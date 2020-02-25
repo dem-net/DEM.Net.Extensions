@@ -22,7 +22,7 @@ namespace SampleApp
     {
         private readonly BuildingService _buildingService;
         private readonly PisteSkiService _pisteSkiService;
-        private readonly IImageryService _imageryService;
+        private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
@@ -32,7 +32,7 @@ namespace SampleApp
 
         public OsmExtensionSample(BuildingService buildingService
                 , PisteSkiService pisteSkiService
-                , IImageryService imageryService
+                , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
                 , IMeshService meshService
@@ -51,10 +51,35 @@ namespace SampleApp
 
             //RunOsmPbfSample(@"D:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
 
+            Run3DModelSamples_BuildingsGeoReferencing();
             Run3DModelSamples_Buildings();
             Run3DModelSamples_SkiResortsAndBuildings();
 
             //RunTesselationSample();
+
+        }
+
+        private void Run3DModelSamples_BuildingsGeoReferencing()
+        {
+            string outputDir = Directory.GetCurrentDirectory();
+            var bbox = new BoundingBox(21.686325073242184, 21.7034912109375, 37.02050454950892, 37.03394528160873);
+            var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ff0000");
+
+            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
+
+            var heightMap = _elevationService.GetHeightMap(ref bbox, DEMDataSet.ASTER_GDEMV3);
+            heightMap = heightMap.ReprojectGeodeticToCartesian().ZScale(ZScale);
+            TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.MapBoxSatellite, 10);
+            string fileName = Path.Combine(outputDir, "Texture.jpg");
+
+            
+            TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg, b.Buildings.SelectMany(bd=>bd.Points).ReprojectTo(Reprojection.SRID_PROJECTED_MERCATOR, Reprojection.SRID_GEODETIC));
+            //TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg, b.Buildings.SelectMany(bd => bd.Points));
+            var normalMap = _imageryService.GenerateNormalMap(heightMap, outputDir);
+            var pbrTexture = PBRTexture.Create(texInfo, normalMap);
+            model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "GeoReferencing.glb"));
 
         }
 
