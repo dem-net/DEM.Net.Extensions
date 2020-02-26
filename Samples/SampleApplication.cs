@@ -44,45 +44,40 @@ namespace SampleApp
     {
         private readonly ILogger<SampleApplication> _logger;
         private readonly IRasterService rasterService;
-        private readonly OsmExtensionSample osmSample;
+        private readonly IServiceProvider services;
         private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
 
-        public SampleApplication(ILogger<SampleApplication> logger,
-            IRasterService rasterService,
-            OsmExtensionSample osmSample)
+        public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
+            IRasterService rasterService)
         {
             _logger = logger;
             this.rasterService = rasterService;
-            this.osmSample = osmSample;
-        }
-
-
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            //Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-
-            Stopwatch sw = Stopwatch.StartNew();
-            _logger.LogInformation("Application started");
-
-            bool pauseAfterEachSample = true;
+            this.services = services;
 
             // Change data dir if not null
             if (!string.IsNullOrWhiteSpace(DATA_FILES_PATH))
             {
                 rasterService.SetLocalDirectory(DATA_FILES_PATH);
             }
+        }
+        internal static void RegisterSamples(IServiceCollection services)
+        {
+            services.AddTransient<OsmExtensionSample>();
+            // .. more samples here
 
-            
-            using (_logger.BeginScope($"Running {nameof(OsmExtensionSample)}.."))
+            services.AddHostedService<SampleApplication>();            
+        }
+
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Application started");
+
+            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
             {
-                osmSample.Run();
-               
-                _logger.LogInformation($"Sample {nameof(OsmExtensionSample)} done. Press any key to run the next sample...");
-                if (pauseAfterEachSample) Console.ReadLine();
+                services.GetService<OsmExtensionSample>().Run();
                 if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
             }
-           
-            _logger.LogTrace($"Application ran in : {sw.Elapsed:g}");
 
             return Task.CompletedTask;
         }

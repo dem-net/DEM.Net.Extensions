@@ -112,22 +112,10 @@ namespace SampleApp
            .AddDemNetglTF()
            .AddDemNetOsmExtension();
 
-            RegisterSamples(services);
+            SampleApplication.RegisterSamples(services);
+
 
         }
 
-        /// <summary>
-        /// Register additionnal samples here
-        /// </summary>
-        /// <param name="services"></param>
-        private static void RegisterSamples(IServiceCollection services)
-        {
-            services
-                    .AddTransient<OsmExtensionSample>();
-
-
-            services.AddHostedService<SampleApplication>();
-            // .. more samples here
-        }
     }
 }
