@@ -62,7 +62,8 @@ namespace SampleApp
         }
         internal static void RegisterSamples(IServiceCollection services)
         {
-            services.AddTransient<OsmExtensionSample>();
+            services.AddScoped<OsmExtensionSample>()
+                    .AddScoped<HelladicSample>();
             // .. more samples here
 
             services.AddHostedService<SampleApplication>();            
@@ -72,6 +73,14 @@ namespace SampleApp
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Application started");
+
+            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+            {
+                services.GetService<HelladicSample>().Run();
+                if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
+            }
+
+            Debugger.Break();
 
             using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
             {

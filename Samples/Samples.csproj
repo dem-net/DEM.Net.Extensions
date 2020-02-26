@@ -38,6 +38,9 @@
 
 
   <ItemGroup>
+    <None Update="Helladic\3D_Initial.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="SampleData\20191022-Puch-Pöllau.gpx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -75,8 +78,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Helladic\" />
   </ItemGroup>
 </Project>

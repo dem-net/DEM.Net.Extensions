@@ -189,6 +189,8 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, float zScale = 1f)
         {
+            if (buildingModels.Count == 0) return buildingModels;
+
             Dictionary<int, GeoPoint> reprojectedPointsById = null;
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
