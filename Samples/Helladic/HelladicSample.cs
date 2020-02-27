@@ -29,10 +29,8 @@ namespace SampleApp
         private readonly IMeshService _meshService;
         private readonly ILogger _logger;
 
-        private float ZScale = 2f;
 
         public HelladicSample(BuildingService buildingService
-                , PisteSkiService pisteSkiService
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
@@ -52,16 +50,15 @@ namespace SampleApp
             Location3DModelSettings settings = new Location3DModelSettings()
             {
                 Dataset = DEMDataSet.AW3D30,
-                ImageryProvider = ImageryProvider.MapBoxSatelliteStreet,
+                ImageryProvider = ImageryProvider.MapTilerSatellite,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
-                OsmBuildings = false,
+                OsmBuildings = true,
                 DownloadMissingFiles = false,
                 GenerateTIN = false,
                 MinTilesPerImage = 4,
                 MaxDegreeOfParallelism = 2,
-                ModelFileNameGenerator = (request) => $"{request.Id}_{DateTime.Now:yyyyMMdd_hhmmss}.glb"
-            };
+        };
 
 
             List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
@@ -76,27 +73,11 @@ namespace SampleApp
                 } while (!sr.EndOfStream);
             }
 
-            //foreach (var request in requests)
-            //{
-            //    Location3DModelResponse response = Generate3DLocationModel(request, settings);
-            //}
-
-
-            settings.ImageryProvider = ImageryProvider.MapTilerSatellite;
-            settings.DownloadMissingFiles = false;
-            settings.OsmBuildings = true;
-            settings.MaxDegreeOfParallelism = 4;
-            settings.GenerateTIN = false;
-            settings.ModelFileNameGenerator = (request) => $"{request.Id}_{DateTime.Now:yyyyMMdd_hhmmss}_{settings.Dataset.Name}_{(settings.OsmBuildings ? "Osm" : "")}{(settings.GenerateTIN ? "TIN" : "")}{settings.ImageryProvider.Name}.glb";
+            
             Parallel.ForEach(requests, new ParallelOptions() { MaxDegreeOfParallelism = settings.MaxDegreeOfParallelism }, request =>
                             {
                                 Location3DModelResponse response = Generate3DLocationModel(request, settings);
                             });
-
-
-          
-
-
 
 
         }
@@ -152,7 +133,7 @@ namespace SampleApp
                         model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture);
                     }
                     model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
-                    model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), settings.ModelFileNameGenerator(request)));
+                    model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), settings.ModelFileNameGenerator(settings, request)));
 
                 }
             }
@@ -276,39 +257,5 @@ namespace SampleApp
         #endregion
     }
 
-    #region Model
-
-    public class Location3DModelSettings
-    {
-        public DEMDataSet Dataset { get; set; }
-        public ImageryProvider ImageryProvider { get; set; }
-        public float ZScale { get; set; } = 2f;
-        public float SideSizeKm { get; internal set; } = 1.5f;
-        public bool OsmBuildings { get; internal set; } = true;
-
-        public Func<Location3DModelRequest, string> ModelFileNameGenerator { get; set; }
-        public int MinTilesPerImage { get; internal set; } = 8;
-        public bool DownloadMissingFiles { get; internal set; } = true;
-        public bool GenerateTIN { get; internal set; } = false;
-        public int MaxDegreeOfParallelism { get; internal set; } = -1;
-    }
-    public class Location3DModelRequest
-    {
-        public string Id { get; set; }
-        public string Title { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public string Description { get; set; }
-
-    }
-    public class Location3DModelResponse
-    {
-        public string Id { get; set; }
-        public Location3DModelRequest Request { get; set; }
-        public Location3DModelSettings Settings { get; set; }
-        public string ModelFile { get; set; }
-
-    }
-
-    #endregion
+   
 }
