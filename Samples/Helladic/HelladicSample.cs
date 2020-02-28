@@ -49,31 +49,32 @@ namespace SampleApp
         {
             Location3DModelSettings settings = new Location3DModelSettings()
             {
-                Dataset = DEMDataSet.AW3D30,
-                ImageryProvider = ImageryProvider.MapTilerSatellite,
+                Dataset = DEMDataSet.ASTER_GDEMV3,
+                ImageryProvider = ImageryProvider.OpenTopoMap,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
-                DownloadMissingFiles = false,
+                DownloadMissingFiles = true,
                 GenerateTIN = false,
-                MinTilesPerImage = 4,
-                MaxDegreeOfParallelism = 2,
-        };
+                MinTilesPerImage = 8,
+                MaxDegreeOfParallelism = 1,//Environment.ProcessorCount,
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All")
+            };
 
+            if (!Directory.Exists(settings.OutputDirectory)) Directory.CreateDirectory(settings.OutputDirectory);
 
             List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
-            using (StreamReader sr = new StreamReader(@"Helladic\3D_Initial.csv", Encoding.UTF8))
+            using (StreamReader sr = new StreamReader(@"Helladic\3D_all.txt", Encoding.UTF8))
             {
                 sr.ReadLine(); // skip header
                 do
                 {
                     //pk,pn,lat,lon,link
-                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine());
+                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine(), '\t');
                     requests.Add(request);
                 } while (!sr.EndOfStream);
             }
 
-            
             Parallel.ForEach(requests, new ParallelOptions() { MaxDegreeOfParallelism = settings.MaxDegreeOfParallelism }, request =>
                             {
                                 Location3DModelResponse response = Generate3DLocationModel(request, settings);
@@ -84,7 +85,7 @@ namespace SampleApp
 
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
         {
-            Location3DModelResponse response = null;
+            Location3DModelResponse response = new Location3DModelResponse();
             try
             {
                 using (TimeSpanBlock timer = new TimeSpanBlock($"3D model {request.Id}", _logger))
@@ -94,16 +95,20 @@ namespace SampleApp
                     HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
 
 
+                    response.Attributions.AddRange(settings.Attributions); // will be added to the model
+                    response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
+
+
                     PBRTexture pbrTexture = null;
                     if (settings.ImageryProvider != null)
                     {
+                        response.Attributions.Add(settings.ImageryProvider.Attribution); // will be added to the model
+
                         // Imagery
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
                         tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
                         string fileName = Path.Combine(Directory.GetCurrentDirectory(), $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
-
-
 
                         hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
                                     .ZScale(settings.ZScale)
@@ -133,7 +138,12 @@ namespace SampleApp
                         model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture);
                     }
                     model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
-                    model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), settings.ModelFileNameGenerator(settings, request)));
+                    model.TryUseExtrasAsList(true).AddRange(response.Attributions);
+                    model.SaveGLB(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
+
+                    // cleanup
+                    File.Delete(pbrTexture.NormalTexture.FilePath);
+                    File.Delete(pbrTexture.BaseColorTexture.FilePath);
 
                 }
             }
@@ -144,9 +154,9 @@ namespace SampleApp
             return response;
         }
 
-        private Location3DModelRequest ParseCsvLine(string cols)
+        private Location3DModelRequest ParseCsvLine(string cols, char separator)
         {
-            string[] values = cols.Split(',');
+            string[] values = cols.Split(separator);
             //pk,pn,lat,lon,link
 
             int index = 0;
@@ -257,5 +267,5 @@ namespace SampleApp
         #endregion
     }
 
-   
+
 }

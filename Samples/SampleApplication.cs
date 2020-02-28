@@ -45,14 +45,16 @@ namespace SampleApp
         private readonly ILogger<SampleApplication> _logger;
         private readonly IRasterService rasterService;
         private readonly IServiceProvider services;
+        private readonly IHostApplicationLifetime _appLifetime;
         private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
 
-        public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
+        public SampleApplication(IHostApplicationLifetime appLifetime, ILogger<SampleApplication> logger, IServiceProvider services,
             IRasterService rasterService)
         {
             _logger = logger;
             this.rasterService = rasterService;
             this.services = services;
+            this._appLifetime = appLifetime;
 
             // Change data dir if not null
             if (!string.IsNullOrWhiteSpace(DATA_FILES_PATH))
@@ -74,21 +76,44 @@ namespace SampleApp
         {
             _logger.LogInformation("Application started");
 
+            _appLifetime.ApplicationStarted.Register(OnStarted);
+            _appLifetime.ApplicationStopping.Register(OnStopping);
+            _appLifetime.ApplicationStopped.Register(OnStopped);
+
+            return Task.CompletedTask;
+        }
+
+        private void OnStarted()
+        {
+            _logger.LogInformation("OnStarted has been called.");
+
+
             using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
             {
                 services.GetService<HelladicSample>().Run();
-                if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
             }
 
-            Debugger.Break();
+            //Debugger.Break();
 
-            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
-            {
-                services.GetService<OsmExtensionSample>().Run();
-                if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
-            }
+            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
+            //{
+            //    services.GetService<OsmExtensionSample>().Run();
+            //    if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
+            //}
+        }
 
-            return Task.CompletedTask;
+        private void OnStopping()
+        {
+            _logger.LogInformation("OnStopping has been called.");
+
+            // Perform on-stopping activities here
+        }
+
+        private void OnStopped()
+        {
+            _logger.LogInformation("OnStopped has been called.");
+
+            // Perform post-stopped activities here
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
