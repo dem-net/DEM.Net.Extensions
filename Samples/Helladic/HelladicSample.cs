@@ -50,7 +50,7 @@ namespace SampleApp
             Location3DModelSettings settings = new Location3DModelSettings()
             {
                 Dataset = DEMDataSet.ASTER_GDEMV3,
-                ImageryProvider = ImageryProvider.OpenTopoMap,
+                ImageryProvider = null,// ImageryProvider.OpenTopoMap,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
@@ -142,8 +142,11 @@ namespace SampleApp
                     model.SaveGLB(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
 
                     // cleanup
-                    File.Delete(pbrTexture.NormalTexture.FilePath);
-                    File.Delete(pbrTexture.BaseColorTexture.FilePath);
+                    if (pbrTexture != null)
+                    {
+                        File.Delete(pbrTexture.NormalTexture.FilePath);
+                        File.Delete(pbrTexture.BaseColorTexture.FilePath);
+                    }
 
                 }
             }
