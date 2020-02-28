@@ -53,50 +53,57 @@ namespace SampleApp
 
         static async Task Main(string[] args)
         {
-            var hostBuilder = Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((context, builder) =>
-                {
-                    builder.SetBasePath(AppContext.BaseDirectory)
-                        .AddJsonFile("appsettings.json", optional: false)
-                        .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
-                        .AddJsonFile("secrets.json", optional: true, reloadOnChange: false);
-                })
-                .ConfigureServices((context, builder) =>
-                {
-                    RegisterServices(context.Configuration, builder);
-                });
 
-            try
+            // Load config
+            // Load appsettings.json
+            var config = LoadAppSettings();
+            if (null == config)
             {
-                await hostBuilder.RunConsoleAsync();
+                Console.WriteLine("Missing or invalid appsettings.json file.");
+                return;
             }
-            catch (TaskCanceledException)
-            {
-                Console.Write("End of DEM.Net Samples after cancelation.");
-            }
-            catch (Exception ex)
-            {
-                Console.Write(ex.ToString());
-            }
-            finally
-            {
-                Console.Write("Press any key to contine...");
-                Console.ReadLine();
-            }
-           
+
+            // Setting up dependency injection
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(config, serviceCollection);
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<SampleApplication>().Run();
 
         }
 
-        private static void RegisterServices(IConfiguration config, IServiceCollection services)
+        private static IConfigurationRoot LoadAppSettings()
+        {
+            try
+            {
+
+                var config = new ConfigurationBuilder()
+                    .AddEnvironmentVariables()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                //.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
+                .AddJsonFile("secrets.json", optional: true, reloadOnChange: false)
+                .Build();
+
+                return config;
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                return null;
+            }
+        }
+
+
+        private static void ConfigureServices(IConfigurationRoot config, IServiceCollection services)
         {
             services.AddLogging(config =>
             {
                 config.AddDebug(); // Log to debug (debug window in Visual Studio or any debugger attached)
                 config.AddConsole(o =>
-                {
-                    o.IncludeScopes = false;
-                    o.DisableColors = false;
-                }); // Log to console (colored !)
+                        {
+                            o.IncludeScopes = false;
+                            o.DisableColors = false;
+                        }); // Log to console (colored !)
             })
            .Configure<LoggerFilterOptions>(options =>
            {

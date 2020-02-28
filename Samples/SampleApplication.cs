@@ -40,21 +40,19 @@ namespace SampleApp
     /// <summary>
     /// Main sample application
     /// </summary>
-    public class SampleApplication : IHostedService
+    public class SampleApplication
     {
         private readonly ILogger<SampleApplication> _logger;
         private readonly IRasterService rasterService;
         private readonly IServiceProvider services;
-        private readonly IHostApplicationLifetime _appLifetime;
         private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
 
-        public SampleApplication(IHostApplicationLifetime appLifetime, ILogger<SampleApplication> logger, IServiceProvider services,
+        public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
             IRasterService rasterService)
         {
             _logger = logger;
             this.rasterService = rasterService;
             this.services = services;
-            this._appLifetime = appLifetime;
 
             // Change data dir if not null
             if (!string.IsNullOrWhiteSpace(DATA_FILES_PATH))
@@ -68,22 +66,11 @@ namespace SampleApp
                     .AddScoped<HelladicSample>();
             // .. more samples here
 
-            services.AddHostedService<SampleApplication>();            
+            services.AddScoped<SampleApplication>();
         }
 
 
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("Application started");
-
-            _appLifetime.ApplicationStarted.Register(OnStarted);
-            _appLifetime.ApplicationStopping.Register(OnStopping);
-            _appLifetime.ApplicationStopped.Register(OnStopped);
-
-            return Task.CompletedTask;
-        }
-
-        private void OnStarted()
+        public void Run()
         {
             _logger.LogInformation("OnStarted has been called.");
 
@@ -102,24 +89,5 @@ namespace SampleApp
             //}
         }
 
-        private void OnStopping()
-        {
-            _logger.LogInformation("OnStopping has been called.");
-
-            // Perform on-stopping activities here
-        }
-
-        private void OnStopped()
-        {
-            _logger.LogInformation("OnStopped has been called.");
-
-            // Perform post-stopped activities here
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogTrace($"Application stopping...");
-            return Task.CompletedTask;
-        }
     }
 }
