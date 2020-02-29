@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SharpGLTF.Schema2;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -47,21 +48,50 @@ namespace SampleApp
 
         public void Run()
         {
-            Location3DModelSettings settings = new Location3DModelSettings()
+            List<Location3DModelSettings> allSettings = new List<Location3DModelSettings>();
+            //Location3DModelSettings settingsSpeed = new Location3DModelSettings()
+            //{
+            //    Dataset = DEMDataSet.ASTER_GDEMV3,
+            //    ImageryProvider = null,
+            //    ZScale = 2f,
+            //    SideSizeKm = 1.5f,
+            //    OsmBuildings = false,
+            //    DownloadMissingFiles = false,
+            //    GenerateTIN = false,
+            //    MinTilesPerImage = 8,
+            //    MaxDegreeOfParallelism = 4,
+            //    OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Speed")
+            //};
+            //Location3DModelSettings settingsNormal = new Location3DModelSettings()
+            //{
+            //    Dataset = DEMDataSet.ASTER_GDEMV3,
+            //    ImageryProvider = ImageryProvider.OpenTopoMap,
+            //    ZScale = 2f,
+            //    SideSizeKm = 1.5f,
+            //    OsmBuildings = true,
+            //    DownloadMissingFiles = false,
+            //    GenerateTIN = false,
+            //    MinTilesPerImage = 8,
+            //    MaxDegreeOfParallelism = 1,
+            //    OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Normal")
+            //};
+            Location3DModelSettings settingsSafe = new Location3DModelSettings()
             {
                 Dataset = DEMDataSet.ASTER_GDEMV3,
-                ImageryProvider = null,// ImageryProvider.OpenTopoMap,
+                ImageryProvider = ImageryProvider.MapBoxOutdoors,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
-                DownloadMissingFiles = true,
+                DownloadMissingFiles = false,
                 GenerateTIN = false,
-                MinTilesPerImage = 8,
-                MaxDegreeOfParallelism = 1,//Environment.ProcessorCount,
-                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All")
+                MaxDegreeOfParallelism = 1,
+                ClearOutputDir = false,
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo")
             };
+            //allSettings.Add(settingsSpeed);
+            //allSettings.Add(settingsNormal);
+            allSettings.Add(settingsSafe);
 
-            if (!Directory.Exists(settings.OutputDirectory)) Directory.CreateDirectory(settings.OutputDirectory);
 
             List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
             using (StreamReader sr = new StreamReader(@"Helladic\3D_all.txt", Encoding.UTF8))
@@ -75,10 +105,54 @@ namespace SampleApp
                 } while (!sr.EndOfStream);
             }
 
-            Parallel.ForEach(requests, new ParallelOptions() { MaxDegreeOfParallelism = settings.MaxDegreeOfParallelism }, request =>
-                            {
-                                Location3DModelResponse response = Generate3DLocationModel(request, settings);
-                            });
+            foreach (var settings in allSettings)
+            {
+                if (settings.ClearOutputDir)
+                {
+                    if (Directory.Exists(settings.OutputDirectory)) Directory.Delete(settings.OutputDirectory, true);
+
+                    Directory.CreateDirectory(settings.OutputDirectory);
+                }
+                else
+                {
+                    // Filter already generated files
+                    int countBefore = requests.Count;
+                    requests = requests.Where(r => !File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
+                    if (requests.Count < countBefore)
+                    {
+                        _logger.LogInformation($"Skipping {countBefore - requests.Count} files already generated.");
+                    }
+                }
+            }
+
+
+
+            ConcurrentBag<Location3DModelResponse> responses = new ConcurrentBag<Location3DModelResponse>();
+            foreach (var setting in allSettings)
+            {
+                //foreach (var request in requests)
+                Parallel.ForEach(requests, new ParallelOptions { MaxDegreeOfParallelism = setting.MaxDegreeOfParallelism }, request =>
+                 {
+                     try
+                     {
+                         var response = Generate3DLocationModel(request, setting);
+                         responses.Add(response);
+
+                         //Location3DModelResponse response = Generate3DLocationModel(request, settings);
+                     }
+                     catch (Exception ex)
+                     {
+                         _logger.LogError(ex.Message);
+                     }
+                     finally
+                     {
+                         if (responses.Count > 0)
+                             _logger.LogInformation($"Reponse: {responses.Last().Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far)");
+                     }
+                 }
+                );
+            }
+
 
 
         }
@@ -88,6 +162,7 @@ namespace SampleApp
             Location3DModelResponse response = new Location3DModelResponse();
             try
             {
+                bool imageryFailed = false;
                 using (TimeSpanBlock timer = new TimeSpanBlock($"3D model {request.Id}", _logger))
                 {
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
@@ -106,14 +181,30 @@ namespace SampleApp
 
                         // Imagery
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
-                        tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
-                        string fileName = Path.Combine(Directory.GetCurrentDirectory(), $"{request.Id}_Texture.jpg");
+                        try
+                        {
+                            tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
+                        }
+                        catch (Exception)
+                        {
+                            imageryFailed = true;
+                            try
+                            {
+                                tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, ImageryProvider.MapBoxSatelliteStreet, settings.MinTilesPerImage);
+                                tiles = _imageryService.DownloadTiles(tiles, ImageryProvider.MapBoxSatelliteStreet);
+                            }
+                            catch (Exception)
+                            {
+                                throw;
+                            }
+                        }
+                        string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
                         hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
                                     .ZScale(settings.ZScale)
                                     .BakeCoordinates();
-                        var normalMap = _imageryService.GenerateNormalMap(hMap, Directory.GetCurrentDirectory(), $"{request.Id}_normalmap.png");
+                        var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
                         pbrTexture = PBRTexture.Create(texInfo, normalMap);
                     }
 
@@ -139,7 +230,7 @@ namespace SampleApp
                     }
                     model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
                     model.TryUseExtrasAsList(true).AddRange(response.Attributions);
-                    model.SaveGLB(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
+                    model.SaveGLB(Path.Combine(settings.OutputDirectory, string.Concat(imageryFailed ? "imageryFailed_" : "", settings.ModelFileNameGenerator(settings, request))));
 
                     // cleanup
                     if (pbrTexture != null)
@@ -148,6 +239,7 @@ namespace SampleApp
                         File.Delete(pbrTexture.BaseColorTexture.FilePath);
                     }
 
+                    response.Elapsed = timer.Elapsed;
                 }
             }
             catch (Exception)

@@ -123,7 +123,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
         #region QueryTimeout
 
-        private UInt32 _QueryTimeout = 100;
+        private UInt32 _QueryTimeout = 10;
 
         /// <summary>
         /// The timeout of the query.

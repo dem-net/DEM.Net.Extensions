@@ -1,4 +1,5 @@
 ﻿using DEM.Net.Core;
+using System;
 using System.Collections.Generic;
 
 namespace SampleApp
@@ -12,7 +13,7 @@ namespace SampleApp
         public string ModelFile { get; set; }
 
         public List<Attribution> Attributions { get; set; } = new List<Attribution>();
-
+        public TimeSpan Elapsed { get; internal set; }
     }
 
     #endregion

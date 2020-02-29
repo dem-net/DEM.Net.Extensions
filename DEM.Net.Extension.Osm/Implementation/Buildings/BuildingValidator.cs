@@ -95,6 +95,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             var color = Color.FromArgb(230, 230, 230);
             try
             {
+                if (!htmlColor.StartsWith("#")) htmlColor = string.Concat("#", htmlColor);
                 color = ColorTranslator.FromHtml(htmlColor);
             }
             catch (Exception ex)
