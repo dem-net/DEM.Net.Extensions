@@ -34,6 +34,7 @@ using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
+using DEM.Net.Extension.SketchFab.Export;
 
 namespace SampleApp
 {
@@ -63,7 +64,9 @@ namespace SampleApp
         internal static void RegisterSamples(IServiceCollection services)
         {
             services.AddScoped<OsmExtensionSample>()
-                    .AddScoped<HelladicSample>();
+                    .AddScoped<HelladicSample>()
+                    .AddScoped<SketchFabExporter>()
+                    .AddScoped<SketchFabSample>();
             // .. more samples here
 
             services.AddScoped<SampleApplication>();
@@ -74,13 +77,19 @@ namespace SampleApp
         {
             _logger.LogInformation("OnStarted has been called.");
 
-
-            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
             {
-                services.GetService<HelladicSample>().Run();
+                services.GetService<SketchFabSample>().Run();
             }
 
             //Debugger.Break();
+
+            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+            //{
+            //    services.GetService<HelladicSample>().Run();
+            //}
+
+            Debugger.Break();
 
             //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
             //{

@@ -152,9 +152,6 @@ namespace SampleApp
                  }
                 );
             }
-
-
-
         }
 
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
