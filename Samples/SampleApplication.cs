@@ -82,12 +82,12 @@ namespace SampleApp
                 services.GetService<SketchFabSample>().Run();
             }
 
-            //Debugger.Break();
+            Debugger.Break();
 
-            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
-            //{
-            //    services.GetService<HelladicSample>().Run();
-            //}
+            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+            {
+                services.GetService<HelladicSample>().Run();
+            }
 
             Debugger.Break();
 

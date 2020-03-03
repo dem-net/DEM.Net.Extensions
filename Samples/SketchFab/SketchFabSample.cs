@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace SampleApp
@@ -27,7 +28,7 @@ namespace SampleApp
             {
                 Token = _secrets.SketchFabToken,
                 Description = "Helladic test upload",
-                FilePath = @"C:\Repos\DEM.Net.Extensions\Samples\bin\Debug\netcoreapp3.1\All_Topo\C5196_ASTER_GDEMV3_OsmMapBox-Outdoors.glb",
+                FilePath = Path.Combine(Directory.GetCurrentDirectory(), "SketchFab", "sampleModel.glb"),
                 IsInspectable = true,
                 IsPrivate = false,
                 IsPublished = false,
