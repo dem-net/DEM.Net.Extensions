@@ -28,11 +28,11 @@ namespace SampleApp
             {
                 Token = _secrets.SketchFabToken,
                 Description = "Helladic test upload",
-                FilePath = Path.Combine(Directory.GetCurrentDirectory(), "SketchFab", "sampleModel.glb"),
+                FilePath = Path.Combine(Directory.GetCurrentDirectory(), "SketchFab", "C1410_Satellite.glb"),
                 IsInspectable = true,
                 IsPrivate = false,
                 IsPublished = false,
-                Name = "C5196_GDEMV3_Osm_MapBoxOutdoors"
+                Name = "C1410_Satellite"
             };
 
 

@@ -81,6 +81,12 @@
     <None Update="secrets.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="SketchFab\C1410_OsmTopo.glb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SketchFab\C1410_Satellite.glb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="SketchFab\sampleModel.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
