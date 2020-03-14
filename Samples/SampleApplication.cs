@@ -77,25 +77,36 @@ namespace SampleApp
         {
             _logger.LogInformation("OnStarted has been called.");
 
-            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
+            try
             {
-                services.GetService<SketchFabSample>().Run();
+
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
+                {
+                    services.GetService<SketchFabSample>().Run();
+                }
+
+                Debugger.Break();
+
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+                {
+                    services.GetService<HelladicSample>().Run();
+                }
+
+                Debugger.Break();
+
+                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
+                //{
+                //    services.GetService<OsmExtensionSample>().Run();
+                //    if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
+                //}
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error: {ex.ToString()}");
+
             }
 
-            Debugger.Break();
-
-            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
-            {
-                services.GetService<HelladicSample>().Run();
-            }
-
-            Debugger.Break();
-
-            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
-            //{
-            //    services.GetService<OsmExtensionSample>().Run();
-            //    if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
-            //}
         }
 
     }
