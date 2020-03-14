@@ -12,6 +12,7 @@ using SharpGLTF.Schema2;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -77,8 +78,8 @@ namespace SampleApp
             //};
             Location3DModelSettings settingsSafe = new Location3DModelSettings()
             {
-                Dataset = DEMDataSet.ASTER_GDEMV3,
-                ImageryProvider = ImageryProvider.MapBoxOutdoors,
+                Dataset = DEMDataSet.NASADEM,
+                ImageryProvider = ImageryProvider.ThunderForestOutdoors,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
@@ -86,7 +87,7 @@ namespace SampleApp
                 GenerateTIN = false,
                 MaxDegreeOfParallelism = 1,
                 ClearOutputDir = false,
-                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo")
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo_NasaDem")
             };
             //allSettings.Add(settingsSpeed);
             //allSettings.Add(settingsNormal);
@@ -110,11 +111,11 @@ namespace SampleApp
                 if (settings.ClearOutputDir)
                 {
                     if (Directory.Exists(settings.OutputDirectory)) Directory.Delete(settings.OutputDirectory, true);
-
                     Directory.CreateDirectory(settings.OutputDirectory);
                 }
                 else
                 {
+                    Directory.CreateDirectory(settings.OutputDirectory);
                     // Filter already generated files
                     int countBefore = requests.Count;
                     requests = requests.Where(r => !File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
@@ -178,6 +179,7 @@ namespace SampleApp
 
                         // Imagery
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
+                        Debug.Assert(tiles.EnumerateRange().Count() < 400);
                         try
                         {
                             tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);

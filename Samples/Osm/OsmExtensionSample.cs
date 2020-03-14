@@ -239,7 +239,7 @@ namespace SampleApp
             //bbox = new BoundingBox(5.526716197512567, 5.6334895739774105, 43.49662332237486, 43.56457608971906);
             //GetBuildings3D(bbox);
 
-
+            
         }
 
         private void Run3DModelSamples_SkiResortsAndBuildings()
@@ -249,7 +249,7 @@ namespace SampleApp
 
             bbox = GeometryService.GetBoundingBox("POLYGON((6.168505020891946 45.29983821918378,6.314073868548196 45.29983821918378,6.314073868548196 45.19444990202436,6.168505020891946 45.19444990202436,6.168505020891946 45.29983821918378))");
 
-            GetSkiResort3D(bbox, "Saint Sorlin d'Arves", numTiles: 10, tinMesh: false, null, ImageryProvider.MapTilerHillshades, ImageryProvider.StamenToner, ImageryProvider.StamenTerrain);
+            GetSkiResort3D(bbox, "Saint Sorlin d'Arves", numTiles: 10, tinMesh: false, null, ImageryProvider.ThunderForestOutdoors, ImageryProvider.StamenToner);
 
             // Ski resort - Val d'Isère
             bbox = GeometryService.GetBoundingBox("POLYGON((6.801003508029977 45.5157770504273,7.074631742893258 45.5157770504273,7.074631742893258 45.405728861083176,6.801003508029977 45.405728861083176,6.801003508029977 45.5157770504273))");
