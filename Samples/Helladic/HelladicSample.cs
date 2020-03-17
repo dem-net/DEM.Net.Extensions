@@ -76,10 +76,10 @@ namespace SampleApp
             //    MaxDegreeOfParallelism = 1,
             //    OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Normal")
             //};
-            Location3DModelSettings settingsSafe = new Location3DModelSettings()
+            Location3DModelSettings settings = new Location3DModelSettings()
             {
-                Dataset = DEMDataSet.NASADEM,
-                ImageryProvider = ImageryProvider.ThunderForestOutdoors,
+                Dataset = DEMDataSet.ASTER_GDEMV3,
+                ImageryProvider = ImageryProvider.MapBoxOutdoors,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
@@ -87,15 +87,12 @@ namespace SampleApp
                 GenerateTIN = false,
                 MaxDegreeOfParallelism = 1,
                 ClearOutputDir = false,
-                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo_NasaDem")
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo")
             };
-            //allSettings.Add(settingsSpeed);
-            //allSettings.Add(settingsNormal);
-            allSettings.Add(settingsSafe);
 
 
             List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
-            using (StreamReader sr = new StreamReader(@"Helladic\3D_all.txt", Encoding.UTF8))
+            using (StreamReader sr = new StreamReader(@"Helladic\3D_Initial.txt", Encoding.UTF8))
             {
                 sr.ReadLine(); // skip header
                 do
@@ -106,53 +103,50 @@ namespace SampleApp
                 } while (!sr.EndOfStream);
             }
 
-            foreach (var settings in allSettings)
+
+            if (settings.ClearOutputDir)
             {
-                if (settings.ClearOutputDir)
+                if (Directory.Exists(settings.OutputDirectory)) Directory.Delete(settings.OutputDirectory, true);
+                Directory.CreateDirectory(settings.OutputDirectory);
+            }
+            else
+            {
+                Directory.CreateDirectory(settings.OutputDirectory);
+                // Filter already generated files
+                int countBefore = requests.Count;
+                requests = requests.Where(r => !File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
+                if (requests.Count < countBefore)
                 {
-                    if (Directory.Exists(settings.OutputDirectory)) Directory.Delete(settings.OutputDirectory, true);
-                    Directory.CreateDirectory(settings.OutputDirectory);
-                }
-                else
-                {
-                    Directory.CreateDirectory(settings.OutputDirectory);
-                    // Filter already generated files
-                    int countBefore = requests.Count;
-                    requests = requests.Where(r => !File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
-                    if (requests.Count < countBefore)
-                    {
-                        _logger.LogInformation($"Skipping {countBefore - requests.Count} files already generated.");
-                    }
+                    _logger.LogInformation($"Skipping {countBefore - requests.Count} files already generated.");
                 }
             }
-
-
 
             ConcurrentBag<Location3DModelResponse> responses = new ConcurrentBag<Location3DModelResponse>();
-            foreach (var setting in allSettings)
-            {
-                //foreach (var request in requests)
-                Parallel.ForEach(requests, new ParallelOptions { MaxDegreeOfParallelism = setting.MaxDegreeOfParallelism }, request =>
+            //foreach (var request in requests)
+            Parallel.ForEach(requests, new ParallelOptions { MaxDegreeOfParallelism = settings.MaxDegreeOfParallelism }, request =>
+             {
+                 try
                  {
-                     try
-                     {
-                         var response = Generate3DLocationModel(request, setting);
-                         responses.Add(response);
+                     var response = Generate3DLocationModel(request, settings);
+                     responses.Add(response);
 
-                         //Location3DModelResponse response = Generate3DLocationModel(request, settings);
-                     }
-                     catch (Exception ex)
-                     {
-                         _logger.LogError(ex.Message);
-                     }
-                     finally
-                     {
-                         if (responses.Count > 0)
-                             _logger.LogInformation($"Reponse: {responses.Last().Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far)");
-                     }
+                     //Location3DModelResponse response = Generate3DLocationModel(request, settings);
                  }
-                );
-            }
+                 catch (Exception ex)
+                 {
+                     _logger.LogError(ex.Message);
+                 }
+                 finally
+                 {
+                     if (responses.Count > 0)
+                         _logger.LogInformation($"Reponse: {responses.Last().Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far)");
+                 }
+             }
+            );
+
+
+            // Now, scan again 
+
         }
 
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)

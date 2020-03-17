@@ -34,7 +34,7 @@ using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
-using DEM.Net.Extension.SketchFab.Export;
+using DEM.Net.Extension.SketchFab;
 
 namespace SampleApp
 {
@@ -65,7 +65,7 @@ namespace SampleApp
         {
             services.AddScoped<OsmExtensionSample>()
                     .AddScoped<HelladicSample>()
-                    .AddScoped<SketchFabExporter>()
+                    .AddScoped<SketchFabApi>()
                     .AddScoped<SketchFabSample>();
             // .. more samples here
 
