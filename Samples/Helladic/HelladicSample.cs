@@ -4,6 +4,7 @@ using DEM.Net.Core.Services.Lab;
 using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.Extension.Osm.OverpassAPI;
+using DEM.Net.Extension.SketchFab;
 using DEM.Net.glTF.SharpglTF;
 using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,7 @@ namespace SampleApp
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
+        private readonly SketchFabApi _sketchFabApi;
         private readonly ILogger _logger;
 
 
@@ -37,6 +39,7 @@ namespace SampleApp
                 , IElevationService elevationService
                 , SharpGltfService gltfService
                 , IMeshService meshService
+                , SketchFabApi sketchFabApi
                 , ILogger<OsmExtensionSample> logger)
         {
             this._buildingService = buildingService;
@@ -44,10 +47,17 @@ namespace SampleApp
             this._elevationService = elevationService;
             this._gltfService = gltfService;
             this._meshService = meshService;
+            this._sketchFabApi = sketchFabApi;
             this._logger = logger;
         }
 
         public void Run()
+        {
+            //BatchGeneration(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
+            BatchUpload(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
+        }
+
+        public void BatchGeneration(string fileName, string outputDirName)
         {
             List<Location3DModelSettings> allSettings = new List<Location3DModelSettings>();
             //Location3DModelSettings settingsSpeed = new Location3DModelSettings()
@@ -78,8 +88,8 @@ namespace SampleApp
             //};
             Location3DModelSettings settings = new Location3DModelSettings()
             {
-                Dataset = DEMDataSet.ASTER_GDEMV3,
-                ImageryProvider = ImageryProvider.MapBoxOutdoors,
+                Dataset = DEMDataSet.NASADEM,
+                ImageryProvider = ImageryProvider.ThunderForestLandscape,
                 ZScale = 2f,
                 SideSizeKm = 1.5f,
                 OsmBuildings = true,
@@ -87,12 +97,12 @@ namespace SampleApp
                 GenerateTIN = false,
                 MaxDegreeOfParallelism = 1,
                 ClearOutputDir = false,
-                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "All_Topo")
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), outputDirName)
             };
 
 
             List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
-            using (StreamReader sr = new StreamReader(@"Helladic\3D_Initial.txt", Encoding.UTF8))
+            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
             {
                 sr.ReadLine(); // skip header
                 do
@@ -149,6 +159,115 @@ namespace SampleApp
 
         }
 
+
+        public void BatchUpload(string fileName, string outputDirName)
+        {
+            Location3DModelSettings settings = new Location3DModelSettings()
+            {
+                Dataset = DEMDataSet.NASADEM,
+                ImageryProvider = ImageryProvider.ThunderForestLandscape,
+                ZScale = 2f,
+                SideSizeKm = 1.5f,
+                OsmBuildings = true,
+                DownloadMissingFiles = false,
+                GenerateTIN = false,
+                MaxDegreeOfParallelism = 1,
+                ClearOutputDir = false,
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), outputDirName)
+            };
+
+
+            List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
+            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
+            {
+                sr.ReadLine(); // skip header
+                do
+                {
+                    //pk,pn,lat,lon,link
+                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine(), '\t');
+                    requests.Add(request);
+                } while (!sr.EndOfStream);
+            }
+
+
+            // Take generated files
+            int countBefore = requests.Count;
+            requests = requests.Where(r => File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
+            _logger.LogInformation($"{requests.Count}/{countBefore} files generated.");
+
+            string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out.txt");
+
+            using (StreamWriter sw = new StreamWriter(outFilePath))
+            {
+                sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "sketchfabstatus", "sketchfabid"));
+                foreach(var request in requests)
+                {
+                    UploadModelRequest uploadRequest = GetUploadRequest(settings, request);
+                    string uuid = null;
+                    bool ok = false;
+                    try
+                    {
+                        uuid = _sketchFabApi.UploadModelAsync(uploadRequest).GetAwaiter().GetResult();
+
+                        // TODO add to collection / delete API
+
+                        ok = true;
+                        _logger.LogInformation($"SketchFab upload ok : {uuid}");
+                    }
+                    catch (Exception exSketchFab)
+                    {
+                        _logger.LogError($"Error in SketchFab upload: {exSketchFab.Message}");
+                        ok = false;
+                        uuid = exSketchFab.Message;
+                    }
+                    finally
+                    {
+                        sw.WriteLine(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude, request.Description,
+                             ok ? "OK" : uuid,
+                             ok ? uuid : ""));
+                    }                    
+                }
+            }
+
+          
+
+        }
+
+        private UploadModelRequest GetUploadRequest(Location3DModelSettings settings, Location3DModelRequest request)
+        {
+            
+             UploadModelRequest upload = new UploadModelRequest()
+            {
+                Description =  GenerateDescription(settings,request),// "TEST",// * Generated by [DEM Net Elevation API](https://elevationapi.com)\n* Helladic test upload",
+                FilePath = Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)),
+                IsInspectable = true,
+                IsPrivate = false,
+                IsPublished = false,
+                Name = string.Concat(request.Id, " ", request.Title),
+                Options = new ModelOptions() { Background = SkecthFabEnvironment.Footprint_Court, Shading = ShadingType.lit }
+            };
+            return upload;
+        }
+
+        private string GenerateDescription(Location3DModelSettings settings, Location3DModelRequest request)
+        {
+            List<string> desc = new List<string>();
+            // Location
+            //desc.Add($"[See on Helladic.info](https://www.google.com/maps/@{request.Latitude:N7},{request.Longitude:N7},13z)");
+
+            // Helladic.info
+            desc.Add($"[Helladic.info Link]({request.Description})");
+
+            desc.AddRange(settings.Attributions.Select(a => $"{a.Subject}: [{a.Text}]({a.Url})"));
+            desc.Add($"Elevation: [{settings.Dataset.Attribution.Text}]({settings.Dataset.Attribution.Url})");
+            if (settings.OsmBuildings)
+            {
+                desc.Add("Data: OpenStreetMap and Contributors [www.openstreetmap.org](https://www.openstreetmap.org)");
+            }
+
+            return string.Join(Environment.NewLine, desc.Select(d => string.Concat("* ", d)));
+        }
+
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
         {
             Location3DModelResponse response = new Location3DModelResponse();
@@ -197,8 +316,8 @@ namespace SampleApp
                         hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
                                     .ZScale(settings.ZScale)
                                     .BakeCoordinates();
-                        var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
-                        pbrTexture = PBRTexture.Create(texInfo, normalMap);
+                        //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
+                        pbrTexture = PBRTexture.Create(texInfo);
                     }
 
                     ModelRoot model = _gltfService.CreateNewModel();
@@ -228,7 +347,7 @@ namespace SampleApp
                     // cleanup
                     if (pbrTexture != null)
                     {
-                        File.Delete(pbrTexture.NormalTexture.FilePath);
+                        if (pbrTexture.NormalTexture != null) File.Delete(pbrTexture.NormalTexture.FilePath);
                         File.Delete(pbrTexture.BaseColorTexture.FilePath);
                     }
 

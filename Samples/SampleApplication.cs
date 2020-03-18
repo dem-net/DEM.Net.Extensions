@@ -79,6 +79,12 @@ namespace SampleApp
 
             try
             {
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+                {
+                    services.GetService<HelladicSample>().Run();
+                }
+
+                Debugger.Break();
 
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
                 {
@@ -87,12 +93,7 @@ namespace SampleApp
 
                 Debugger.Break();
 
-                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
-                {
-                    services.GetService<HelladicSample>().Run();
-                }
-
-                Debugger.Break();
+                
 
                 //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 //{
