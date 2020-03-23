@@ -37,6 +37,7 @@ using GeoJSON.Net.Geometry;
 using GeoJSON.Net;
 using System.Numerics;
 using System.Drawing;
+using DEM.Net.Extension.Osm.Extensions;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
@@ -95,8 +96,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             var color = Color.FromArgb(230, 230, 230);
             try
             {
-                if (!htmlColor.StartsWith("#")) htmlColor = string.Concat("#", htmlColor);
-                color = ColorTranslator.FromHtml(htmlColor);
+                color = HtmlColorTranslator.FromHtml(htmlColor);
             }
             catch (Exception ex)
             {
@@ -104,6 +104,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
             return new Vector4(componentRemap(color.R), componentRemap(color.G), componentRemap(color.B), componentRemap(color.A));
         }
+
 
         private void ParseTag<T>(BuildingModel model, string tagName, Action<T> updateAction)
         {

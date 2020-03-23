@@ -392,7 +392,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
             // Relation.Ways.Select(Way => new JArray(Way.Nodes.Select(Node => new JArray(Node.Longitude, Node.Latitude))))
 
-            var RemainingGeoFeatures = Relation.Members.Where(m=>m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
+            var RemainingGeoFeatures = Relation.Members.Where(m => m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
             var ResultList = new List<GeoFeature>();
 
             bool Found = false;
@@ -471,7 +471,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                     } while (RemainingGeoFeatures.Count > 0 && Found);
 
-                    CurrentGeoFeature.Type = (Relation.Tags["type"].ToString() != "route" &&
+                    // Is route
+                    bool isRoute = Relation.Tags.Any() && Relation.Tags["type"].ToString() == "route";
+                    CurrentGeoFeature.Type = (!isRoute &&
                                                CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
                                                   ? GeoJSONObjectType.Polygon
                                                   : GeoJSONObjectType.LineString;
