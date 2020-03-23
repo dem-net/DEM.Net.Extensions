@@ -54,7 +54,8 @@ namespace SampleApp
         public void Run()
         {
             //BatchGeneration(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
-            BatchUpload(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
+            //BatchUpload(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
+            BatchGenerationAndUpload(@"Helladic\3D_Initial.txt", "3D_Initial_2ndbatch");
         }
 
         public void BatchGeneration(string fileName, string outputDirName)
@@ -101,17 +102,7 @@ namespace SampleApp
             };
 
 
-            List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
-            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
-            {
-                sr.ReadLine(); // skip header
-                do
-                {
-                    //pk,pn,lat,lon,link
-                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine(), '\t');
-                    requests.Add(request);
-                } while (!sr.EndOfStream);
-            }
+            List<Location3DModelRequest> requests = ParseInputFile(fileName);
 
 
             if (settings.ClearOutputDir)
@@ -139,8 +130,6 @@ namespace SampleApp
                  {
                      var response = Generate3DLocationModel(request, settings);
                      responses.Add(response);
-
-                     //Location3DModelResponse response = Generate3DLocationModel(request, settings);
                  }
                  catch (Exception ex)
                  {
@@ -159,6 +148,113 @@ namespace SampleApp
 
         }
 
+        private List<Location3DModelRequest> ParseInputFile(string fileName)
+        {
+            List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
+            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
+            {
+                sr.ReadLine(); // skip header
+                do
+                {
+                    //pk,pn,lat,lon,link
+                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine(), '\t');
+                    requests.Add(request);
+                } while (!sr.EndOfStream);
+            }
+
+            return requests;
+        }
+        public void BatchGenerationAndUpload(string fileName, string outputDirName)
+        {
+            Location3DModelSettings settings = new Location3DModelSettings()
+            {
+                Dataset = DEMDataSet.NASADEM,
+                ImageryProvider = ImageryProvider.ThunderForestLandscape,
+                ZScale = 2f,
+                SideSizeKm = 1.5f,
+                OsmBuildings = true,
+                DownloadMissingFiles = false,
+                GenerateTIN = false,
+                MaxDegreeOfParallelism = 1,
+                ClearOutputDir = false,
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), outputDirName)
+            };
+
+            List<Location3DModelRequest> requests = ParseInputFile(fileName);
+
+            // Restart from previous run
+            if (settings.ClearOutputDir)
+            {
+                if (Directory.Exists(settings.OutputDirectory)) Directory.Delete(settings.OutputDirectory, true);
+                Directory.CreateDirectory(settings.OutputDirectory);
+            }
+            else
+            {
+                Directory.CreateDirectory(settings.OutputDirectory);
+                // Filter already generated files
+                int countBefore = requests.Count;
+                requests = requests.Where(r => !File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, r)))).ToList();
+                if (requests.Count < countBefore)
+                {
+                    _logger.LogInformation($"Skipping {countBefore - requests.Count} files already generated.");
+                }
+            }
+
+            // Generate and upload
+            int sumTilesDownloaded = 0;
+            string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out.txt");
+            SketchFabApi.Source = "mycenaean-atlas-project_elevationapi";
+
+
+            List<Location3DModelResponse> responses = new List<Location3DModelResponse>();
+            using (StreamWriter sw = new StreamWriter(outFilePath))
+            {
+                sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
+                foreach (var request in requests)
+                {
+                    UploadModelRequest uploadRequest;
+                    string uuid = null;
+                    bool ok = false;
+                    try
+                    {
+                        //===========================
+                        // Generation
+                        var response = Generate3DLocationModel(request, settings);
+                        sumTilesDownloaded += response.NumTiles ?? 0;
+                        responses.Add(response);
+
+                        //===========================
+                        // Upload
+                        uploadRequest = GetUploadRequest(settings, request);
+                        uuid = _sketchFabApi.UploadModelAsync(uploadRequest).GetAwaiter().GetResult();
+                        ok = true;
+                        _logger.LogInformation($"SketchFab upload ok : {uuid}");
+                    }
+                    catch (Exception ex)
+                    {
+                        ok = false;
+                        _logger.LogError(ex.Message);
+                        break;
+                    }
+                    finally
+                    {
+                        sw.WriteLine(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
+                            , request.Description // link
+                            , sumTilesDownloaded // tilecount_running_total
+                            , ok ? "OK" : uuid // sketchfab_status
+                            , ok ? uuid : "" // sketchfab_id
+                             ));
+
+
+                        if (responses.Count > 0)
+                            _logger.LogInformation($"Reponse: {responses.Last().Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far, {sumTilesDownloaded} tiles)");
+                    }
+                }
+            }
+
+            
+
+        }
 
         public void BatchUpload(string fileName, string outputDirName)
         {
@@ -177,17 +273,7 @@ namespace SampleApp
             };
 
 
-            List<Location3DModelRequest> requests = new List<Location3DModelRequest>();
-            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
-            {
-                sr.ReadLine(); // skip header
-                do
-                {
-                    //pk,pn,lat,lon,link
-                    Location3DModelRequest request = ParseCsvLine(sr.ReadLine(), '\t');
-                    requests.Add(request);
-                } while (!sr.EndOfStream);
-            }
+            List<Location3DModelRequest> requests = ParseInputFile(fileName);
 
 
             // Take generated files
@@ -197,10 +283,12 @@ namespace SampleApp
 
             string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out.txt");
 
+            SketchFabApi.Source = "mycenaean-atlas-project_elevationapi";
+
             using (StreamWriter sw = new StreamWriter(outFilePath))
             {
                 sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "sketchfabstatus", "sketchfabid"));
-                foreach(var request in requests)
+                foreach (var request in requests)
                 {
                     UploadModelRequest uploadRequest = GetUploadRequest(settings, request);
                     string uuid = null;
@@ -225,26 +313,23 @@ namespace SampleApp
                         sw.WriteLine(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude, request.Description,
                              ok ? "OK" : uuid,
                              ok ? uuid : ""));
-                    }                    
+                    }
                 }
             }
-
-          
-
         }
 
         private UploadModelRequest GetUploadRequest(Location3DModelSettings settings, Location3DModelRequest request)
         {
-            
-             UploadModelRequest upload = new UploadModelRequest()
+
+            UploadModelRequest upload = new UploadModelRequest()
             {
-                Description =  GenerateDescription(settings,request),// "TEST",// * Generated by [DEM Net Elevation API](https://elevationapi.com)\n* Helladic test upload",
+                Description = GenerateDescription(settings, request),// "TEST",// * Generated by [DEM Net Elevation API](https://elevationapi.com)\n* Helladic test upload",
                 FilePath = Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)),
                 IsInspectable = true,
                 IsPrivate = false,
-                IsPublished = false,
+                IsPublished = true,
                 Name = string.Concat(request.Id, " ", request.Title),
-                Options = new ModelOptions() { Background = SkecthFabEnvironment.Footprint_Court, Shading = ShadingType.lit }
+                Options = new ModelOptions() { Background = SkecthFabEnvironment.Tokyo_Big_Sight, Shading = ShadingType.lit }
             };
             return upload;
         }
@@ -264,6 +349,8 @@ namespace SampleApp
             {
                 desc.Add("Data: OpenStreetMap and Contributors [www.openstreetmap.org](https://www.openstreetmap.org)");
             }
+
+            desc.Add($"Imagery: [{settings.ImageryProvider.Attribution.Text}]({settings.ImageryProvider.Attribution.Url})");
 
             return string.Join(Environment.NewLine, desc.Select(d => string.Concat("* ", d)));
         }
@@ -292,24 +379,10 @@ namespace SampleApp
 
                         // Imagery
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
-                        Debug.Assert(tiles.EnumerateRange().Count() < 400);
-                        try
-                        {
-                            tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
-                        }
-                        catch (Exception)
-                        {
-                            imageryFailed = true;
-                            try
-                            {
-                                tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, ImageryProvider.MapBoxSatelliteStreet, settings.MinTilesPerImage);
-                                tiles = _imageryService.DownloadTiles(tiles, ImageryProvider.MapBoxSatelliteStreet);
-                            }
-                            catch (Exception)
-                            {
-                                throw;
-                            }
-                        }
+                        Debug.Assert(tiles.Count < 400);
+                        
+                        tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
+
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
@@ -352,6 +425,7 @@ namespace SampleApp
                     }
 
                     response.Elapsed = timer.Elapsed;
+                    response.NumTiles = pbrTexture.BaseColorTexture.TileCount;
                 }
             }
             catch (Exception)

@@ -86,12 +86,12 @@ namespace SampleApp
 
                 Debugger.Break();
 
-                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
-                {
-                    services.GetService<SketchFabSample>().Run();
-                }
+                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
+                //{
+                //    services.GetService<SketchFabSample>().Run();
+                //}
 
-                Debugger.Break();
+                //Debugger.Break();
 
                 
 
