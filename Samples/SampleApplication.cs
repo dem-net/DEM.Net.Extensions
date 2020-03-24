@@ -79,6 +79,10 @@ namespace SampleApp
 
             try
             {
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
+                {
+                    services.GetService<OsmExtensionSample>().Run();
+                }
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
                 {
                     services.GetService<HelladicSample>().Run();

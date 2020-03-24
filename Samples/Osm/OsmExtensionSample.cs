@@ -62,7 +62,9 @@ namespace SampleApp
         private void Run3DModelSamples_BuildingsGeoReferencing()
         {
             string outputDir = Directory.GetCurrentDirectory();
-            var bbox = new BoundingBox(21.686325073242184, 21.7034912109375, 37.02050454950892, 37.03394528160873);
+
+            // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
+            var bbox = new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ff0000");
 
             var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
@@ -72,8 +74,8 @@ namespace SampleApp
             TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.MapBoxSatellite, 10);
             string fileName = Path.Combine(outputDir, "Texture.jpg");
 
-            
-            TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg, b.Buildings.SelectMany(bd=>bd.Points).ReprojectTo(Reprojection.SRID_PROJECTED_MERCATOR, Reprojection.SRID_GEODETIC));
+
+            TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg, b.Buildings.SelectMany(bd => bd.Points).ReprojectTo(Reprojection.SRID_PROJECTED_MERCATOR, Reprojection.SRID_GEODETIC));
             //TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg, b.Buildings.SelectMany(bd => bd.Points));
             var normalMap = _imageryService.GenerateNormalMap(heightMap, outputDir);
             var pbrTexture = PBRTexture.Create(texInfo, normalMap);
@@ -239,7 +241,7 @@ namespace SampleApp
             //bbox = new BoundingBox(5.526716197512567, 5.6334895739774105, 43.49662332237486, 43.56457608971906);
             //GetBuildings3D(bbox);
 
-            
+
         }
 
         private void Run3DModelSamples_SkiResortsAndBuildings()

@@ -26,12 +26,16 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         const double FloorHeightMeters = 2.5;
 
+        //const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
+        //                way[""building:part""] ({{bbox}});
+        //                //relation[type=building] ({{bbox}});
+        //                //relation[""building""] ({{bbox}});
+        //               );";
         const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
                         way[""building:part""] ({{bbox}});
                         //relation[type=building] ({{bbox}});
-                        //relation[""building""] ({{bbox}});
+                        relation[""building""] ({{bbox}});
                        );";
-
 
         public BuildingService(IElevationService elevationService
             , SharpGltfService gltfService
