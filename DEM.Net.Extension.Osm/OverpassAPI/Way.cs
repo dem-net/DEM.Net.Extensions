@@ -98,18 +98,18 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <param name="Id">The identification of an OSM way.</param>
         /// <param name="Nodes">An optional list of OSM nodes.</param>
         /// <param name="Tags">Optional tags for this OSM way.</param>
-        public Way(UInt64                                     Id,
-                   IEnumerable<Node>                          Nodes,
-                   IEnumerable<KeyValuePair<String, String>>  Tags = null)
+        public Way(UInt64 Id,
+                   IEnumerable<Node> Nodes,
+                   IEnumerable<KeyValuePair<String, String>> Tags = null)
         {
 
-            this._Id         = Id;
+            this._Id = Id;
 
-            this._Nodes      = Nodes != null
+            this._Nodes = Nodes != null
                                    ? new List<Node>(Nodes)
                                    : new List<Node>();
 
-            this._Tags       = Tags  != null
+            this._Tags = Tags != null
                                    ? Tags.ToDictionary(kvp => kvp.Key,
                                                        kvp => kvp.Value)
                                    : new Dictionary<String, String>();
@@ -126,8 +126,8 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="JSON">Some JSON.</param>
         /// <param name="NodeResolver">A delegate to resolve OSM nodes.</param>
-        public static Way Parse(JObject             JSON,
-                                Func<UInt64, Node>  NodeResolver)
+        public static Way Parse(JObject JSON,
+                                Func<UInt64, Node> NodeResolver)
         {
 
             // {
@@ -156,10 +156,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             //   }
             // }
 
-            return new Way(UInt64.Parse(JSON["id"]. ToString()),
-
+            return new Way(UInt64.Parse(JSON["id"].ToString()),
                            JSON["nodes"] != null
-                                        ? JSON["nodes"].Values().Select(v => NodeResolver(UInt64.Parse(v.ToString())))
+                                        ? JSON["nodes"].Values().Select(v => NodeResolver(UInt64.Parse(v.ToString()))).Where(v => v != null)
                                         : null,
 
                            JSON["tags"] != null

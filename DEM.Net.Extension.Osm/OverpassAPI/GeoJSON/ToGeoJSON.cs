@@ -27,6 +27,7 @@ using DEM.Net.Extension.Osm;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 using GeoJSON.Net;
+using System.Diagnostics;
 //using DEM.Net.Extension.Osm;
 
 #endregion
@@ -34,10 +35,12 @@ using GeoJSON.Net;
 namespace DEM.Net.Extension.Osm.OverpassAPI
 {
 
+
+
     /// <summary>
     /// Convert the OSM JSON result of an Overpass query to GeoJSON.
     /// </summary>
-    public static partial class GeoJSONExtentions
+    public static class GeoJSONExtentions
     {
 
         #region ToGeoJSON(this OverpassQuery)
@@ -101,7 +104,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 foreach (var element in jWays)
                 {
                     Way = Way.Parse(element,
-                                    NodeResolver: nodeId => Nodes[nodeId]);
+                                    NodeResolver: nodeId => Nodes.ContainsKey(nodeId) ? Nodes[nodeId] : null);
 
                     if (Ways.ContainsKey(Way.Id))
                     {
@@ -124,8 +127,8 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 foreach (var element in jRelations)
                 {
                     Relation = Relation.Parse(element,
-                                              NodeResolver: nodeId => Nodes[nodeId],
-                                              WayResolver: wayId => Ways[wayId]);
+                                              NodeResolver: nodeId => Nodes.ContainsKey(nodeId) ? Nodes[nodeId] : null,
+                                              WayResolver: wayId => Ways.ContainsKey(wayId) ? Ways[wayId] : null);
 
                     if (Relations.ContainsKey(Relation.Id))
                         Console.WriteLine("Duplicate relation id detected!");
@@ -152,9 +155,23 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 List<Feature> features = new List<Feature>();
 
                 // Debug code
-                var featuresFromNodes = Nodes.Values.Where(n => n.Tags.Count > 0 && !nodesInRelation.Contains(n.Id)).Select(n => n.ToGeoJSON()).ToList();
-                var featuresFromWays = Ways.Values.Where(n => n.Tags.Count > 0 && !waysInRelation.Contains(n.Id)).Select(n => n.ToGeoJSON()).ToList();
-                var featuresFromRelations = Relations.Values.Select(n => n.ToGeoJSON()).ToList();
+                var featuresFromNodes = Nodes.Values.Where(n => n.Tags.Count > 0
+                                                            && !nodesInRelation.Contains(n.Id)
+                                                           )
+                                                            .Select(n => n.ToGeoJSON())
+                                                            .Where(n => n != null)
+                                                            .ToList();
+                var featuresFromWays = Ways.Values.Where(n => n.Tags.Count > 0
+                                                        && n.Nodes.Count > 0
+                                                        && !waysInRelation.Contains(n.Id)
+                                                        )
+                                                        .Select(n => n.ToGeoJSON())
+                                                        .Where(n => n != null)
+                                                        .ToList();
+                var featuresFromRelations = Relations.Values.Where(n => n.Members.Count > 0)
+                                                           .Select(n => n.ToGeoJSON())
+                                                           .Where(n => n != null)
+                                                           .ToList();
                 var featureCollection = new FeatureCollection(featuresFromNodes.Concat(featuresFromWays).Concat(featuresFromRelations).ToList());
 
                 // Release code
@@ -293,16 +310,24 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             //     }
             // }
 
-            var id = string.Concat("node/", Node.Id);
-            Dictionary<string, object> props = new Dictionary<string, object>();
-            props.Add("@id", id);
-            foreach (var tag in Node.Tags)
+            try
             {
-                props.Add(tag.Key, tag.Value);
+                var id = string.Concat("node/", Node.Id);
+                Dictionary<string, object> props = new Dictionary<string, object>();
+                props.Add("@id", id);
+                foreach (var tag in Node.Tags)
+                {
+                    props.Add(tag.Key, tag.Value);
+                }
+                var feature = new Feature(new Point(new Position(Node.Latitude, Node.Longitude)), props, id);
+                return feature;
             }
-            var feature = new Feature(new Point(new Position(Node.Latitude, Node.Longitude)), props, id);
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("OSM to GeoJSON error for node");
+                return null;
+            }
 
-            return feature;
 
         }
 
@@ -333,31 +358,45 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
             // https://wiki.openstreetmap.org/wiki/Overpass_turbo/Polygon_Features
 
-            var FirstNode = Way.Nodes.First();
-            var LastNode = Way.Nodes.Last();
-            var isClosed = FirstNode.Latitude == LastNode.Latitude && FirstNode.Longitude == LastNode.Longitude;
-
-            var id = string.Concat("way/", Way.Id);
-            Dictionary<string, object> props = new Dictionary<string, object>();
-            props.Add("@id", id);
-            foreach (var tag in Way.Tags)
-            {
-                props.Add(tag.Key, tag.Value);
-            }
-            IGeometryObject geometry;
-            var ring = new LineString(Way.Nodes.Select(n => new Position(n.Latitude, n.Longitude)));
-            if (isClosed)
-            {
-                geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
-            }
-            else
+            try
             {
 
-                geometry = ring;
-            }
-            var feature = new Feature(geometry, props, id);
 
-            return feature;
+                if (Way.Nodes.Count == 0)
+                {
+                    return null;
+                }
+                var FirstNode = Way.Nodes.First();
+                var LastNode = Way.Nodes.Last();
+                var isClosed = FirstNode.Latitude == LastNode.Latitude && FirstNode.Longitude == LastNode.Longitude;
+
+                var id = string.Concat("way/", Way.Id);
+                Dictionary<string, object> props = new Dictionary<string, object>();
+                props.Add("@id", id);
+                foreach (var tag in Way.Tags)
+                {
+                    props.Add(tag.Key, tag.Value);
+                }
+                IGeometryObject geometry;
+                var ring = new LineString(Way.Nodes.Select(n => new Position(n.Latitude, n.Longitude)));
+                if (isClosed)
+                {
+                    geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                }
+                else
+                {
+
+                    geometry = ring;
+                }
+                var feature = new Feature(geometry, props, id);
+
+                return feature;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("OSM to GeoJSON error for feature");
+                return null;
+            }
 
         }
 
@@ -392,138 +431,148 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
             // Relation.Ways.Select(Way => new JArray(Way.Nodes.Select(Node => new JArray(Node.Longitude, Node.Latitude))))
 
-            var RemainingGeoFeatures = Relation.Members.Where(m => m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
-            var ResultList = new List<GeoFeature>();
-
-            bool Found = false;
-            GeoFeature CurrentGeoFeature;
-
-            //if (Relation.Tags["type"].ToString() != "multipolygon")
-            //{
-            //    Console.WriteLine("Broken OSM multipolygon relation found!");
-            //}
-
-            do
+            try
             {
 
-                CurrentGeoFeature = RemainingGeoFeatures.RemoveAndReturnFirst();
 
-                // The current geo feature is closed -> a polygon!
-                if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString() != "route") &&
-                    CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
+                var RemainingGeoFeatures = Relation.Members.Where(m => m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
+                var ResultList = new List<GeoFeature>();
+
+                bool Found = false;
+                GeoFeature CurrentGeoFeature;
+
+                //if (Relation.Tags["type"].ToString() != "multipolygon")
+                //{
+                //    Console.WriteLine("Broken OSM multipolygon relation found!");
+                //}
+
+                do
                 {
-                    CurrentGeoFeature.Type = GeoJSONObjectType.Polygon;
-                    ResultList.Add(CurrentGeoFeature);
-                }
 
-                // The current geo feature is not closed
-                // Try to extend the geo feature by finding fitting other geo features
-                else
-                {
+                    CurrentGeoFeature = RemainingGeoFeatures.RemoveAndReturnFirst();
 
-                    do
+                    // The current geo feature is closed -> a polygon!
+                    if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString() != "route") &&
+                        CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
+                    {
+                        CurrentGeoFeature.Type = GeoJSONObjectType.Polygon;
+                        ResultList.Add(CurrentGeoFeature);
+                    }
+
+                    // The current geo feature is not closed
+                    // Try to extend the geo feature by finding fitting other geo features
+                    else
                     {
 
-                        Found = false;
-
-                        foreach (var AdditionalPath in RemainingGeoFeatures)
+                        do
                         {
 
-                            if (AdditionalPath.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
+                            Found = false;
+
+                            foreach (var AdditionalPath in RemainingGeoFeatures)
                             {
-                                RemainingGeoFeatures.Remove(AdditionalPath);
-                                // Skip first GeoCoordinate as it is redundant!
-                                CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates);//.Skip(1));
-                                Found = true;
-                                break;
+
+                                if (AdditionalPath.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
+                                {
+                                    RemainingGeoFeatures.Remove(AdditionalPath);
+                                    // Skip first GeoCoordinate as it is redundant!
+                                    CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates);//.Skip(1));
+                                    Found = true;
+                                    break;
+                                }
+
+                                else if (AdditionalPath.GeoCoordinates.Last() == CurrentGeoFeature.GeoCoordinates.Last())
+                                {
+                                    RemainingGeoFeatures.Remove(AdditionalPath);
+                                    // Skip first GeoCoordinate as it is redundant!
+                                    CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates.ReverseAndReturn());//.Skip(1));
+                                    Found = true;
+                                    break;
+                                }
+
+                                else if (AdditionalPath.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.First())
+                                {
+                                    RemainingGeoFeatures.Remove(AdditionalPath);
+                                    CurrentGeoFeature.GeoCoordinates.Reverse();
+                                    // Skip first GeoCoordinate as it is redundant!
+                                    CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates);//.Skip(1));
+                                    Found = true;
+                                    break;
+                                }
+
+                                else if (AdditionalPath.GeoCoordinates.Last() == CurrentGeoFeature.GeoCoordinates.First())
+                                {
+                                    RemainingGeoFeatures.Remove(AdditionalPath);
+                                    CurrentGeoFeature.GeoCoordinates.Reverse();
+                                    // Skip first GeoCoordinate as it is redundant!
+                                    CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates.ReverseAndReturn());//.Skip(1));
+                                    Found = true;
+                                    break;
+                                }
+
                             }
 
-                            else if (AdditionalPath.GeoCoordinates.Last() == CurrentGeoFeature.GeoCoordinates.Last())
-                            {
-                                RemainingGeoFeatures.Remove(AdditionalPath);
-                                // Skip first GeoCoordinate as it is redundant!
-                                CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates.ReverseAndReturn());//.Skip(1));
-                                Found = true;
-                                break;
-                            }
+                        } while (RemainingGeoFeatures.Count > 0 && Found);
 
-                            else if (AdditionalPath.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.First())
-                            {
-                                RemainingGeoFeatures.Remove(AdditionalPath);
-                                CurrentGeoFeature.GeoCoordinates.Reverse();
-                                // Skip first GeoCoordinate as it is redundant!
-                                CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates);//.Skip(1));
-                                Found = true;
-                                break;
-                            }
+                        // Is route
+                        bool isRoute = Relation.Tags.Any() && Relation.Tags["type"].ToString() == "route";
+                        CurrentGeoFeature.Type = (!isRoute &&
+                                                   CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
+                                                      ? GeoJSONObjectType.Polygon
+                                                      : GeoJSONObjectType.LineString;
 
-                            else if (AdditionalPath.GeoCoordinates.Last() == CurrentGeoFeature.GeoCoordinates.First())
-                            {
-                                RemainingGeoFeatures.Remove(AdditionalPath);
-                                CurrentGeoFeature.GeoCoordinates.Reverse();
-                                // Skip first GeoCoordinate as it is redundant!
-                                CurrentGeoFeature.GeoCoordinates.AddRange(AdditionalPath.GeoCoordinates.ReverseAndReturn());//.Skip(1));
-                                Found = true;
-                                break;
-                            }
+                        ResultList.Add(CurrentGeoFeature);
 
-                        }
+                    }
 
-                    } while (RemainingGeoFeatures.Count > 0 && Found);
-
-                    // Is route
-                    bool isRoute = Relation.Tags.Any() && Relation.Tags["type"].ToString() == "route";
-                    CurrentGeoFeature.Type = (!isRoute &&
-                                               CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
-                                                  ? GeoJSONObjectType.Polygon
-                                                  : GeoJSONObjectType.LineString;
-
-                    ResultList.Add(CurrentGeoFeature);
-
-                }
-
-            } while (RemainingGeoFeatures.Count > 0);
+                } while (RemainingGeoFeatures.Count > 0);
 
 
-            IGeometryObject geometry = null;
+                IGeometryObject geometry = null;
 
-            if (ResultList.Count == 1)
-            {
-                var ring = new LineString(CurrentGeoFeature.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude)));
-                if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                if (ResultList.Count == 1)
                 {
-                    geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                    var ring = new LineString(CurrentGeoFeature.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude)));
+                    if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                    {
+                        geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                    }
+                    else
+                    {
+                        geometry = ring;
+                    }
                 }
                 else
                 {
-                    geometry = ring;
-                }
-            }
-            else
-            {
-                var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude))));
+                    var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude))));
 
-                if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                    if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                    {
+                        multiRing = multiRing.Where(r => r.Coordinates.Count >= 4).ToList();
+                        geometry = new Polygon(multiRing);
+                    }
+                    else
+                    {
+                        geometry = new MultiLineString(multiRing);
+                    }
+                }
+
+                var id = string.Concat("relation/", Relation.Id);
+                Dictionary<string, object> props = new Dictionary<string, object>();
+                props.Add("@id", id);
+                foreach (var tag in Relation.Tags)
                 {
-                    multiRing = multiRing.Where(r => r.Coordinates.Count >= 4).ToList();
-                    geometry = new Polygon(multiRing);
+                    props.Add(tag.Key, tag.Value);
                 }
-                else
-                {
-                    geometry = new MultiLineString(multiRing);
-                }
-            }
+                var feature = new Feature(geometry, props, id);
 
-            var id = string.Concat("relation/", Relation.Id);
-            Dictionary<string, object> props = new Dictionary<string, object>();
-            props.Add("@id", id);
-            foreach (var tag in Relation.Tags)
+                return feature;
+            }
+            catch (Exception ex)
             {
-                props.Add(tag.Key, tag.Value);
+                Trace.TraceWarning("OSM to GeoJSON error for relation");
+                return null;
             }
-            var feature = new Feature(geometry, props, id);
-
-            return feature;
 
         }
 
