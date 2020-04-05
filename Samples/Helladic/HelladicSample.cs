@@ -17,7 +17,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static DEM.Net.glTF.SharpglTF.SharpGltfService;
 
@@ -55,7 +57,83 @@ namespace SampleApp
         {
             //BatchGeneration(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
             //BatchUpload(@"Helladic\3D_Initial.txt", "3D_Initial_nonormal");
-            BatchGenerationAndUpload(@"Helladic\3D_Initial.txt", "3D_Initial_2ndbatch");
+
+            //Reprise(@"Helladic\3D_debug.txt", "3D_debug");
+
+            //BatchGenerationAndUpload(@"Helladic\3D_debug.txt", "3D_debug");
+
+            BatchGenerationAndUpload(@"Helladic\3D_all.txt", "3D_Initial_2ndbatch");
+
+
+        }
+
+        private void Reprise(string fileName, string outputDirName)
+        {
+            Location3DModelSettings settings = new Location3DModelSettings()
+            {
+                Dataset = DEMDataSet.NASADEM,
+                ImageryProvider = ImageryProvider.ThunderForestLandscape,
+                ZScale = 2f,
+                SideSizeKm = 1.5f,
+                OsmBuildings = true,
+                DownloadMissingFiles = false,
+                GenerateTIN = false,
+                MaxDegreeOfParallelism = 1,
+                ClearOutputDir = false,
+                OutputDirectory = Path.Combine(Directory.GetCurrentDirectory(), outputDirName)
+            };
+
+            List<Location3DModelRequest> requests = ParseInputFile(fileName);
+
+            var lines = File.ReadAllLines(@"C:\Repos\DEM.Net.Extensions\Samples\bin\Debug\netcoreapp3.1\Helladic\3D_debug_out.txt");
+            var lastOutput = lines.Skip(1).Select(l => l.Split("\t")).ToDictionary(l => l[0], l => l.ToList());
+
+            // Generate and upload
+            int sumTilesDownloaded = 0;
+            string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out2.txt");
+
+            List<Location3DModelResponse> responses = new List<Location3DModelResponse>();
+            using (StreamWriter sw = new StreamWriter(outFilePath, append: false))
+            {
+                sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id", "center_3857", "other_sites_3857"));
+                foreach (var request in requests)
+                {
+                    try
+                    {
+                        BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
+
+                        //===========================
+                        // Closeby sites
+                        var closebySites = (from d in requests
+                                            where d.Id != request.Id && bbox.Intersects(d.Latitude, d.Longitude)
+                                            select d).ToList();
+
+                        var sitePoint = new GeoPoint(request.Latitude, request.Longitude);
+                        var sitePoint3857 = sitePoint.Clone().ReprojectTo(4326, 3857);
+                        var elevation = _elevationService.GetPointElevation(sitePoint, settings.Dataset).Elevation.Value * settings.ZScale;
+
+                        var last = lastOutput[request.Id];
+                        string ptCenter = $"[{sitePoint3857.Longitude},{sitePoint3857.Latitude},{elevation}]";
+                        last.Add(ptCenter);
+
+                        var sitesCoords = (from s in closebySites
+                                           let elev = _elevationService.GetPointElevation(s.Latitude, s.Longitude, settings.Dataset).Elevation.Value * settings.ZScale
+                                           let pt = new GeoPoint(s.Latitude, s.Longitude).ReprojectTo(4326, 3857)
+                                           select $"{s.Id}:[{pt.Longitude},{pt.Latitude},{elev}]").ToList();
+
+                        last.Add(string.Join(",", sitesCoords));
+
+                        sw.WriteLine(string.Join("\t", last));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex.Message);
+                        break;
+                    }
+
+                }
+            }
+
         }
 
         public void BatchGeneration(string fileName, string outputDirName)
@@ -202,25 +280,41 @@ namespace SampleApp
 
             // Generate and upload
             int sumTilesDownloaded = 0;
-            string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out.txt");
+            string outFilePath = string.Concat(Path.ChangeExtension(fileName, null), "_out_NOW.txt");
             SketchFabApi.Source = "mycenaean-atlas-project_elevationapi";
-
 
             List<Location3DModelResponse> responses = new List<Location3DModelResponse>();
             using (StreamWriter sw = new StreamWriter(outFilePath))
             {
                 sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
+
                 foreach (var request in requests)
                 {
+                    if (sumTilesDownloaded > 150000 - 50000 - 60365)
+                    {
+                        break;
+                    }
                     UploadModelRequest uploadRequest;
                     string uuid = null;
                     bool ok = false;
                     try
                     {
+                        Thread.Sleep(2000);
+
                         //===========================
                         // Generation
                         var response = Generate3DLocationModel(request, settings);
                         sumTilesDownloaded += response.NumTiles ?? 0;
+
+                        //===========================
+                        // Closeby sites
+                        var sitePoint = new GeoPoint(request.Latitude, request.Longitude);
+                        var closestSites = (from d in requests
+                                            let dp = new GeoPoint(d.Latitude, d.Longitude).DistanceTo(sitePoint)
+                                            orderby dp descending
+                                            where dp < 2000
+                                            select new { Distance = dp, Site = d }).Take(5).ToList();
+                        response.ClosebySites = closestSites.Select(c => c.Site);
                         responses.Add(response);
 
                         //===========================
@@ -234,7 +328,6 @@ namespace SampleApp
                     {
                         ok = false;
                         _logger.LogError(ex.Message);
-                        break;
                     }
                     finally
                     {
@@ -245,16 +338,17 @@ namespace SampleApp
                             , ok ? uuid : "" // sketchfab_id
                              ));
 
-
+                        sw.Flush();
                         if (responses.Count > 0)
                             _logger.LogInformation($"Reponse: {responses.Last().Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far, {sumTilesDownloaded} tiles)");
                     }
                 }
             }
 
-            
+
 
         }
+
 
         public void BatchUpload(string fileName, string outputDirName)
         {
@@ -380,18 +474,23 @@ namespace SampleApp
                         // Imagery
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
                         Debug.Assert(tiles.Count < 400);
-                        
+
                         tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
 
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
                         hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
-                                    .ZScale(settings.ZScale)
-                                    .BakeCoordinates();
+                                    .ZScale(settings.ZScale);
+
+
                         //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
                         pbrTexture = PBRTexture.Create(texInfo);
                     }
+
+                    // Center on origin
+                    //hMap = hMap.CenterOnOrigin(out Matrix4x4 transform).BakeCoordinates();
+                    //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
 
                     ModelRoot model = _gltfService.CreateNewModel();
                     //=======================
@@ -400,8 +499,16 @@ namespace SampleApp
                     {
                         var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, settings.ZScale, useOsmColors: true);
                         var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
+
                         if (indexedTriangulation.Positions.Count > 0)
+                        {
+                            //if (!transform.IsIdentity)
+                            //{
+                            //    indexedTriangulation.Positions = indexedTriangulation.Positions.Select(v => Vector3.Transform(v, transform)).ToList();
+                            //}
+
                             model = _gltfService.AddMesh(model, indexedTriangulation, null, null, doubleSided: true);
+                        }
                     }
 
 
@@ -418,11 +525,11 @@ namespace SampleApp
                     model.SaveGLB(Path.Combine(settings.OutputDirectory, string.Concat(imageryFailed ? "imageryFailed_" : "", settings.ModelFileNameGenerator(settings, request))));
 
                     // cleanup
-                    if (pbrTexture != null)
-                    {
-                        if (pbrTexture.NormalTexture != null) File.Delete(pbrTexture.NormalTexture.FilePath);
-                        File.Delete(pbrTexture.BaseColorTexture.FilePath);
-                    }
+                    //if (pbrTexture != null)
+                    //{
+                    //    if (pbrTexture.NormalTexture != null) File.Delete(pbrTexture.NormalTexture.FilePath);
+                    //    File.Delete(pbrTexture.BaseColorTexture.FilePath);
+                    //}
 
                     response.Elapsed = timer.Elapsed;
                     response.NumTiles = pbrTexture.BaseColorTexture.TileCount;

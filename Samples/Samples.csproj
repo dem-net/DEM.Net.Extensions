@@ -39,6 +39,9 @@
 
 
   <ItemGroup>
+    <None Update="Helladic\3D_debug.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Helladic\3D_all.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

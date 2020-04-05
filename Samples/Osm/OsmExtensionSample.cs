@@ -63,7 +63,7 @@ namespace SampleApp
         {
             string outputDir = Directory.GetCurrentDirectory();
 
-            // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
+            // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)   
             var bbox = new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ff0000");
 

@@ -15,6 +15,8 @@ namespace SampleApp
         public List<Attribution> Attributions { get; set; } = new List<Attribution>();
         public TimeSpan Elapsed { get; internal set; }
         public int? NumTiles { get; internal set; }
+        public GeoPoint Origin { get; internal set; }
+        public IEnumerable<Location3DModelRequest> ClosebySites { get; internal set; }
     }
 
     #endregion
