@@ -7,10 +7,12 @@ namespace SampleApp
     #region Model
     public class Location3DModelResponse
     {
+        public UploadStatus UploadStatus { get; set; } = UploadStatus.None;
+
         public string Id { get; set; }
         public Location3DModelRequest Request { get; set; }
         public Location3DModelSettings Settings { get; set; }
-        public string ModelFile { get; set; }
+        public string UploadedFileId { get; set; }
 
         public List<Attribution> Attributions { get; set; } = new List<Attribution>();
         public TimeSpan Elapsed { get; internal set; }

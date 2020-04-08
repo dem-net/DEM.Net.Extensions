@@ -25,7 +25,6 @@ namespace SampleApp
             new Attribution("Generator","DEM Net Elevation API","https://elevationapi.com","Xavier Fischer, Frédéric Aubin, and contributors. License: MIT, free for individuals/private use or companies generating less than 100K$ income."),
         };
         public string OutputDirectory { get; internal set; }
-        public bool ClearOutputDir { get; internal set; }
     }
 
     #endregion
