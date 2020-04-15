@@ -14,21 +14,28 @@ namespace SampleApp
     {
         private readonly ILogger _logger;
         private readonly SketchFabApi _sketchFabApi;
+        private readonly string _sketchFabToken;
 
-        public SketchFabSample(SketchFabApi sketchFabExport, ILogger<SketchFabSample> logger)
+        public SketchFabSample(SketchFabApi sketchFabExport, ILogger<SketchFabSample> logger, IOptions<AppSecrets> secrets)
         {
             this._logger = logger;
             this._sketchFabApi = sketchFabExport;
+            this._sketchFabToken = secrets.Value.SketchFabToken;
+
+            if (string.IsNullOrEmpty(this._sketchFabToken))
+            {
+                _logger.LogWarning($"SketchFabToken is not set. Ensure you have a secrets.json file with a SketchFabToken entry with your api token (see https://sketchfab.com/settings/password)");
+            }
         }
 
         public void Run()
         {
 
-            List<Collection> collections =  _sketchFabApi.GetMyCollectionsAsync().GetAwaiter().GetResult();
+            List<Collection> collections = _sketchFabApi.GetMyCollectionsAsync(_sketchFabToken).GetAwaiter().GetResult();
 
             if (collections.Any(c => c.name == "Helladic Tests"))
             {
-                
+
             }
 
 
@@ -44,7 +51,7 @@ namespace SampleApp
             };
 
 
-            var uuid = _sketchFabApi.UploadModelAsync(upload).GetAwaiter().GetResult();
+            var uuid = _sketchFabApi.UploadModelAsync(upload, _sketchFabToken).GetAwaiter().GetResult();
         }
     }
 }

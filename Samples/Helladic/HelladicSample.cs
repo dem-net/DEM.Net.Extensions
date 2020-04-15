@@ -1,27 +1,21 @@
 ﻿using DEM.Net.Core;
+using DEM.Net.Core.Configuration;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Core.Services.Lab;
-using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;
-using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.Extension.SketchFab;
 using DEM.Net.glTF.SharpglTF;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
 using SharpGLTF.Schema2;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using static DEM.Net.glTF.SharpglTF.SharpGltfService;
 
 namespace SampleApp
 {
@@ -33,6 +27,7 @@ namespace SampleApp
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
         private readonly SketchFabApi _sketchFabApi;
+        private readonly string _sketchFabToken;
         private readonly ILogger _logger;
 
 
@@ -42,6 +37,7 @@ namespace SampleApp
                 , SharpGltfService gltfService
                 , IMeshService meshService
                 , SketchFabApi sketchFabApi
+                , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
         {
             this._buildingService = buildingService;
@@ -50,7 +46,13 @@ namespace SampleApp
             this._gltfService = gltfService;
             this._meshService = meshService;
             this._sketchFabApi = sketchFabApi;
+            this._sketchFabToken = secrets.Value.SketchFabToken;
             this._logger = logger;
+
+            if (string.IsNullOrEmpty(_sketchFabToken))
+            {
+                _logger.LogWarning($"SketchFabToken is not set. Ensure you have a secrets.json file with a SketchFabToken entry with your api token (see https://sketchfab.com/settings/password)");
+            }
         }
 
         public void Run()
@@ -80,7 +82,7 @@ namespace SampleApp
 
             // Backup file by creating a copy
             var outFilePath = string.Concat(Path.ChangeExtension(fileName, null), $"_out_{DateTime.Now:ddMMyyyy-hhmmss}.txt");
-            
+
             bool append = responses.Count > 0;
             _logger.LogInformation($"Append mode: {append}");
 
@@ -139,7 +141,7 @@ namespace SampleApp
                                 //===========================
                                 // Upload
                                 uploadRequest = GetUploadRequest(settings, request);
-                                response.UploadedFileId = _sketchFabApi.UploadModelAsync(uploadRequest).GetAwaiter().GetResult();
+                                response.UploadedFileId = _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken).GetAwaiter().GetResult();
                                 response.UploadStatus = UploadStatus.OK;
                                 _logger.LogInformation($"SketchFab upload ok : {response.UploadedFileId}");
                             }
@@ -171,7 +173,7 @@ namespace SampleApp
                     {
                         _logger.LogError(ex.Message);
                     }
-                    
+
                 }
             }
 
