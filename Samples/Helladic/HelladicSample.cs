@@ -3,11 +3,11 @@ using DEM.Net.Core.Configuration;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Core.Services.Lab;
 using DEM.Net.Extension.Osm.Buildings;
-using DEM.Net.Extension.SketchFab;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SharpGLTF.Schema2;
+using SketchFab;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -99,7 +99,6 @@ namespace SampleApp
 
             // Generate and upload
             int sumTilesDownloaded = 0;
-            SketchFabApi.Source = "mycenaean-atlas-project_elevationapi";
 
             using (StreamWriter sw = new StreamWriter(outFilePath, append: append, Encoding.UTF8))
             {
@@ -272,7 +271,9 @@ namespace SampleApp
                 IsPrivate = false,
                 IsPublished = true,
                 Name = string.Concat(request.Id, " ", request.Title),
-                Options = new ModelOptions() { Background = SkecthFabEnvironment.Tokyo_Big_Sight, Shading = ShadingType.lit }
+                Options = new ModelOptions() { Background = SkecthFabEnvironment.Tokyo_Big_Sight, Shading = ShadingType.lit },
+                Source = "mycenaean-atlas-project_elevationapi",
+                IsBearerToken = false
             };
             return upload;
         }

@@ -1,7 +1,7 @@
 ﻿using DEM.Net.Core.Configuration;
-using DEM.Net.Extension.SketchFab;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SketchFab;
 using System;
 using System.Collections.Generic;
 using System.IO;

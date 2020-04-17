@@ -34,7 +34,7 @@ using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
-using DEM.Net.Extension.SketchFab;
+using SketchFab;
 
 namespace SampleApp
 {
@@ -97,7 +97,7 @@ namespace SampleApp
 
                 //Debugger.Break();
 
-                
+
 
                 //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 //{
