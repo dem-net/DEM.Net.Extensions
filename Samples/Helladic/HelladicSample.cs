@@ -27,7 +27,7 @@ namespace SampleApp
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
-        private readonly SketchFabApi _sketchFabApi;
+        private readonly SketchFab.SketchFabApi _sketchFabApi;
         private readonly string _sketchFabToken;
         private readonly ILogger _logger;
 
@@ -37,7 +37,7 @@ namespace SampleApp
                 , IElevationService elevationService
                 , SharpGltfService gltfService
                 , IMeshService meshService
-                , SketchFabApi sketchFabApi
+                , SketchFab.SketchFabApi sketchFabApi
                 , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
         {
@@ -275,7 +275,7 @@ namespace SampleApp
                 Name = string.Concat(request.Id, " ", request.Title),
                 Options = new ModelOptions() { Background = SkecthFabEnvironment.Tokyo_Big_Sight, Shading = ShadingType.lit },
                 Source = "mycenaean-atlas-project_elevationapi",
-                IsBearerToken = false
+                TokenType = TokenType.Token
             };
             return upload;
         }

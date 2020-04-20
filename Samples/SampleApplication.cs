@@ -31,7 +31,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using DEM.Net.Core.Configuration;
-using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 using SketchFab;
@@ -65,7 +64,7 @@ namespace SampleApp
         {
             services.AddScoped<OsmExtensionSample>()
                     .AddScoped<HelladicSample>()
-                    .AddScoped<SketchFabApi>()
+                    .AddScoped<SketchFab.SketchFabApi>()
                     .AddScoped<SketchFabSample>();
             // .. more samples here
 

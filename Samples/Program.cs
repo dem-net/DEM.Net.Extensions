@@ -34,7 +34,6 @@ using Microsoft.Extensions.Logging.Debug;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Configuration;
 using DEM.Net.Core.Configuration;
-using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
 using DEM.Net.Extension.Osm;
 
@@ -78,7 +77,6 @@ namespace SampleApp
             {
 
                 var config = new ConfigurationBuilder()
-                    .AddEnvironmentVariables()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false)
                 //.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)

@@ -13,10 +13,10 @@ namespace SampleApp
     class SketchFabSample
     {
         private readonly ILogger _logger;
-        private readonly SketchFabApi _sketchFabApi;
+        private readonly SketchFab.SketchFabApi _sketchFabApi;
         private readonly string _sketchFabToken;
 
-        public SketchFabSample(SketchFabApi sketchFabExport, ILogger<SketchFabSample> logger, IOptions<AppSecrets> secrets)
+        public SketchFabSample(SketchFab.SketchFabApi sketchFabExport, ILogger<SketchFabSample> logger, IOptions<AppSecrets> secrets)
         {
             this._logger = logger;
             this._sketchFabApi = sketchFabExport;
@@ -31,7 +31,7 @@ namespace SampleApp
         public void Run()
         {
 
-            List<Collection> collections = _sketchFabApi.GetMyCollectionsAsync(_sketchFabToken).GetAwaiter().GetResult();
+            List<Collection> collections = _sketchFabApi.GetMyCollectionsAsync(_sketchFabToken, TokenType.Token).GetAwaiter().GetResult();
 
             if (collections.Any(c => c.name == "Helladic Tests"))
             {
