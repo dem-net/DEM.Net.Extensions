@@ -33,8 +33,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
+    <ProjectReference Include="..\..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj" />
     <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
-    <ProjectReference Include="..\..\DEM.Net.Extension.SketchFab\DEM.Net.Extension.SketchFab\SketchFabApi.Net.csproj" />
   </ItemGroup>
 
 

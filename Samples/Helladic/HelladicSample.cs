@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 
@@ -140,8 +141,9 @@ namespace SampleApp
                                 //===========================
                                 // Upload
                                 uploadRequest = GetUploadRequest(settings, request);
-                                response.UploadedFileId = _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken).GetAwaiter().GetResult();
-                                response.UploadStatus = UploadStatus.OK;
+                                var sfResponse = _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken).GetAwaiter().GetResult();
+                                response.UploadedFileId = sfResponse.ModelId;
+                                response.UploadStatus = sfResponse.StatusCode == HttpStatusCode.Created ? UploadStatus.OK : UploadStatus.Error;
                                 _logger.LogInformation($"SketchFab upload ok : {response.UploadedFileId}");
                             }
                             catch (Exception ex)

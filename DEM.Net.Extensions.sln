@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DEM.Net", "DEM.Net", "{36DA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samples", "Samples\Samples.csproj", "{3E6A3F62-6768-4D09-A404-9359E18B9D8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SketchFabApi.Net", "..\DEM.Net.Extension.SketchFab\DEM.Net.Extension.SketchFab\SketchFabApi.Net.csproj", "{58D7FFD0-80D4-459E-9A7C-479E800F04C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SketchFabApi.Net", "..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj", "{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,10 +43,10 @@ Global
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{58D7FFD0-80D4-459E-9A7C-479E800F04C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{58D7FFD0-80D4-459E-9A7C-479E800F04C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{58D7FFD0-80D4-459E-9A7C-479E800F04C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{58D7FFD0-80D4-459E-9A7C-479E800F04C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
