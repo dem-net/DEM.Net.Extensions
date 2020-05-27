@@ -28,7 +28,7 @@ namespace SampleApp
         private readonly IMeshService _meshService;
         private readonly ILogger _logger;
 
-        private float ZScale = 2f;
+        private float ZScale = 1f;
 
         public OsmExtensionSample(BuildingService buildingService
                 , PisteSkiService pisteSkiService
@@ -51,11 +51,34 @@ namespace SampleApp
 
             //RunOsmPbfSample(@"D:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
 
+            Buildings3DOnly();
+
             Run3DModelSamples_BuildingsGeoReferencing();
             Run3DModelSamples_Buildings();
             Run3DModelSamples_SkiResortsAndBuildings();
 
             //RunTesselationSample();
+
+        }
+
+        private void Buildings3DOnly()
+        {
+            string outputDir = Directory.GetCurrentDirectory();
+
+            string WKT_SF_BIG = "POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))";
+            string WKT_SF_SMALL = "POLYGON((-122.42722692299768 37.81034598808797, -122.38886060524865 37.81034598808797, -122.38886060524865 37.784573673820816, -122.42722692299768 37.784573673820816, -122.42722692299768 37.81034598808797))";
+            // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
+            // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
+
+            // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
+            //new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
+
+            var bbox = GeometryService.GetBoundingBox(WKT_SF_SMALL);
+            var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
+
+            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true, ZScale);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "GeoReferencing.glb"));
 
         }
 

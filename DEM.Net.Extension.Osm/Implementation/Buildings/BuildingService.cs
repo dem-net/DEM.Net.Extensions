@@ -56,6 +56,14 @@ namespace DEM.Net.Extension.Osm.Buildings
             {
                 TriangulationNormals triangulation = this.GetBuildings3DTriangulation(buildings, null, dataSet, downloadMissingFiles, zScale);
 
+                // georeference
+                var bbox = new BoundingBox();
+                foreach (var p in triangulation.Positions)
+                {
+                    bbox.UnionWith(p.X, p.Y, p.Z);
+                }
+
+
                 var model = _gltfService.AddMesh(null, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
 
                 return model;

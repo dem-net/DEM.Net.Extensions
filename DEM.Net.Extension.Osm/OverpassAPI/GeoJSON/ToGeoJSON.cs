@@ -439,17 +439,17 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 var ResultList = new List<GeoFeature>();
 
                 bool Found = false;
-                GeoFeature CurrentGeoFeature;
+                GeoFeature CurrentGeoFeature = new GeoFeature();
 
                 //if (Relation.Tags["type"].ToString() != "multipolygon")
                 //{
                 //    Console.WriteLine("Broken OSM multipolygon relation found!");
                 //}
 
-                do
+                while (RemainingGeoFeatures.Count > 0)
                 {
-
                     CurrentGeoFeature = RemainingGeoFeatures.RemoveAndReturnFirst();
+
 
                     // The current geo feature is closed -> a polygon!
                     if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString() != "route") &&
@@ -525,10 +525,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                     }
 
-                } while (RemainingGeoFeatures.Count > 0);
+                }
 
 
                 IGeometryObject geometry = null;
+                if (ResultList.Count == 0)
+                    return null;
 
                 if (ResultList.Count == 1)
                 {

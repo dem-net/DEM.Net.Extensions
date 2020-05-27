@@ -45,7 +45,7 @@ namespace SampleApp
         private readonly ILogger<SampleApplication> _logger;
         private readonly IRasterService rasterService;
         private readonly IServiceProvider services;
-        private const string DATA_FILES_PATH = @"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
+        private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
 
         public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
             IRasterService rasterService)
@@ -78,14 +78,14 @@ namespace SampleApp
 
             try
             {
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
-                //{
-                //    services.GetService<OsmExtensionSample>().Run();
-                //}
-                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 {
-                    services.GetService<HelladicSample>().Run();
+                    services.GetService<OsmExtensionSample>().Run();
                 }
+                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+                //{
+                //    services.GetService<HelladicSample>().Run();
+                //}
 
                 Debugger.Break();
 

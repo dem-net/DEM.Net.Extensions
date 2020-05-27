@@ -195,7 +195,12 @@ namespace DEM.Net.Extension.Osm.Extensions
 
         internal static Color FromHtml(string htmlColor)
         {
-            if (knownColors.TryGetValue(htmlColor.ToLower(), out Color color))
+            Color color;
+            if (knownColors.TryGetValue(htmlColor.ToLower(), out color))
+            {
+                return color;
+            }
+            else if (knownColors.TryGetValue(htmlColor.ToLower().Replace("_", ""), out color))
             {
                 return color;
             }
