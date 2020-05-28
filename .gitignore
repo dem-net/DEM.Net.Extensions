@@ -351,3 +351,4 @@ MigrationBackup/
 
 Samples/secrets.json
 .DS_Store
+*.DS_Store
