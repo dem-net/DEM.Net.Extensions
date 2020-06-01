@@ -61,6 +61,8 @@ namespace SampleApp
 
         }
 
+        
+
         private void Buildings3DOnly()
         {
             string outputDir = Directory.GetCurrentDirectory();
@@ -85,10 +87,18 @@ namespace SampleApp
 
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
 
-            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true, ZScale);
+            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true
+                , ReprojectAnCenter(ZScale));
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
 
+        }
+
+        private BuildingService.OsmGeoTransform ReprojectAnCenter(float zScale)
+        {
+            return pts => pts.ZScale(zScale)
+                            .ReprojectGeodeticToCartesian()
+                            .CenterOnOrigin();
         }
 
         private void Run3DModelSamples_BuildingsGeoReferencing()
@@ -99,7 +109,7 @@ namespace SampleApp
             var bbox = new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ff0000");
 
-            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
+            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ReprojectAnCenter(ZScale));
 
             var heightMap = _elevationService.GetHeightMap(ref bbox, DEMDataSet.ASTER_GDEMV3);
             heightMap = heightMap.ReprojectGeodeticToCartesian().ZScale(ZScale);
@@ -309,7 +319,7 @@ namespace SampleApp
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
 
-                    var model = _buildingService.GetBuildings3DModel(buildingModels, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
+                    var model = _buildingService.GetBuildings3DModel(buildingModels, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale));
                     if (terrain)
                     {
                         model = AddTerrainModel(model, bbox, DEMDataSet.ASTER_GDEMV3, withTexture: provider != null, provider, numTiles, tinMesh);
@@ -332,7 +342,7 @@ namespace SampleApp
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
 
-                    var model = _buildingService.GetBuildings3DModel(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale, useOsmColors: true);
+                    var model = _buildingService.GetBuildings3DModel(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true);
                     if (terrain)
                     {
                         model = AddTerrainModel(model, bbox, DEMDataSet.ASTER_GDEMV3, withTexture: provider != null, provider, numTiles, tinMesh);
@@ -358,7 +368,7 @@ namespace SampleApp
 
                     var model = _pisteSkiService.GetPiste3DModel(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
 
-                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale, useOsmColors: true); ;
+                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true); ;
                     var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
                     _gltfService.AddMesh(model, indexedTriangulation, null, null, doubleSided: true);
 
@@ -387,7 +397,7 @@ namespace SampleApp
 
                     var pistes = _pisteSkiService.GetPisteModels(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
 
-                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale, useOsmColors: true);
+                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true);
                     var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
 
                     foreach (var provider in providers)

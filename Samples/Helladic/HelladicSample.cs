@@ -349,7 +349,7 @@ namespace SampleApp
                     // Buildings
                     if (settings.OsmBuildings)
                     {
-                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, settings.ZScale, useOsmColors: true);
+                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, pts => pts.ZScale(settings.ZScale).ReprojectGeodeticToCartesian(), useOsmColors: true);
                         var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
 
                         if (indexedTriangulation.Positions.Count > 0)

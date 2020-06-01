@@ -18,6 +18,9 @@ namespace DEM.Net.Extension.Osm.Buildings
 {
     public class BuildingService
     {
+
+        public delegate IEnumerable<GeoPoint> OsmGeoTransform(IEnumerable<GeoPoint> geoPoints);
+
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
@@ -50,11 +53,11 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._logger = logger;
         }
 
-        public ModelRoot GetBuildings3DModel(List<BuildingModel> buildings, DEMDataSet dataSet, bool downloadMissingFiles, float zScale)
+        public ModelRoot GetBuildings3DModel(List<BuildingModel> buildings, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform)
         {
             try
             {
-                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(buildings, null, dataSet, downloadMissingFiles, zScale);
+                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(buildings, null, dataSet, downloadMissingFiles, geoTransform);
 
                 // georeference
                 var bbox = new BoundingBox();
@@ -75,11 +78,11 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public ModelRoot GetBuildings3DModel(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, float zScale, bool useOsmColors, string defaultHtmlColor = null)
+        public ModelRoot GetBuildings3DModel(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, bool useOsmColors, string defaultHtmlColor = null)
         {
             try
             {
-                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(bbox, dataSet, downloadMissingFiles, zScale, useOsmColors, defaultHtmlColor);
+                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(bbox, dataSet, downloadMissingFiles, geoTransform, useOsmColors, defaultHtmlColor);
 
                 var model = _gltfService.AddMesh(null, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
 
@@ -144,7 +147,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public TriangulationNormals GetBuildings3DTriangulation(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, float zScale, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
+        public TriangulationNormals GetBuildings3DTriangulation(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
         {
             try
             {
@@ -154,7 +157,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                 (List<BuildingModel> Buildings, int TotalPoints) parsedBuildings = GetBuildingsModel(bbox, useOsmColors, defaultHtmlColor, progressReport);
 
-                return GetBuildings3DTriangulation(parsedBuildings.Buildings, parsedBuildings.TotalPoints, dataSet, downloadMissingFiles, zScale, progressReport);
+                return GetBuildings3DTriangulation(parsedBuildings.Buildings, parsedBuildings.TotalPoints, dataSet, downloadMissingFiles, geoTransform, progressReport);
             }
             catch (Exception ex)
             {
@@ -162,12 +165,12 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public TriangulationNormals GetBuildings3DTriangulation(List<BuildingModel> buildings, int? count, DEMDataSet dataSet, bool downloadMissingFiles, float zScale, Action<string, int> progressReport = null)
+        public TriangulationNormals GetBuildings3DTriangulation(List<BuildingModel> buildings, int? count, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, Action<string, int> progressReport = null)
         {
 
             progressReport?.Invoke("OSM buildings: getting elevation...", 50);
             // Compute elevations (faster elevation when point count is known in advance)
-            buildings = this.ComputeElevations(buildings, count ?? buildings.Sum(b => b.Points.Count()), dataSet, downloadMissingFiles, zScale);
+            buildings = this.ComputeElevations(buildings, count ?? buildings.Sum(b => b.Points.Count()), dataSet, downloadMissingFiles, geoTransform);
 
             progressReport?.Invoke("OSM buildings: triangulating...", 75);
             TriangulationNormals triangulation = this.Triangulate(buildings);
@@ -199,7 +202,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         }
 
-        public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, float zScale = 1f)
+        public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, OsmGeoTransform geoTransform = null)
         {
             if (buildingModels.Count == 0) return buildingModels;
 
@@ -223,13 +226,16 @@ namespace DEM.Net.Extension.Osm.Buildings
                     .SelectMany(b => b.Points);
 
                 // Compute elevations
-                reprojectedPointsById = _elevationService.GetPointsElevation(allBuildingPoints
+                var geoPoints = _elevationService.GetPointsElevation(allBuildingPoints
                                                                     , dataset
-                                                                    , downloadMissingFiles: downloadMissingFiles)
-                                        .ZScale(zScale)
-                                        .ReprojectGeodeticToCartesian(pointCount)
-                                        .CenterOnOrigin(bbox3857)
-                                        .ToDictionary(p => p.Id.Value, p => p);
+                                                                    , downloadMissingFiles: downloadMissingFiles);
+                geoPoints = geoTransform?.Invoke(geoPoints);
+
+                reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
+                //.ZScale(zScale)
+                //.ReprojectGeodeticToCartesian(pointCount)
+                //.CenterOnOrigin(bbox3857)
+
             }
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Remap points", _logger, LogLevel.Debug))
