@@ -63,20 +63,31 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         public override void ParseTags(BuildingModel model)
         {
-            ParseTag<int>(model, v => model.Levels = v, "building:levels", "buildings:levels");
-            ParseTag<string>(model, v => model.IsPart = v.ToLower() == "yes", "building:part", "buildings:part");
-            ParseLengthTag(model, v => model.MinHeight = v, "min_height");
-            ParseLengthTag(model, v => model.Height = v, "height", "building:height", "buildings:height");
+            ParseTag<int>(model, "building:levels", v => model.Levels = v);
+            ParseTag<int>(model, "buildings:levels", v => model.Levels = v);            
+            ParseTag<string>(model, "buildings:part", v => model.IsPart = v.ToLower() == "yes");
+            ParseTag<string>(model, "building:part", v => model.IsPart = v.ToLower() == "yes");
+            ParseLengthTag(model, "min_height", v => model.MinHeight = v);
+            ParseLengthTag(model, "height", v => model.Height = v);
             if (_useOsmColors)
             {
-                ParseTag<string, Vector4>(model, htmlColor => HtmlColorToVec4(htmlColor), v => model.Color = v, "building:colour", "building:color");
-                ParseTag<string, Vector4>(model, htmlColor => HtmlColorToVec4(htmlColor), v => model.RoofColor = v, "roof:colour", "roof:color");
+                ParseTag<string, Vector4>(model, "building:colour", htmlColor => HtmlColorToVec4(htmlColor), v => model.Color = v);
+                ParseTag<string, Vector4>(model, "roof:colour", htmlColor => HtmlColorToVec4(htmlColor), v => model.RoofColor = v);
             }
             else
             {
                 model.Color = _defaultColor;
                 // no roof color, it would duplicate roof vertices
             }
+
+            ParseLengthTag(model, "building:height", v =>
+            {
+                if (model.Height != null)
+                {
+                    _logger.LogWarning($"Height is passed as height and building:height, got value {v}");
+                }
+                model.Height = v;
+            });
         }
 
         private Vector4 HtmlColorToVec4(string htmlColor)
@@ -95,88 +106,81 @@ namespace DEM.Net.Extension.Osm.Buildings
             return new Vector4(componentRemap(color.R), componentRemap(color.G), componentRemap(color.B), componentRemap(color.A));
         }
 
-        private void ParseTag<T>(BuildingModel model, Action<T> updateAction, params string[] tagNames)
-        {
-            ParseTag<T, T>(model, t => t, updateAction, tagNames);
-        }
-        private void ParseTag<Tin, Tout>(BuildingModel model, Func<Tin, Tout> transformFunc, Action<Tout> updateAction, params string[] tagNames)
-        {
-            foreach (var tagName in tagNames)
-            {
-                if (model.Tags.TryGetValue(tagName, out object val))
-                {
-                    try
-                    {
-                        Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
-                        Tout outVal = transformFunc(typedVal);
-                        updateAction(outVal);
 
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
-                    }
+        private void ParseTag<T>(BuildingModel model, string tagName, Action<T> updateAction)
+        {
+            ParseTag<T, T>(model, tagName, t => t, updateAction);
+        }
+        private void ParseTag<Tin, Tout>(BuildingModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
+        {
+            if (model.Tags.TryGetValue(tagName, out object val))
+            {
+                try
+                {
+                    Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
+                    Tout outVal = transformFunc(typedVal);
+                    updateAction(outVal);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
                 }
             }
         }
         // Parse with unit conversion to meters
-        private void ParseLengthTag(BuildingModel model, Action<double> updateAction, params string[] tagNames)
+        private void ParseLengthTag(BuildingModel model, string tagName, Action<double> updateAction)
         {
-            foreach (var tagName in tagNames)
-                if (model.Tags.TryGetValue(tagName, out object val))
+            if (model.Tags.TryGetValue(tagName, out object val))
+            {
+                try
                 {
-                    try
+                    // Will capture 4 items : inputval / sign / value / unit
+                    var match = Regex.Match(val.ToString(), ValueAndUnitRegex, RegexOptions.Singleline | RegexOptions.Compiled);
+                    if (match.Success)
                     {
-                        // Will capture 4 items : inputval / sign / value / unit
-                        var match = Regex.Match(val.ToString(), ValueAndUnitRegex, RegexOptions.Singleline | RegexOptions.Compiled);
-                        if (match.Success)
+                        var groups = match.Groups[0];
+                        int sign = match.Groups[1].Value == "-" ? -1 : 1;
+                        string valueStr = match.Groups[2].Value;
+                        double typedVal = sign * double.Parse(valueStr, CultureInfo.InvariantCulture);
+
+                        string unit = match.Groups[3].Value;
+                        double factor = 1d;
+                        switch (unit.ToLower())
                         {
-                            var groups = match.Groups[0];
-                            int sign = match.Groups[1].Value == "-" ? -1 : 1;
-                            string valueStr = match.Groups[2].Value;
-                            double typedVal = sign * double.Parse(valueStr, CultureInfo.InvariantCulture);
+                            case "ft":
+                            case "feet":
+                            case "foot":
+                            case "'":
+                                factor = 0.3048009193;
+                                break;
 
-                            string unit = match.Groups[3].Value;
-                            double factor = 1d;
-                            switch (unit.ToLower())
-                            {
-                                case "ft":
-                                case "feet":
-                                case "foot":
-                                case "'":
-                                    factor = 0.3048009193;
-                                    break;
-
-                                case "":
-                                    factor = 1d;
-                                    break;
-                                case "m":
-                                case "meters":
-                                    factor = 1d;
-                                    break;
-                                default:
-                                    throw new NotSupportedException($"Length unit {unit} conversion is not supported.");
-                            }
-
-                            typedVal *= factor;
-
-                            updateAction(typedVal);
-
-                            break;
-                        }
-                        else
-                        {
-                            _logger.LogWarning($"Cannot extract value and unit for tag {tagName}, got value {val}.");
+                            case "":
+                                factor = 1d;
+                                break;
+                            case "m":
+                            case "meters":
+                                factor = 1d;
+                                break;
+                            default:
+                                throw new NotSupportedException($"Length unit {unit} conversion is not supported.");
                         }
 
+                        typedVal *= factor;
 
+                        updateAction(typedVal);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
+                        _logger.LogWarning($"Cannot extract value and unit for tag {tagName}, got value {val}.");
                     }
+
+
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
+                }
+            }
         }
 
         public override BuildingModel CreateModel(Feature feature)
