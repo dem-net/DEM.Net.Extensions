@@ -83,11 +83,11 @@ namespace SampleApp
             // Pripryat
             //var bbox = new BoundingBox(30.06295502185822, 30.065519213676456, 51.40682904758998, 51.408609239256506);
 
-            var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ffffff");
+            var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
 
             var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true, ZScale);
 
-            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857AutoCentered.glb"));
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
 
         }
 

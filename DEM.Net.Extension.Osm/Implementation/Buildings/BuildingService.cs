@@ -204,17 +204,15 @@ namespace DEM.Net.Extension.Osm.Buildings
             if (buildingModels.Count == 0) return buildingModels;
 
             Dictionary<int, GeoPoint> reprojectedPointsById = null;
-            string wkt = "POLYGON((-122.41063177228989 37.80707295150412,-122.40904390455307 37.80707295150412,-122.40904390455307 37.806064225434206,-122.41063177228989 37.806064225434206,-122.41063177228989 37.80707295150412))";
-            var bbox = GeometryService.GetBoundingBox(wkt).ReprojectTo(4326,3857);
 
-            //// georeference
-            //var bbox = new BoundingBox();
-            //foreach (var p in buildingModels)
-            //{
-            //    foreach(var pt in p.ExteriorRing)
-            //        bbox.UnionWith(pt.Longitude, pt.Latitude,0);
-            //}
-            //var bbox3857 = bbox.ReprojectTo(4326, 3857);
+            // georeference
+            var bbox = new BoundingBox();
+            foreach (var p in buildingModels)
+            {
+                foreach (var pt in p.ExteriorRing)
+                    bbox.UnionWith(pt.Longitude, pt.Latitude, 0);
+            }
+            var bbox3857 = bbox.ReprojectTo(4326, 3857);
 
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
@@ -230,7 +228,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                                                                     , downloadMissingFiles: downloadMissingFiles)
                                         .ZScale(zScale)
                                         .ReprojectGeodeticToCartesian(pointCount)
-                                        //.CenterOnOrigin(bbox)
+                                        .CenterOnOrigin(bbox3857)
                                         .ToDictionary(p => p.Id.Value, p => p);
             }
 
