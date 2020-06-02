@@ -38,7 +38,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._logger = logger;
         }
 
-        public ModelRoot GetPiste3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
+        public ModelRoot GetPiste3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
@@ -53,7 +53,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
+        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public List<PisteModel> GetPisteModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
+        public List<PisteModel> GetPisteModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
@@ -123,14 +123,14 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public List<PisteModel> ComputeElevations(List<PisteModel> models, int pointCount, DEMDataSet dataset, OsmGeoTransform transform)
+        public List<PisteModel> ComputeElevations(List<PisteModel> models, int pointCount, DEMDataSet dataset, IGeoTransformPipeline transform)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 //foreach(var model in models)
                 Parallel.ForEach(models, model =>
                 {
-                    model.LineString = transform(_elevationService.GetLineGeometryElevation(model.LineString, dataset))
+                    model.LineString = transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataset))
                                          .ZTranslate(10)
                                          .ToList();
                 }

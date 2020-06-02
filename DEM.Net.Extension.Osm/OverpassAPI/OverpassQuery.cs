@@ -626,7 +626,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                 catch (Exception e)
                 {
-                    throw new Exception("The OverpassQuery led to an error!", e);
+                    throw new Exception("The OverpassQuery led to an error: " + e.Message, e);
                 }
 
             }

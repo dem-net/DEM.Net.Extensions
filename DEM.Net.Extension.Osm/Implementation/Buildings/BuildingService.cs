@@ -51,7 +51,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._logger = logger;
         }
 
-        public ModelRoot GetBuildings3DModel(List<BuildingModel> buildings, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform)
+        public ModelRoot GetBuildings3DModel(List<BuildingModel> buildings, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform)
         {
             try
             {
@@ -76,7 +76,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public ModelRoot GetBuildings3DModel(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, bool useOsmColors, string defaultHtmlColor = null)
+        public ModelRoot GetBuildings3DModel(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, bool useOsmColors, string defaultHtmlColor = null)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public TriangulationNormals GetBuildings3DTriangulation(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
+        public TriangulationNormals GetBuildings3DTriangulation(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public TriangulationNormals GetBuildings3DTriangulation(List<BuildingModel> buildings, int? count, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform geoTransform, Action<string, int> progressReport = null)
+        public TriangulationNormals GetBuildings3DTriangulation(List<BuildingModel> buildings, int? count, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, Action<string, int> progressReport = null)
         {
 
             progressReport?.Invoke("OSM buildings: getting elevation...", 50);
@@ -200,7 +200,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         }
 
-        public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, OsmGeoTransform geoTransform = null)
+        public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, IGeoTransformPipeline geoTransform = null)
         {
             if (buildingModels.Count == 0) return buildingModels;
 
@@ -227,7 +227,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 var geoPoints = _elevationService.GetPointsElevation(allBuildingPoints
                                                                     , dataset
                                                                     , downloadMissingFiles: downloadMissingFiles);
-                geoPoints = geoTransform?.Invoke(geoPoints);
+                geoPoints = geoTransform?.TransformPoints(geoPoints);
 
                 reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
                 //.ZScale(zScale)
