@@ -42,16 +42,30 @@ namespace DEM.Net.Extension.Osm.Buildings
         {
             try
             {
+                ModelRoot gltfModel = _gltfService.CreateNewModel();
+                gltfModel = AddPiste3DModel(gltfModel, bbox, wayTag, dataSet, downloadMissingFiles, zScale);
+
+                return gltfModel;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(GetPiste3DModel)} error: {ex.Message}");
+                throw;
+            }
+        }
+        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, float zScale)
+        {
+            try
+            {
 
                 List<PisteModel> models = GetPisteModels(bbox, wayTag, dataSet, downloadMissingFiles, zScale);
 
-                ModelRoot gltfModel = _gltfService.CreateNewModel();
                 foreach (var m in models)
                 {
-                    gltfModel = _gltfService.AddLine(gltfModel, m.LineString, m.ColorVec4, 30);
+                    model = _gltfService.AddLine(model, m.LineString, m.ColorVec4, 30);
                 }
 
-                return gltfModel;
+                return model;
             }
             catch (Exception ex)
             {
