@@ -19,8 +19,6 @@ namespace DEM.Net.Extension.Osm.Buildings
     public class BuildingService
     {
 
-        public delegate IEnumerable<GeoPoint> OsmGeoTransform(IEnumerable<GeoPoint> geoPoints);
-
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;

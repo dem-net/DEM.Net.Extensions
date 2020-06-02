@@ -38,12 +38,12 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._logger = logger;
         }
 
-        public ModelRoot GetPiste3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, float zScale)
+        public ModelRoot GetPiste3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
         {
             try
             {
                 ModelRoot gltfModel = _gltfService.CreateNewModel();
-                gltfModel = AddPiste3DModel(gltfModel, bbox, wayTag, dataSet, downloadMissingFiles, zScale);
+                gltfModel = AddPiste3DModel(gltfModel, bbox, wayTag, dataSet, downloadMissingFiles, transform);
 
                 return gltfModel;
             }
@@ -53,12 +53,12 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
-        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, float zScale)
+        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
         {
             try
             {
 
-                List<PisteModel> models = GetPisteModels(bbox, wayTag, dataSet, downloadMissingFiles, zScale);
+                List<PisteModel> models = GetPisteModels(bbox, wayTag, dataSet, downloadMissingFiles, transform);
 
                 foreach (var m in models)
                 {
@@ -74,7 +74,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public List<PisteModel> GetPisteModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, float zScale)
+        public List<PisteModel> GetPisteModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, OsmGeoTransform transform)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                 _logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
-                parsed.Models = this.ComputeElevations(parsed.Models, parsed.TotalPoints, dataSet, downloadMissingFiles, zScale);
+                parsed.Models = this.ComputeElevations(parsed.Models, parsed.TotalPoints, dataSet, transform);
 
                 return parsed.Models;
             }
@@ -123,17 +123,15 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public List<PisteModel> ComputeElevations(List<PisteModel> models, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, float zScale = 1f)
+        public List<PisteModel> ComputeElevations(List<PisteModel> models, int pointCount, DEMDataSet dataset, OsmGeoTransform transform)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 //foreach(var model in models)
                 Parallel.ForEach(models, model =>
                 {
-                    model.LineString = _elevationService.GetLineGeometryElevation(model.LineString, dataset)
-                                         .ZScale(zScale)
+                    model.LineString = transform(_elevationService.GetLineGeometryElevation(model.LineString, dataset))
                                          .ZTranslate(10)
-                                         .ReprojectGeodeticToCartesian()
                                          .ToList();
                 }
                 );
