@@ -304,6 +304,7 @@ namespace SampleApp
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
         {
             Location3DModelResponse response = new Location3DModelResponse();
+            var transform = new ModelGenerationTransform(Reprojection.SRID_PROJECTED_MERCATOR, true, settings.ZScale);
             try
             {
                 bool imageryFailed = false;
@@ -311,8 +312,7 @@ namespace SampleApp
                 {
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
-                    HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
-
+                    HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);                    
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
                     response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
@@ -332,8 +332,8 @@ namespace SampleApp
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
-                        hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
-                                    .ZScale(settings.ZScale);
+                        transform.BoundingBox = bbox;
+                        hMap = transform.TransformHeightMap(hMap);
 
 
                         //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
@@ -345,11 +345,12 @@ namespace SampleApp
                     //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
 
                     ModelRoot model = _gltfService.CreateNewModel();
+                    
                     //=======================
                     // Buildings
                     if (settings.OsmBuildings)
                     {
-                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, pts => pts.ZScale(settings.ZScale).ReprojectGeodeticToCartesian(), useOsmColors: true);
+                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, transform, useOsmColors: true);
                         var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
 
                         if (indexedTriangulation.Positions.Count > 0)

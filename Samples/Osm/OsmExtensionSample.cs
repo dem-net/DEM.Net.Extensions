@@ -66,12 +66,19 @@ namespace SampleApp
         private void Buildings3DOnly()
         {
             string outputDir = Directory.GetCurrentDirectory();
-
+            
             string WKT_SF_BIG = "POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))";
             string WKT_SF_SMALL = "POLYGON((-122.42722692299768 37.81034598808797, -122.38886060524865 37.81034598808797, -122.38886060524865 37.784573673820816, -122.42722692299768 37.784573673820816, -122.42722692299768 37.81034598808797))";
             string WKT_SF_SUPERSMALL = "POLYGON((-122.41063177228989 37.80707295150412,-122.40904390455307 37.80707295150412,-122.40904390455307 37.806064225434206,-122.41063177228989 37.806064225434206,-122.41063177228989 37.80707295150412))";
 
-            string WKT_PRIPYAT = "POLYGON((30.02660187739031 51.415790195964,30.075697031198903 51.415790195964,30.075697031198903 51.390517276343274,30.02660187739031 51.390517276343274,30.02660187739031 51.415790195964))";
+            // FULL
+            string WKT_PRIPYAT = "POLYGON((30.021919548702254 51.41813804241615,30.083030998897566 51.41813804241615,30.083030998897566 51.389438684773985,30.021919548702254 51.389438684773985,30.021919548702254 51.41813804241615))";
+            // Cas 1
+            //string WKT_PRIPYAT = "POLYGON((30.05430313958436 51.404795567637294,30.055118531124887 51.404795567637294,30.055118531124887 51.40432372279637,30.05430313958436 51.40432372279637,30.05430313958436 51.404795567637294))";
+            // cas 2
+            //string WKT_PRIPYAT = "POLYGON((30.062877280833636 51.40748141189236,30.063456637980853 51.40748141189236,30.063456637980853 51.40716017522757,30.062877280833636 51.40716017522757,30.062877280833636 51.40748141189236))";
+            // cas 3
+            //string WKT_PRIPYAT = "POLYGON((30.065251398582948 51.407283441091266,30.066243815918458 51.407283441091266,30.066243815918458 51.40558353075506,30.065251398582948 51.40558353075506,30.065251398582948 51.407283441091266))";
 
 
             // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
@@ -81,6 +88,8 @@ namespace SampleApp
             //new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
 
             var bbox = GeometryService.GetBoundingBox(WKT_PRIPYAT);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+
 
             // Pripryat
             //var bbox = new BoundingBox(30.06295502185822, 30.065519213676456, 51.40682904758998, 51.408609239256506);
@@ -88,19 +97,13 @@ namespace SampleApp
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
 
             var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true
-                , ReprojectAnCenter(ZScale));
+                , transform);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
 
         }
 
-        private BuildingService.OsmGeoTransform ReprojectAnCenter(float zScale)
-        {
-            return pts => pts.ZScale(zScale)
-                            .ReprojectGeodeticToCartesian()
-                            .CenterOnOrigin();
-        }
-
+        
         private void Run3DModelSamples_BuildingsGeoReferencing()
         {
             string outputDir = Directory.GetCurrentDirectory();
@@ -109,7 +112,9 @@ namespace SampleApp
             var bbox = new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
             var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: false, defaultHtmlColor: "#ff0000");
 
-            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ReprojectAnCenter(ZScale));
+
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform);
 
             var heightMap = _elevationService.GetHeightMap(ref bbox, DEMDataSet.ASTER_GDEMV3);
             heightMap = heightMap.ReprojectGeodeticToCartesian().ZScale(ZScale);
@@ -318,8 +323,8 @@ namespace SampleApp
                 {
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
-
-                    var model = _buildingService.GetBuildings3DModel(buildingModels, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale));
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+                    var model = _buildingService.GetBuildings3DModel(buildingModels, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform);
                     if (terrain)
                     {
                         model = AddTerrainModel(model, bbox, DEMDataSet.ASTER_GDEMV3, withTexture: provider != null, provider, numTiles, tinMesh);
@@ -342,7 +347,8 @@ namespace SampleApp
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
 
-                    var model = _buildingService.GetBuildings3DModel(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true);
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+                    var model = _buildingService.GetBuildings3DModel(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform, useOsmColors: true);
                     if (terrain)
                     {
                         model = AddTerrainModel(model, bbox, DEMDataSet.ASTER_GDEMV3, withTexture: provider != null, provider, numTiles, tinMesh);
@@ -365,10 +371,10 @@ namespace SampleApp
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
 
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+                    var model = _pisteSkiService.GetPiste3DModel(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform);
 
-                    var model = _pisteSkiService.GetPiste3DModel(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
-
-                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true); ;
+                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform, useOsmColors: true); ;
                     var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
                     _gltfService.AddMesh(model, indexedTriangulation, null, null, doubleSided: true);
 
@@ -394,10 +400,10 @@ namespace SampleApp
                     // debug: write geojson to file
                     //File.WriteAllText("buildings.json", JsonConvert.SerializeObject(buildingService.GetBuildingsGeoJson(bbox)));
 
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
+                    var pistes = _pisteSkiService.GetPisteModels(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform);
 
-                    var pistes = _pisteSkiService.GetPisteModels(bbox, "piste:type", DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, ZScale);
-
-                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, pts => pts.ZScale(ZScale), useOsmColors: true);
+                    var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, DEMDataSet.ASTER_GDEMV3, downloadMissingFiles: true, transform, useOsmColors: true);
                     var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
 
                     foreach (var provider in providers)

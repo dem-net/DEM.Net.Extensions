@@ -8,8 +8,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 {
     public class BuildingModel : CommonModel
     {
-        public List<BuildingModel> Parts { get; set; }
-        public List<GeoPoint> ExteriorRing { get; set; }
+       public List<GeoPoint> ExteriorRing { get; set; }
 
         public List<List<GeoPoint>> InteriorRings { get; set; }
 
@@ -38,10 +37,11 @@ namespace DEM.Net.Extension.Osm.Buildings
         public double? Height { get; set; }
 
         public double? ComputedFloorAltitude { get; set; }
-        public double ComputedRoofAltitude { get; set; }
+        public double? ComputedRoofAltitude { get; set; }
         public bool HasHeightInformation { get; set; }
         public bool IsPart { get; set; }
         public Vector4? Color { get; set; }
         public Vector4? RoofColor { get; set; }
+        public BuildingModel Parent { get; internal set; }
     }
 }

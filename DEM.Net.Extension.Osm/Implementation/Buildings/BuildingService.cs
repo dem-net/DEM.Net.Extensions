@@ -25,7 +25,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         private readonly OsmService _osmService;
         private readonly ILogger<BuildingService> _logger;
 
-        const double FloorHeightMeters = 3;
+        const double LevelHeightMeters = 3;
 
         //const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
         //                way[""building:part""] ({{bbox}});
@@ -35,7 +35,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
                         way[""building:part""] ({{bbox}});
                         //relation[type=building] ({{bbox}});
-                        relation[""building""] ({{bbox}});
+                        //relation[""building""] ({{bbox}});
                        );";
 
         public BuildingService(IElevationService elevationService
@@ -113,6 +113,36 @@ namespace DEM.Net.Extension.Osm.Buildings
                 var buildingValidator = new BuildingValidator(_logger, useOsmColors, defaultHtmlColor);
                 (List<BuildingModel> Buildings, int TotalPoints) parsedBuildings = _osmService.CreateModelsFromGeoJson(buildings, buildingValidator);
 
+
+                // Attempt to fix mesh for internal building parts.
+                // ref: https://wiki.openstreetmap.org/wiki/Simple_3D_buildings
+                // Ex: a part can have building:levels=11 and main building:levels=10
+                //
+                // TODO: on big model this could by divided to conquer by using quad tree
+                // every parent should be indexed on a quad an then child/parent check will
+                // be made for only potential parents of that quad
+                StopwatchLog timer = new StopwatchLog(_logger);
+                {
+                    var parts = parsedBuildings.Buildings.Where(b => b.IsPart);
+                    var mainBuildings = parsedBuildings.Buildings.Where(b => !b.IsPart);
+                    foreach (var part in parts)
+                    {
+                        var main = FindMainBuilding(part, mainBuildings);
+                        if (main != null)
+                        {
+                            if (part.Parent != null)
+                            {
+                                _logger.LogWarning($"Part {part.Id} has more than one parent");
+                            }
+                            Debug.Assert(part.Parent == null);
+
+                            part.Parent = main;
+
+                        }
+                    }
+                    timer.LogTime("Building parent point in polygon");
+                }
+
                 return parsedBuildings;
             }
             catch (Exception ex)
@@ -121,6 +151,39 @@ namespace DEM.Net.Extension.Osm.Buildings
                 throw;
             }
         }
+
+        // Source: https://stackoverflow.com/a/49434625/1818237
+        private bool IsInPolygon(GeoPoint point, IEnumerable<GeoPoint> polygon)
+        {
+            bool result = false;
+            var a = polygon.Last();
+            foreach (var b in polygon)
+            {
+                if ((b.Longitude == point.Longitude) && (b.Latitude == point.Latitude))
+                    return true;
+
+                if ((b.Latitude == a.Latitude) && (point.Latitude == a.Latitude) && (a.Longitude <= point.Longitude) && (point.Longitude <= b.Longitude))
+                    return true;
+
+                if ((b.Latitude < point.Latitude) && (a.Latitude >= point.Latitude) || (a.Latitude < point.Latitude) && (b.Latitude >= point.Latitude))
+                {
+                    if (b.Longitude + (point.Latitude - b.Latitude) / (a.Latitude - b.Latitude) * (a.Longitude - b.Longitude) <= point.Longitude)
+                        result = !result;
+                }
+                a = b;
+            }
+            return result;
+        }
+        private BuildingModel FindMainBuilding(BuildingModel building, IEnumerable<BuildingModel> candidates)
+        {
+            foreach(var candidate in candidates)
+            {
+                if (building.ExteriorRing.All(p => IsInPolygon(p, candidate.ExteriorRing)))
+                    return candidate;                
+            }
+            return null;
+        }
+
 
         public OverpassCountResult GetCount(BoundingBox bbox)
         {
@@ -415,24 +478,59 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         private BuildingModel ComputeBuildingHeightMeters(BuildingModel building)
         {
+            if ( building.ComputedRoofAltitude.HasValue)
+                return building;
+
             building.HasHeightInformation = building.Levels.HasValue || building.Height.HasValue || building.MinHeight.HasValue;
 
-            if (building.Levels.HasValue && (building.Height.HasValue || building.MinHeight.HasValue))
+            if (building.Levels.HasValue && building.Height.HasValue)
             {
-                _logger.LogWarning("Inchoerent height info (Levels and Height), choosing Height.");
+                if (building.Levels.Value * LevelHeightMeters > building.Height.Value)
+                {
+                    _logger.LogWarning($"Conflicting height info (Levels:{building.Levels.Value} and Height:{building.Height}), height will be used.");
+                }
             }
+            if (building.IsPart && building.Parent != null)
+            {
+                if (building.Levels == null && building.Height == null)
+                {
+                    building.Levels = 1;
+                }
 
-            double highestFloorElevation = building.Points.OrderByDescending(p => p.Elevation ?? 0).First().Elevation ?? 0;
+                if (building.Levels.Value < (building.Parent.Levels ?? 3))
+                {
+                    _logger.LogWarning($"Conflicting height info between building and part (parent:{building.Parent.Levels ?? 3} > part:{building.Levels.Value}), choosing parent level.");
+                    building.Levels = building.Parent.Levels ?? 3;
+                }
 
-            double computedHeight = building.Height ?? (building.Levels ?? 3) * FloorHeightMeters;
-            double roofElevation = computedHeight + highestFloorElevation;
+                if (building.Parent.ComputedRoofAltitude == null)
+                {
+                    // Compute parent roof first
+                    ComputeBuildingHeightMeters(building.Parent);
+                }
+                double highestFloorElevation = building.Parent.ComputedRoofAltitude.Value;
 
-            double? computedMinHeight = null;
-            if (building.MinHeight.HasValue)
-                computedMinHeight = roofElevation - building.MinHeight.Value;
+                double computedHeight = (building.Levels.Value - building.Parent.Levels ?? 3) * LevelHeightMeters;
+                double roofElevation = computedHeight + highestFloorElevation;
 
-            building.ComputedRoofAltitude = roofElevation;
-            building.ComputedFloorAltitude = computedMinHeight;
+                building.ComputedRoofAltitude = roofElevation;
+                building.ComputedFloorAltitude = highestFloorElevation;// - 0.5; // 50 cm inclusion inside parent mesh
+            }
+            else
+            {
+                double highestFloorElevation = building.Points.OrderByDescending(p => p.Elevation ?? 0).First().Elevation ?? 0;
+
+                double computedHeight = building.Height ?? (building.Levels ?? 3) * LevelHeightMeters;
+                double roofElevation = computedHeight + highestFloorElevation;
+
+                double? computedMinHeight = null;
+                if (building.MinHeight.HasValue)
+                    computedMinHeight = roofElevation - building.MinHeight.Value;
+
+                building.ComputedRoofAltitude = roofElevation;
+                building.ComputedFloorAltitude = computedMinHeight;
+            }
+           
 
             return building;
         }
