@@ -43,5 +43,15 @@ namespace DEM.Net.Extension.Osm.Buildings
         public Vector4? Color { get; set; }
         public Vector4? RoofColor { get; set; }
         public BuildingModel Parent { get; internal set; }
+
+        public override string ToString()
+        {
+            string outStr = string.Concat(IsPart ? "part" : "", " "
+                , Id, " "
+                , "Height: ", Height, " "
+                , "Levels: ", Levels, " "
+                , "MinHeight: ", MinHeight, " ");
+            return outStr;
+        }
     }
 }

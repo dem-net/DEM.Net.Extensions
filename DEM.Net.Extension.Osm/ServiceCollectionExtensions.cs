@@ -1,4 +1,5 @@
 ﻿using DEM.Net.Extension.Osm.Buildings;
+using DEM.Net.Extension.Osm.Highways;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,8 @@ namespace DEM.Net.Extension.Osm
         {
             services.AddTransient<OsmService>()
                     .AddTransient<BuildingService>()
-                    .AddTransient<PisteSkiService>();
+                    .AddTransient<PisteSkiService>()
+                    .AddTransient<HighwayService>();
 
             return services;
         }

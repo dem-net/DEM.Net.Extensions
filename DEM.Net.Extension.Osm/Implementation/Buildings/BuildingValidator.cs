@@ -90,6 +90,32 @@ namespace DEM.Net.Extension.Osm.Buildings
             });
         }
 
+
+        public override BuildingModel CreateModel(Feature feature)
+        {
+            if (feature == null) return null;
+
+            BuildingModel model = null;
+            switch (feature.Geometry.Type)
+            {
+                case GeoJSON.Net.GeoJSONObjectType.Polygon:
+                    model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+                    break;
+                default:
+                    _logger.LogDebug($"{feature.Geometry.Type} not supported for {nameof(BuildingModel)} {feature.Id}.");
+                    break;
+            }
+
+            if (model != null)
+            {
+                model.Id = feature.Id;
+                model.Tags = feature.Properties;
+            }
+
+
+            return model;
+        }
+
         private Vector4 HtmlColorToVec4(string htmlColor)
         {
             float componentRemap(byte c) => c / 255f;
@@ -183,30 +209,6 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
         }
 
-        public override BuildingModel CreateModel(Feature feature)
-        {
-            if (feature == null) return null;
-
-            BuildingModel model = null;
-            switch (feature.Geometry.Type)
-            {
-                case GeoJSON.Net.GeoJSONObjectType.Polygon:
-                    model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
-                    break;
-                default:
-                    _logger.LogDebug($"{feature.Geometry.Type} not supported for {nameof(BuildingModel)} {feature.Id}.");
-                    break;
-            }
-
-            if (model != null)
-            {
-                model.Id = feature.Id;
-                model.Tags = feature.Properties;
-            }
-
-
-            return model;
-        }
 
         private BuildingModel ConvertBuildingGeometry(Polygon poly, ref int geoPointIdCounter)
         {

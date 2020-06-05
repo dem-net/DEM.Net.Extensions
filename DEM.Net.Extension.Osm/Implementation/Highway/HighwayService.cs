@@ -15,21 +15,21 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DEM.Net.Extension.Osm.Buildings
+namespace DEM.Net.Extension.Osm.Highways
 {
-    public class PisteSkiService
+    public class HighwayService
     {
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly IMeshService _meshService;
         private readonly OsmService _osmService;
-        private readonly ILogger<PisteSkiService> _logger;
+        private readonly ILogger<HighwayService> _logger;
 
-        public PisteSkiService(IElevationService elevationService
+        public HighwayService(IElevationService elevationService
             , SharpGltfService gltfService
             , IMeshService meshService
             , OsmService osmService
-            , ILogger<PisteSkiService> logger)
+            , ILogger<HighwayService> logger)
         {
             this._elevationService = elevationService;
             this._gltfService = gltfService;
@@ -38,27 +38,27 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._logger = logger;
         }
 
-        public ModelRoot GetPiste3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        public ModelRoot GetHighway3DModel(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
                 ModelRoot gltfModel = _gltfService.CreateNewModel();
-                gltfModel = AddPiste3DModel(gltfModel, bbox, wayTag, dataSet, downloadMissingFiles, transform);
+                gltfModel = AddHighway3DModel(gltfModel, bbox, wayTag, dataSet, downloadMissingFiles, transform);
 
                 return gltfModel;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(GetPiste3DModel)} error: {ex.Message}");
+                _logger.LogError($"{nameof(GetHighway3DModel)} error: {ex.Message}");
                 throw;
             }
         }
-        public ModelRoot AddPiste3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        public ModelRoot AddHighway3DModel(ModelRoot model, BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
 
-                List<PisteModel> models = GetPisteModels(bbox, wayTag, dataSet, downloadMissingFiles, transform);
+                List<HighwayModel> models = GetHighwayModels(bbox, wayTag, dataSet, downloadMissingFiles, transform);
 
                 foreach (var m in models)
                 {
@@ -69,17 +69,17 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(GetPiste3DModel)} error: {ex.Message}");
+                _logger.LogError($"{nameof(GetHighway3DModel)} error: {ex.Message}");
                 throw;
             }
         }
 
-        public List<PisteModel> GetPisteModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        public List<HighwayModel> GetHighwayModels(BoundingBox bbox, string wayTag, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
                 // Download buildings and convert them to GeoJson
-                FeatureCollection skiPistes = _osmService.GetOsmDataAsGeoJson(bbox, q => q
+                FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox, q => q
                                                                                        .WithWays(wayTag)
                                                                               );
 
@@ -87,8 +87,8 @@ namespace DEM.Net.Extension.Osm.Buildings
                 if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
 
                 // Create internal building model
-                var validator = new SkiPisteValidator(_logger);
-                (List<PisteModel> Models, int TotalPoints) parsed = _osmService.CreateModelsFromGeoJson<PisteModel>(skiPistes, validator);
+                var validator = new HighwayValidator(_logger);
+                (List<HighwayModel> Models, int TotalPoints) parsed = _osmService.CreateModelsFromGeoJson<HighwayModel>(features, validator);
 
                 _logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
@@ -98,11 +98,11 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(GetPisteModels)} error: {ex.Message}");
+                _logger.LogError($"{nameof(GetHighwayModels)} error: {ex.Message}");
                 throw;
             }
         }
-        public ModelRoot GetPiste3DModel(List<PisteModel> models)
+        public ModelRoot GetHighway3DModel(List<HighwayModel> models)
         {
             try
             {
@@ -117,12 +117,12 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(GetPiste3DModel)} error: {ex.Message}");
+                _logger.LogError($"{nameof(GetHighway3DModel)} error: {ex.Message}");
                 throw;
             }
         }
 
-        public List<PisteModel> ComputeElevations(List<PisteModel> models, int pointCount, DEMDataSet dataset, IGeoTransformPipeline transform)
+        public List<HighwayModel> ComputeElevations(List<HighwayModel> models, int pointCount, DEMDataSet dataset, IGeoTransformPipeline transform)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
@@ -140,5 +140,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             return models;
 
         }
+
+        
     }
 }

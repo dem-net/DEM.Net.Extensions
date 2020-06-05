@@ -27,12 +27,13 @@ using GeoJSON.Net;
 using GeoJSON.Net.Feature;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
 namespace DEM.Net.Extension.Osm
 {
-    public abstract class OsmModelFactory<TModel>
+    public abstract class OsmModelFactory<TModel> where TModel: CommonModel
     {
         public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
         internal int _totalPoints;
@@ -48,6 +49,22 @@ namespace DEM.Net.Extension.Osm
         internal string GetTagsReport()
         {
             return TagRegistry.GetReport();
+        }
+
+        protected void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
+        {
+            if (model.Tags.TryGetValue(tagName, out object val))
+            {
+                try
+                {
+                    T typedVal = (T)Convert.ChangeType(val, typeof(T), CultureInfo.InvariantCulture);
+                    updateAction(typedVal);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
+                }
+            }
         }
     }
     public class TagRegistry

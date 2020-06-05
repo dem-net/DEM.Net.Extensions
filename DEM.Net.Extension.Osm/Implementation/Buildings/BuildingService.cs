@@ -27,6 +27,8 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         const double LevelHeightMeters = 3;
 
+        private bool computeElevations = false;
+
         //const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
         //                way[""building:part""] ({{bbox}});
         //                //relation[type=building] ({{bbox}});
@@ -35,7 +37,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
                         way[""building:part""] ({{bbox}});
                         //relation[type=building] ({{bbox}});
-                        //relation[""building""] ({{bbox}});
+                        relation[""building""] ({{bbox}});
                        );";
 
         public BuildingService(IElevationService elevationService
@@ -140,9 +142,27 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                         }
                     }
-                    timer.LogTime("Building parent point in polygon");
-                }
+                    HashSet<string> idsToRemove = new HashSet<string>();
+                    foreach (var part in mainBuildings)
+                    {
+                        var main = FindMainBuilding(part, mainBuildings.Where(p => p.Id != part.Id));
+                        if (main != null)
+                        {
+                            idsToRemove.Add(main.Id);
+                            if (part.Parent != null)
+                            {
+                                _logger.LogWarning($"Part {part.Id} has more than one parent");
+                            }
+                            Debug.Assert(part.Parent == null);
 
+                            part.Parent = main;
+
+                        }
+                    }
+                    timer.LogTime("Building parent point in polygon");
+                    parsedBuildings.Buildings.RemoveAll(b => idsToRemove.Contains(b.Id));
+                }
+                
                 return parsedBuildings;
             }
             catch (Exception ex)
@@ -364,8 +384,6 @@ namespace DEM.Net.Extension.Osm.Buildings
         }
         public TriangulationList<GeoPoint> Triangulate(BuildingModel building)
         {
-            int totalPoints = building.ExteriorRing.Count - 1 + building.InteriorRings.Sum(r => r.Count - 1);
-
             //==========================
             // Footprint triangulation
             //
@@ -381,6 +399,8 @@ namespace DEM.Net.Extension.Osm.Buildings
             // First triangulate the foot print (with inner rings if existing)
             // This triangulation is the roof top if building is flat
             building = this.ComputeBuildingHeightMeters(building);
+
+            int totalPoints = building.ExteriorRing.Count - 1 + building.InteriorRings.Sum(r => r.Count - 1);
 
             // Triangulate wall for each ring
             // (We add floor indices before copying the vertices, they will be duplicated and z shifted later on)
@@ -494,13 +514,22 @@ namespace DEM.Net.Extension.Osm.Buildings
             {
                 if (building.Levels == null && building.Height == null)
                 {
+                    _logger.LogWarning("Undertermined height");
                     building.Levels = 1;
                 }
 
-                if (building.Levels.Value < (building.Parent.Levels ?? 3))
+                if (building.Levels.Value <= (building.Parent.Levels ?? 3))
                 {
-                    _logger.LogWarning($"Conflicting height info between building and part (parent:{building.Parent.Levels ?? 3} > part:{building.Levels.Value}), choosing parent level.");
-                    building.Levels = building.Parent.Levels ?? 3;
+                    _logger.LogWarning($"Conflicting height info between building and part (parent:{building.Parent.Levels ?? 3} >= part:{building.Levels.Value}), choosing parent level.");
+                    if (building.Levels.Value == (building.Parent.Levels ?? 3))
+                    {
+                        building.Levels = (building.Parent.Levels ?? 3) + 1;
+                    }
+                    else
+                    {
+                        building.Levels = (building.Parent.Levels ?? 3) +1 ;
+                    }
+                    
                 }
 
                 if (building.Parent.ComputedRoofAltitude == null)

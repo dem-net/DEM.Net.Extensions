@@ -96,8 +96,7 @@ namespace DEM.Net.Extension.Osm
 
         }
 
-        public (List<T> models, int totalPoints) CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator)
-            where T : class
+        public (List<T> models, int totalPoints) CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
         {
 
             List<T> models = new List<T>(features.Features.Count);

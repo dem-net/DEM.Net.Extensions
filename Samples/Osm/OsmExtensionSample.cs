@@ -2,6 +2,7 @@
 using DEM.Net.Core.Imagery;
 using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;
+using DEM.Net.Extension.Osm.Highways;
 using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
 using GeoJSON.Net.Feature;
@@ -22,6 +23,7 @@ namespace SampleApp
     {
         private readonly BuildingService _buildingService;
         private readonly PisteSkiService _pisteSkiService;
+        private readonly HighwayService _highwayService;
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
@@ -32,6 +34,7 @@ namespace SampleApp
 
         public OsmExtensionSample(BuildingService buildingService
                 , PisteSkiService pisteSkiService
+                , HighwayService highwayService
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
@@ -40,6 +43,7 @@ namespace SampleApp
         {
             this._buildingService = buildingService;
             this._pisteSkiService = pisteSkiService;
+            this._highwayService = highwayService;
             this._imageryService = imageryService;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
@@ -61,12 +65,12 @@ namespace SampleApp
 
         }
 
-        
+
 
         private void Buildings3DOnly()
         {
             string outputDir = Directory.GetCurrentDirectory();
-            
+
             string WKT_SF_BIG = "POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))";
             string WKT_SF_SMALL = "POLYGON((-122.42722692299768 37.81034598808797, -122.38886060524865 37.81034598808797, -122.38886060524865 37.784573673820816, -122.42722692299768 37.784573673820816, -122.42722692299768 37.81034598808797))";
             string WKT_SF_SUPERSMALL = "POLYGON((-122.41063177228989 37.80707295150412,-122.40904390455307 37.80707295150412,-122.40904390455307 37.806064225434206,-122.41063177228989 37.806064225434206,-122.41063177228989 37.80707295150412))";
@@ -90,7 +94,6 @@ namespace SampleApp
             var bbox = GeometryService.GetBoundingBox(WKT_PRIPYAT);
             var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
 
-
             // Pripryat
             //var bbox = new BoundingBox(30.06295502185822, 30.065519213676456, 51.40682904758998, 51.408609239256506);
 
@@ -99,11 +102,17 @@ namespace SampleApp
             var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true
                 , transform);
 
+            var roads = _highwayService.GetHighwayModels(bbox, "highway", DEMDataSet.NASADEM, downloadMissingFiles: true, transform);
+            foreach (var road in roads)
+            {
+                model = _gltfService.AddLine(model, road.LineString, road.ColorVec4, road.Lanes * 3);
+            }
+
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
 
         }
 
-        
+
         private void Run3DModelSamples_BuildingsGeoReferencing()
         {
             string outputDir = Directory.GetCurrentDirectory();
