@@ -69,8 +69,10 @@ namespace DEM.Net.Extension.Osm
                 if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
                 parsed.Models = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles, transform);
 
-
-                gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
+                if (parsed.Models.Any())
+                {
+                    gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
+                }
 
                 return gltfModel;
 

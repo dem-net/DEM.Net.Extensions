@@ -32,8 +32,10 @@ namespace DEM.Net.Extension.Osm.Highways
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<HighwayModel> models)
         {
-
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, m.Lanes * LaneWidthMeters)), models.First().ColorVec4);
+            if (models.Any())
+            {
+                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, m.Lanes * LaneWidthMeters)), models.First().ColorVec4);
+            }
             //foreach (var m in models)
             //{
             //    gltfModel = _gltfService.AddLine(gltfModel, glTFNodeName, m.LineString, m.ColorVec4, 30);
