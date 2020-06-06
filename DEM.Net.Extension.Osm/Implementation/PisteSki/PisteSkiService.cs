@@ -62,7 +62,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                 foreach (var m in models)
                 {
-                    model = _gltfService.AddLine(model, m.LineString, m.ColorVec4, 30);
+                    model = _gltfService.AddLine(model,"Pistes", m.LineString, m.ColorVec4, 30);
                 }
 
                 return model;
@@ -88,7 +88,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                 // Create internal building model
                 var validator = new SkiPisteValidator(_logger);
-                (List<PisteModel> Models, int TotalPoints) parsed = _osmService.CreateModelsFromGeoJson<PisteModel>(skiPistes, validator);
+                OsmModelList<PisteModel> parsed = _osmService.CreateModelsFromGeoJson(skiPistes, validator);
 
                 _logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
@@ -110,7 +110,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 ModelRoot gltfModel = _gltfService.CreateNewModel();
                 foreach (var m in models)
                 {
-                    gltfModel = _gltfService.AddLine(gltfModel, m.LineString, m.ColorVec4, 30);
+                    gltfModel = _gltfService.AddLine(gltfModel,"Pistes", m.LineString, m.ColorVec4, 30);
                 }
 
                 return gltfModel;

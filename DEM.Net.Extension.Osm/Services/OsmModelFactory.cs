@@ -33,7 +33,7 @@ using System.Text;
 
 namespace DEM.Net.Extension.Osm
 {
-    public abstract class OsmModelFactory<TModel> where TModel: CommonModel
+    public abstract class OsmModelFactory<TModel> where TModel : CommonModel
     {
         public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
         internal int _totalPoints;

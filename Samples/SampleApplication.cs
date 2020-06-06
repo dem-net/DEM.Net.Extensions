@@ -77,7 +77,7 @@ namespace SampleApp
             _logger.LogInformation("OnStarted has been called.");
 
             try
-            {
+            { 
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 {
                     services.GetService<OsmExtensionSample>().Run();

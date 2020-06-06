@@ -7,7 +7,7 @@ namespace DEM.Net.Extension.Osm.Highways
     public class HighwayModel : CommonModel
     {
         public string Name { get; internal set; }
-        public int Lanes { get; internal set; } = 1;
+        public int Lanes { get; internal set; } = 2;
         public string Type { get; internal set; }
 
         public List<GeoPoint> LineString { get; internal set; }

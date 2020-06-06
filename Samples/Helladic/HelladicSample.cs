@@ -2,10 +2,12 @@
 using DEM.Net.Core.Configuration;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Core.Services.Lab;
+using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Win32.SafeHandles;
 using SharpGLTF.Schema2;
 using SketchFab;
 using System;
@@ -22,7 +24,7 @@ namespace SampleApp
 {
     public class HelladicSample
     {
-        private readonly BuildingService _buildingService;
+        private readonly SampleOsmProcessor _sampleOsmProcessor;
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
@@ -32,7 +34,7 @@ namespace SampleApp
         private readonly ILogger _logger;
 
 
-        public HelladicSample(BuildingService buildingService
+        public HelladicSample(SampleOsmProcessor sampleOsmProcessor
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
@@ -41,7 +43,7 @@ namespace SampleApp
                 , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
         {
-            this._buildingService = buildingService;
+            this._sampleOsmProcessor = sampleOsmProcessor;
             this._imageryService = imageryService;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
@@ -312,7 +314,7 @@ namespace SampleApp
                 {
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
-                    HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);                    
+                    HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
                     response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
@@ -345,23 +347,12 @@ namespace SampleApp
                     //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
 
                     ModelRoot model = _gltfService.CreateNewModel();
-                    
+
                     //=======================
                     // Buildings
                     if (settings.OsmBuildings)
                     {
-                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, transform, useOsmColors: true);
-                        var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
-
-                        if (indexedTriangulation.Positions.Count > 0)
-                        {
-                            //if (!transform.IsIdentity)
-                            //{
-                            //    indexedTriangulation.Positions = indexedTriangulation.Positions.Select(v => Vector3.Transform(v, transform)).ToList();
-                            //}
-
-                            model = _gltfService.AddMesh(model, indexedTriangulation, null, null, doubleSided: true);
-                        }
+                        model = _sampleOsmProcessor.Run(bbox, transform, computeElevations: true, settings.Dataset, settings.DownloadMissingFiles);
                     }
 
 

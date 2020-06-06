@@ -96,10 +96,10 @@ namespace DEM.Net.Extension.Osm
 
         }
 
-        public (List<T> models, int totalPoints) CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
+        public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
         {
 
-            List<T> models = new List<T>(features.Features.Count);
+            OsmModelList<T> models = new OsmModelList<T>(features.Features.Count);
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
             {
                 int count = 0;
@@ -127,7 +127,9 @@ namespace DEM.Net.Extension.Osm
 
             _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
 
-            return (models, validator._totalPoints);
+            models.TotalPoints = validator._totalPoints;
+
+            return models;
 
         }
     }

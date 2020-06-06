@@ -16,282 +16,41 @@ using DEM.Net.Extension.Osm.Model;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
-    public class BuildingService
-    {
 
-        private readonly IElevationService _elevationService;
-        private readonly SharpGltfService _gltfService;
-        private readonly IMeshService _meshService;
-        private readonly OsmService _osmService;
-        private readonly ILogger<BuildingService> _logger;
+    public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
+    {
 
         const double LevelHeightMeters = 3;
 
-        private bool computeElevations = false;
 
-        //const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
-        //                way[""building:part""] ({{bbox}});
-        //                //relation[type=building] ({{bbox}});
-        //                //relation[""building""] ({{bbox}});
-        //               );";
-        const string OverpassQueryBody = @"(way[""building""] ({{bbox}});
-                        way[""building:part""] ({{bbox}});
-                        //relation[type=building] ({{bbox}});
-                        relation[""building""] ({{bbox}});
-                       );";
+        public override string[] WaysFilter { get; set; } = new string[] { "building", "building:part" };
+        public override string[] RelationsFilter { get; set; } =
+        new string[] { "building" };
+        public override string[] NodesFilter { get; set; } = null;
+        public override bool ComputeElevations { get; set; } = true;
+        public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, true, "white");
+        public override string glTFNodeName { get; set; } = "Buildings";
 
-        public BuildingService(IElevationService elevationService
-            , SharpGltfService gltfService
-            , IMeshService meshService
-            , OsmService osmService
-            , ILogger<BuildingService> logger)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<BuildingModel> models)
         {
-            this._elevationService = elevationService;
-            this._gltfService = gltfService;
-            this._meshService = meshService;
-            this._osmService = osmService;
-            this._logger = logger;
-        }
-
-        public ModelRoot GetBuildings3DModel(List<BuildingModel> buildings, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform)
-        {
-            try
-            {
-                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(buildings, null, dataSet, downloadMissingFiles, geoTransform);
-
-                // georeference
-                var bbox = new BoundingBox();
-                foreach (var p in triangulation.Positions)
-                {
-                    bbox.UnionWith(p.X, p.Y, p.Z);
-                }
+            TriangulationNormals triangulation = this.Triangulate(models.Models);
 
 
-                var model = _gltfService.AddMesh(null, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
+            gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
 
-                return model;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetBuildings3DModel)} error: {ex.Message}");
-                throw;
-            }
-        }
-
-        public ModelRoot GetBuildings3DModel(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, bool useOsmColors, string defaultHtmlColor = null)
-        {
-            try
-            {
-                TriangulationNormals triangulation = this.GetBuildings3DTriangulation(bbox, dataSet, downloadMissingFiles, geoTransform, useOsmColors, defaultHtmlColor);
-
-                var model = _gltfService.AddMesh(null, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
-
-                return model;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetBuildings3DModel)} error: {ex.Message}");
-                throw;
-            }
-        }
-        public (List<BuildingModel> Buildings, int TotalPoints) GetBuildingsModel(BoundingBox bbox, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
-        {
-            try
-            {
-                // Download buildings and convert them to GeoJson
-                //FeatureCollection buildings = _osmService.GetOsmDataAsGeoJson(bbox, q => q
-                //.WithWays("building")
-                //.WithWays("building:part")
-                //.WithRelations("type=building")
-                //.WithRelations("building"));
-
-                progressReport?.Invoke("OSM buildings: downloading", 0);
-                FeatureCollection buildings = _osmService.GetOsmDataAsGeoJson(bbox,
-                    BuildingService.OverpassQueryBody);
-
-
-                progressReport?.Invoke("OSM buildings: converting", 20);
-                // Create internal building model
-                var buildingValidator = new BuildingValidator(_logger, useOsmColors, defaultHtmlColor);
-                (List<BuildingModel> Buildings, int TotalPoints) parsedBuildings = _osmService.CreateModelsFromGeoJson(buildings, buildingValidator);
-
-
-                // Attempt to fix mesh for internal building parts.
-                // ref: https://wiki.openstreetmap.org/wiki/Simple_3D_buildings
-                // Ex: a part can have building:levels=11 and main building:levels=10
-                //
-                // TODO: on big model this could by divided to conquer by using quad tree
-                // every parent should be indexed on a quad an then child/parent check will
-                // be made for only potential parents of that quad
-                StopwatchLog timer = new StopwatchLog(_logger);
-                {
-                    var parts = parsedBuildings.Buildings.Where(b => b.IsPart);
-                    var mainBuildings = parsedBuildings.Buildings.Where(b => !b.IsPart);
-                    foreach (var part in parts)
-                    {
-                        var main = FindMainBuilding(part, mainBuildings);
-                        if (main != null)
-                        {
-                            if (part.Parent != null)
-                            {
-                                _logger.LogWarning($"Part {part.Id} has more than one parent");
-                            }
-                            Debug.Assert(part.Parent == null);
-
-                            part.Parent = main;
-
-                        }
-                    }
-                    HashSet<string> idsToRemove = new HashSet<string>();
-                    foreach (var part in mainBuildings)
-                    {
-                        var main = FindMainBuilding(part, mainBuildings.Where(p => p.Id != part.Id));
-                        if (main != null)
-                        {
-                            idsToRemove.Add(main.Id);
-                            if (part.Parent != null)
-                            {
-                                _logger.LogWarning($"Part {part.Id} has more than one parent");
-                            }
-                            Debug.Assert(part.Parent == null);
-
-                            part.Parent = main;
-
-                        }
-                    }
-                    timer.LogTime("Building parent point in polygon");
-                    parsedBuildings.Buildings.RemoveAll(b => idsToRemove.Contains(b.Id));
-                }
-                
-                return parsedBuildings;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetBuildingsModel)} error: {ex.Message}");
-                throw;
-            }
-        }
-
-        // Source: https://stackoverflow.com/a/49434625/1818237
-        private bool IsInPolygon(GeoPoint point, IEnumerable<GeoPoint> polygon)
-        {
-            bool result = false;
-            var a = polygon.Last();
-            foreach (var b in polygon)
-            {
-                if ((b.Longitude == point.Longitude) && (b.Latitude == point.Latitude))
-                    return true;
-
-                if ((b.Latitude == a.Latitude) && (point.Latitude == a.Latitude) && (a.Longitude <= point.Longitude) && (point.Longitude <= b.Longitude))
-                    return true;
-
-                if ((b.Latitude < point.Latitude) && (a.Latitude >= point.Latitude) || (a.Latitude < point.Latitude) && (b.Latitude >= point.Latitude))
-                {
-                    if (b.Longitude + (point.Latitude - b.Latitude) / (a.Latitude - b.Latitude) * (a.Longitude - b.Longitude) <= point.Longitude)
-                        result = !result;
-                }
-                a = b;
-            }
-            return result;
-        }
-        private BuildingModel FindMainBuilding(BuildingModel building, IEnumerable<BuildingModel> candidates)
-        {
-            foreach(var candidate in candidates)
-            {
-                if (building.ExteriorRing.All(p => IsInPolygon(p, candidate.ExteriorRing)))
-                    return candidate;                
-            }
-            return null;
-        }
-
-
-        public OverpassCountResult GetCount(BoundingBox bbox)
-        {
-            try
-            {
-                // Download buildings and convert them to GeoJson
-                //FeatureCollection buildings = _osmService.GetOsmDataAsGeoJson(bbox, q => q
-                //.WithWays("building")
-                //.WithWays("building:part")
-                //.WithRelations("type=building")
-                //.WithRelations("building"));
-
-                OverpassCountResult buildingsCount = _osmService.GetOsmDataCount(bbox,
-                   BuildingService.OverpassQueryBody);
-
-
-                return buildingsCount;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetCount)} error: {ex.Message}");
-                throw;
-            }
-        }
-        public TriangulationNormals GetBuildings3DTriangulation(BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, bool useOsmColors, string defaultHtmlColor = null, Action<string, int> progressReport = null)
-        {
-            try
-            {
-
-                // Download elevation data if missing
-                if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
-
-                (List<BuildingModel> Buildings, int TotalPoints) parsedBuildings = GetBuildingsModel(bbox, useOsmColors, defaultHtmlColor, progressReport);
-
-                return GetBuildings3DTriangulation(parsedBuildings.Buildings, parsedBuildings.TotalPoints, dataSet, downloadMissingFiles, geoTransform, progressReport);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetBuildings3DModel)} error: {ex.Message}");
-                throw;
-            }
-        }
-        public TriangulationNormals GetBuildings3DTriangulation(List<BuildingModel> buildings, int? count, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline geoTransform, Action<string, int> progressReport = null)
-        {
-
-            progressReport?.Invoke("OSM buildings: getting elevation...", 50);
-            // Compute elevations (faster elevation when point count is known in advance)
-            buildings = this.ComputeElevations(buildings, count ?? buildings.Sum(b => b.Points.Count()), dataSet, downloadMissingFiles, geoTransform);
-
-            progressReport?.Invoke("OSM buildings: triangulating...", 75);
-            TriangulationNormals triangulation = this.Triangulate(buildings);
-            return triangulation;
+            return gltfModel;
 
         }
 
-
-        public FeatureCollection GetBuildingsGeoJson(int wayId)
+        protected override List<BuildingModel> ComputeModelElevationsAndTransform(OsmModelList<BuildingModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
-            try
-            {
-                using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetBuildingsGeoJson), _logger, LogLevel.Debug))
-                {
-                    var task = new OverpassQuery()
-                    .WithWays("id", wayId.ToString())
-                    .ToGeoJSON();
-
-                    FeatureCollection buildings = task.GetAwaiter().GetResult();
-
-                    return buildings;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetBuildingsGeoJson)} error: {ex.Message}");
-                throw;
-            }
-
-        }
-
-        public List<BuildingModel> ComputeElevations(List<BuildingModel> buildingModels, int pointCount, DEMDataSet dataset, bool downloadMissingFiles = true, IGeoTransformPipeline geoTransform = null)
-        {
-            if (buildingModels.Count == 0) return buildingModels;
+            if (models.Count == 0) return models.Models;
 
             Dictionary<int, GeoPoint> reprojectedPointsById = null;
 
             // georeference
             var bbox = new BoundingBox();
-            foreach (var p in buildingModels)
+            foreach (var p in models.Models)
             {
                 foreach (var pt in p.ExteriorRing)
                     bbox.UnionWith(pt.Longitude, pt.Latitude, 0);
@@ -303,14 +62,17 @@ namespace DEM.Net.Extension.Osm.Buildings
             {
                 // Select all points (outer ring) + (inner rings)
                 // They all have an Id, so we can lookup in which building they should be mapped after
-                var allBuildingPoints = buildingModels
+                var allBuildingPoints = models.Models
                     .SelectMany(b => b.Points);
 
-                // Compute elevations
-                var geoPoints = _elevationService.GetPointsElevation(allBuildingPoints
-                                                                    , dataset
-                                                                    , downloadMissingFiles: downloadMissingFiles);
-                geoPoints = geoTransform?.TransformPoints(geoPoints);
+
+                // Compute elevations if requested
+                IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints
+                                                                        , dataSet
+                                                                        , downloadMissingFiles: downloadMissingFiles)
+                                                                    : allBuildingPoints;
+
+                geoPoints = transform?.TransformPoints(geoPoints);
 
                 reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
                 //.ZScale(zScale)
@@ -322,7 +84,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Remap points", _logger, LogLevel.Debug))
             {
                 int checksum = 0;
-                foreach (var buiding in buildingModels)
+                foreach (var buiding in models.Models)
                 {
                     foreach (var point in buiding.Points)
                     {
@@ -338,9 +100,10 @@ namespace DEM.Net.Extension.Osm.Buildings
                 reprojectedPointsById = null;
             }
 
-            return buildingModels;
-
+            return models.Models;
         }
+
+        #region Triangulation
 
         public TriangulationNormals Triangulate(List<BuildingModel> buildingModels)
         {
@@ -498,7 +261,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         private BuildingModel ComputeBuildingHeightMeters(BuildingModel building)
         {
-            if ( building.ComputedRoofAltitude.HasValue)
+            if (building.ComputedRoofAltitude.HasValue)
                 return building;
 
             building.HasHeightInformation = building.Levels.HasValue || building.Height.HasValue || building.MinHeight.HasValue;
@@ -527,9 +290,9 @@ namespace DEM.Net.Extension.Osm.Buildings
                     }
                     else
                     {
-                        building.Levels = (building.Parent.Levels ?? 3) +1 ;
+                        building.Levels = (building.Parent.Levels ?? 3) + 1;
                     }
-                    
+
                 }
 
                 if (building.Parent.ComputedRoofAltitude == null)
@@ -559,9 +322,11 @@ namespace DEM.Net.Extension.Osm.Buildings
                 building.ComputedRoofAltitude = roofElevation;
                 building.ComputedFloorAltitude = computedMinHeight;
             }
-           
+
 
             return building;
         }
+
+        #endregion
     }
 }
