@@ -19,15 +19,11 @@ namespace DEM.Net.Extension.Osm.Buildings
                 return ExteriorRing.Concat(this.InteriorRings == null ? Enumerable.Empty<GeoPoint>() : this.InteriorRings.SelectMany(r => r));
             }
         }
-
-
-
         public BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint>> interiorRings)
         {
             this.ExteriorRing = exteriorRingPoints;
             this.InteriorRings = interiorRings ?? new List<List<GeoPoint>>();
         }
-
 
         // building:levels
         // height

@@ -69,6 +69,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 // Compute elevations if requested
                 IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints
                                                                         , dataSet
+                                                                        , behavior: NoDataBehavior.SetToZero
                                                                         , downloadMissingFiles: downloadMissingFiles)
                                                                     : allBuildingPoints;
 

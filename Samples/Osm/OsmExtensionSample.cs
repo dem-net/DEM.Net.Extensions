@@ -28,7 +28,7 @@ namespace SampleApp
         private readonly IMeshService _meshService;
         private readonly ILogger _logger;
 
-        private float ZScale = 3f;
+        private float ZScale = 1.5f;
 
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
                 , ImageryService imageryService
@@ -91,11 +91,11 @@ namespace SampleApp
             string WKT_AIX_SMALLOSMBUG= "POLYGON((5.441805234256467 43.55910060792738,5.442684998813352 43.55910060792738,5.442684998813352 43.55877017799191,5.441805234256467 43.55877017799191,5.441805234256467 43.55910060792738))";
             string WKT_MONACO = "POLYGON((7.392147587957001 43.75577569838535,7.4410710803886415 43.75577569838535,7.4410710803886415 43.71757458493263,7.392147587957001 43.71757458493263,7.392147587957001 43.75577569838535))";
 
-            string WKT_MONACO_DEBUG = "POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
+            string WKT_MONACO_DEBUG = "POLYGON((7.421709439122424 43.73663530909531,7.433961769902453 43.73663530909531,7.433961769902453 43.733007331111345,7.421709439122424 43.733007331111345,7.421709439122424 43.73663530909531))";//"POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
 
 
 
-            var bbox = GeometryService.GetBoundingBox(WKT_MONACO);
+            var bbox = GeometryService.GetBoundingBox(WKT_PRIPYAT_FULL);
 
             ModelRoot model = null;
             bool withTerrain = false;
@@ -110,7 +110,7 @@ namespace SampleApp
             else
             {
                 var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
-                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.AW3D30, downloadMissingFiles: true);                
+                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true);                
             }
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));

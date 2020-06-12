@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace DEM.Net.Extension.Osm.Highways
 {
@@ -21,7 +22,16 @@ namespace DEM.Net.Extension.Osm.Highways
         {
             base.ParseTag<string>(model, "name", v => model.Name = v);
             base.ParseTag<int>(model, "lanes", v => model.Lanes = v);
-            base.ParseTag<string>(model, "highway", v => model.Type= v);
+            base.ParseTag<string>(model, "highway", v => model.Type = v);
+            base.ParseTag<int>(model, "layer", v => model.Layer = v);
+            base.ParseBoolTag(model, "area", v => v == "yes", v => model.Area = v);
+            base.ParseBoolTag(model, "tunnel", v => v == "yes", v => model.Tunnel = v);
+            base.ParseBoolTag(model, "bridge", v => v == "yes", v => model.Bridge = v);
+
+            if (model.Area)
+            {
+                _logger.LogWarning($"Area polygons not supported yet. Will process only exterior ring. {nameof(HighwayModel)} {model.Id}.");
+            }
         }
 
 
@@ -35,8 +45,16 @@ namespace DEM.Net.Extension.Osm.Highways
                 case GeoJSON.Net.GeoJSONObjectType.LineString:
                     model = BuildModelFromGeometry((LineString)feature.Geometry, ref _totalPoints);
                     break;
+                case GeoJSON.Net.GeoJSONObjectType.Polygon:
+                    var poly = (Polygon)feature.Geometry;
+                    
+                    model = BuildModelFromGeometry(poly.Coordinates.First(), ref _totalPoints);
+                    
+                    if (poly.Coordinates.Count > 1) _logger.LogWarning($"Polygon has {poly.Coordinates.Count} rings. Single ring processing supported so far. {nameof(HighwayModel)} {feature.Id}.");
+
+                    break;
                 default:
-                    _logger.LogDebug($"{feature.Geometry.Type} not supported for {nameof(HighwayModel)} {feature.Id}.");
+                    _logger.LogWarning($"{feature.Geometry.Type} not supported for {nameof(HighwayModel)} {feature.Id}.");
                     break;
             }
 

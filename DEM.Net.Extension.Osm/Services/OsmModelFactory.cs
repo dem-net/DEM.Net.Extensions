@@ -66,6 +66,13 @@ namespace DEM.Net.Extension.Osm
                 }
             }
         }
+        protected void ParseBoolTag(TModel model, string tagName, Predicate<string> condition, Action<bool> updateAction)
+        {
+            if (model.Tags.TryGetValue(tagName, out object val))
+            {
+                updateAction(condition(val.ToString()));
+            }
+        }
     }
     public class TagRegistry
     {
@@ -78,7 +85,7 @@ namespace DEM.Net.Extension.Osm
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(string.Join(Separator, "GeometryType", "Tag", "Value", "Occurences"));
-            foreach (var occur in _geomTypes.OrderBy(k=>k.Key))
+            foreach (var occur in _geomTypes.OrderBy(k => k.Key))
             {
                 sb.AppendLine(string.Join(Separator, occur.Key, "", "", occur.Value));
             }
