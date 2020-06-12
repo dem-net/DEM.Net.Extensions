@@ -29,7 +29,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         public override string[] NodesFilter { get; set; } = null;
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, true, "white");
-        public override string glTFNodeName { get; set; } = "Buildings";
+        public override string glTFNodeName => "Buildings";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<BuildingModel> models)
         {

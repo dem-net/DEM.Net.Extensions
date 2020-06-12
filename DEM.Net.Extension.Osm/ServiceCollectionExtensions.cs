@@ -12,7 +12,7 @@ namespace DEM.Net.Extension.Osm
         public static IServiceCollection AddDemNetOsmExtension(this IServiceCollection services)
         {
             services.AddTransient<OsmService>()
-                    .AddTransient<SampleOsmProcessor>();
+                    .AddTransient<DefaultOsmProcessor>();
 
             return services;
         }

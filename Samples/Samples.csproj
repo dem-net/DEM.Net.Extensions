@@ -10,6 +10,7 @@
     <None Remove=".DS_Store" />
     <None Remove="._.DS_Store" />
     <None Remove="appsettings.json" />
+    <None Remove="Osm\OsmExtensionSample.cs~RFb1716a.TMP" />
   </ItemGroup>
 
   <ItemGroup>

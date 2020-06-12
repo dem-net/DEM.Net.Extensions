@@ -24,7 +24,7 @@ namespace SampleApp
 {
     public class HelladicSample
     {
-        private readonly SampleOsmProcessor _sampleOsmProcessor;
+        private readonly DefaultOsmProcessor _sampleOsmProcessor;
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
@@ -34,7 +34,7 @@ namespace SampleApp
         private readonly ILogger _logger;
 
 
-        public HelladicSample(SampleOsmProcessor sampleOsmProcessor
+        public HelladicSample(DefaultOsmProcessor sampleOsmProcessor
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService

@@ -1,6 +1,4 @@
 ﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.Buildings;
-using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
 using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
@@ -8,10 +6,6 @@ using SharpGLTF.Schema2;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections;
-using DEM.Net.Extension.Osm.Highways;
 
 namespace DEM.Net.Extension.Osm
 {
@@ -44,7 +38,7 @@ namespace DEM.Net.Extension.Osm
 
         public abstract OsmModelFactory<T> ModelFactory { get; }
 
-        public abstract string glTFNodeName { get; set; }
+        public abstract string glTFNodeName { get; }
 
         public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
@@ -89,88 +83,5 @@ namespace DEM.Net.Extension.Osm
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<T> models);
 
 
-    }
-    public interface IOsmProcessor
-    {
-        void Init(IElevationService elevationService
-            , SharpGltfService gltfService
-            , IMeshService meshService
-            , OsmService osmService
-            , ILogger logger);
-
-        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox,bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
-    }
-
-    public class OsmModelList<T> : IEnumerable<T> where T : CommonModel
-    {
-        public OsmModelList()
-        {
-            this.Models = new List<T>();
-        }
-        public OsmModelList(int count)
-        {
-            this.Models = new List<T>(count);
-        }
-
-        public int Count => Models?.Count ?? 0;
-        public List<T> Models { get; set; }
-        public int TotalPoints { get; set; }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return Models.GetEnumerator();
-        }
-
-        internal void Add(T model)
-        {
-            Models.Add(model);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return Models.GetEnumerator();
-        }
-    }
-
-    public class SampleOsmProcessor
-    {
-        private readonly IElevationService _elevationService;
-        private readonly SharpGltfService _gltfService;
-        private readonly IMeshService _meshService;
-        private readonly OsmService _osmService;
-        private readonly ILogger<SampleOsmProcessor> _logger;
-
-        public SampleOsmProcessor(IElevationService elevationService
-            , SharpGltfService gltfService
-            , IMeshService meshService
-            , OsmService osmService
-            , ILogger<SampleOsmProcessor> logger)
-        {
-            this._elevationService = elevationService;
-            this._gltfService = gltfService;
-            this._meshService = meshService;
-            this._osmService = osmService;
-            this._logger = logger;
-        }
-        public ModelRoot Run(BoundingBox bbox, IGeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true)
-        {
-            List<IOsmProcessor> processors = new List<IOsmProcessor>();
-
-            processors.Add(new OsmBuildingProcessor());
-            processors.Add(new OsmHighwayProcessor());
-
-            ModelRoot model = _gltfService.CreateNewModel();
-
-            foreach (var p in processors)
-            {
-                p.Init(_elevationService, _gltfService, _meshService, _osmService, _logger);
-
-                model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles, transform);
-            }
-
-            return model;
-
-
-        }
     }
 }

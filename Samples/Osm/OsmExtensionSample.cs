@@ -21,7 +21,7 @@ namespace SampleApp
 {
     public class OsmExtensionSample
     {
-        private readonly SampleOsmProcessor _osmProcessor;
+        private readonly DefaultOsmProcessor _osmProcessor;
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
@@ -30,7 +30,7 @@ namespace SampleApp
 
         private float ZScale = 3f;
 
-        public OsmExtensionSample(SampleOsmProcessor osmProcessor
+        public OsmExtensionSample(DefaultOsmProcessor osmProcessor
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
@@ -86,28 +86,32 @@ namespace SampleApp
             // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
             //new BoundingBox(14.364430059744153, 14.365218629194532, 40.78433307340424, 40.785023575175295);
 
-            string WKT_AIX = "POLYGON((5.413651506101798 43.56231784942399,5.482316056883048 43.56231784942399,5.482316056883048 43.5075613149375,5.413651506101798 43.5075613149375,5.413651506101798 43.56231784942399))";
-            //var bbox = GeometryService.GetBoundingBox(WKT_AIX);
+            string WKT_AIX_FULL = "POLYGON((5.402291662243135 43.565714431347274,5.48056925013376 43.565714431347274,5.48056925013376 43.50797300081391,5.402291662243135 43.50797300081391,5.402291662243135 43.565714431347274))";
+            string WKT_AIX_WITHTERRAIN = "POLYGON((5.440657648511835 43.55957815383877,5.444434198804804 43.55957815383877,5.444434198804804 43.5579454365131,5.440657648511835 43.5579454365131,5.440657648511835 43.55957815383877))";
+            string WKT_AIX_SMALLOSMBUG= "POLYGON((5.441805234256467 43.55910060792738,5.442684998813352 43.55910060792738,5.442684998813352 43.55877017799191,5.441805234256467 43.55877017799191,5.441805234256467 43.55910060792738))";
+            string WKT_MONACO = "POLYGON((7.392147587957001 43.75577569838535,7.4410710803886415 43.75577569838535,7.4410710803886415 43.71757458493263,7.392147587957001 43.71757458493263,7.392147587957001 43.75577569838535))";
 
-            var bbox = GeometryService.GetBoundingBox(WKT_PRIPYAT_FULL);
+            string WKT_MONACO_DEBUG = "POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
 
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, true, ZScale);
 
-            var model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.NASADEM, true);
 
-            //// Pripryat
-            ////var bbox = new BoundingBox(30.06295502185822, 30.065519213676456, 51.40682904758998, 51.408609239256506);
+            var bbox = GeometryService.GetBoundingBox(WKT_MONACO);
 
-            //var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
-
-            //var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true
-            //    , transform);
-
-            //var roads = _highwayService.GetHighwayModels(bbox, "highway", DEMDataSet.NASADEM, downloadMissingFiles: true, transform);
-            //foreach (var road in roads)
-            //{
-            //    model = _gltfService.AddLine(model, road.LineString, road.ColorVec4, road.Lanes * 3);
-            //}
+            ModelRoot model = null;
+            bool withTerrain = false;
+            if (withTerrain)
+            {
+                var heightMap = _elevationService.GetHeightMap(ref bbox, DEMDataSet.NASADEM);
+                var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+                heightMap = transform.TransformHeightMap(heightMap);
+                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true);
+                model = _gltfService.AddTerrainMesh(model, heightMap, null);
+            }
+            else
+            {
+                var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.AW3D30, downloadMissingFiles: true);                
+            }
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
 

@@ -21,6 +21,7 @@ namespace DEM.Net.Extension.Osm.Highways
         {
             base.ParseTag<string>(model, "name", v => model.Name = v);
             base.ParseTag<int>(model, "lanes", v => model.Lanes = v);
+            base.ParseTag<string>(model, "highway", v => model.Type= v);
         }
 
 

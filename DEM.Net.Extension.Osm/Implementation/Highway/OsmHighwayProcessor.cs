@@ -28,21 +28,33 @@ namespace DEM.Net.Extension.Osm.Highways
         public override string[] NodesFilter { get; set; } = null;
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
-        public override string glTFNodeName { get; set; } = "Roads";
+        public override string glTFNodeName => "Roads";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<HighwayModel> models)
         {
             if (models.Any())
             {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, m.Lanes * LaneWidthMeters)), models.First().ColorVec4);
+                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
             }
-            //foreach (var m in models)
-            //{
-            //    gltfModel = _gltfService.AddLine(gltfModel, glTFNodeName, m.LineString, m.ColorVec4, 30);
-            //}
-
             return gltfModel;
 
+        }
+
+        private float GetRoadWidth(HighwayModel road)
+        {
+            if (road.Lanes.HasValue)
+            {
+                return road.Lanes.Value * LaneWidthMeters;
+            }
+            else
+            {
+                switch(road.Type)
+                {
+                    case "unclassified": return 3;
+                    default:
+                        return LaneWidthMeters;
+                }
+            }
         }
 
         protected override List<HighwayModel> ComputeModelElevationsAndTransform(OsmModelList<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
@@ -52,10 +64,12 @@ namespace DEM.Net.Extension.Osm.Highways
                 if (computeElevations)
                 {
                     Parallel.ForEach(models, model =>
+                    //foreach (var model in models)
                     {
                         model.LineString = transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
                                              .ToList();
-                    });
+                    }
+                    );
                 }
                 else
                 {
