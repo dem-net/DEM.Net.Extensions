@@ -73,7 +73,7 @@ namespace DEM.Net.Extension.Osm
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(T)} generator error: {ex.Message}");
+                _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
                 throw;
             }
         }

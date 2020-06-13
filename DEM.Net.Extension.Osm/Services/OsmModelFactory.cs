@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using GeoJSON.Net;
 using GeoJSON.Net.Feature;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -35,10 +36,20 @@ namespace DEM.Net.Extension.Osm
 {
     public abstract class OsmModelFactory<TModel> where TModel : CommonModel
     {
+        public OsmModelFactory(ILogger logger)
+        {
+            _logger = logger;
+        }
         public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
         internal int _totalPoints;
+        private readonly ILogger _logger;
 
-        public abstract void ParseTags(TModel model);
+        /// <summary>
+        /// Parse model tags and return bool indicating if the model is valid.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public abstract bool ParseTags(TModel model);
         public abstract TModel CreateModel(Feature feature);
 
         public virtual void RegisterTags(Feature feature)
@@ -53,26 +64,25 @@ namespace DEM.Net.Extension.Osm
 
         protected void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
         {
+            ParseTag<T, T>(model, tagName, t => t, updateAction);
+        }
+        protected void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
+        {
             if (model.Tags.TryGetValue(tagName, out object val))
             {
                 try
                 {
-                    T typedVal = (T)Convert.ChangeType(val, typeof(T), CultureInfo.InvariantCulture);
-                    updateAction(typedVal);
+                    Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
+                    Tout outVal = transformFunc(typedVal);
+                    updateAction(outVal);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
+                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
                 }
             }
         }
-        protected void ParseBoolTag(TModel model, string tagName, Predicate<string> condition, Action<bool> updateAction)
-        {
-            if (model.Tags.TryGetValue(tagName, out object val))
-            {
-                updateAction(condition(val.ToString()));
-            }
-        }
+      
     }
     public class TagRegistry
     {

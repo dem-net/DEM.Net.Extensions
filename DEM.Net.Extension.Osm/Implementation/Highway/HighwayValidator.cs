@@ -11,27 +11,37 @@ namespace DEM.Net.Extension.Osm.Highways
 {
     internal class HighwayValidator : OsmModelFactory<HighwayModel>
     {
-        public HighwayValidator(ILogger logger)
+        public HighwayValidator(ILogger logger) : base(logger)
         {
             this._logger = logger;
         }
 
         private readonly ILogger _logger;
 
-        public override void ParseTags(HighwayModel model)
+        public override bool ParseTags(HighwayModel model)
         {
+            base.ParseTag<string>(model, "highway", v => model.Type = v);
             base.ParseTag<string>(model, "name", v => model.Name = v);
             base.ParseTag<int>(model, "lanes", v => model.Lanes = v);
-            base.ParseTag<string>(model, "highway", v => model.Type = v);
             base.ParseTag<int>(model, "layer", v => model.Layer = v);
-            base.ParseBoolTag(model, "area", v => v == "yes", v => model.Area = v);
-            base.ParseBoolTag(model, "tunnel", v => v == "yes", v => model.Tunnel = v);
-            base.ParseBoolTag(model, "bridge", v => v == "yes", v => model.Bridge = v);
+            base.ParseTag<string, bool>(model, "area", s => s == "yes", v => model.Area = v);
+            base.ParseTag<string, bool>(model, "tunnel", s => s == "yes", v => model.Tunnel = v);
+            base.ParseTag<string, bool>(model, "bridge", s => s == "yes", v => model.Bridge = v);
 
             if (model.Area)
             {
-                _logger.LogWarning($"Area polygons not supported yet. Will process only exterior ring. {nameof(HighwayModel)} {model.Id}.");
+                _logger.LogWarning($"Area polygons not supported yet. Will process only exterior ring. {nameof(HighwayModel)} {model.Type} {model.Id}.");
+                switch (model.Type)
+                {
+                    case "pedestrian":
+                    case "platform":
+                    case "footway":
+                        return false;
+                    default:
+                        return true;
+                }
             }
+            return true;
         }
 
 

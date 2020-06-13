@@ -28,7 +28,7 @@ namespace SampleApp
         private readonly IMeshService _meshService;
         private readonly ILogger _logger;
 
-        private float ZScale = 1.5f;
+        private float ZScale = 2f;
 
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
                 , ImageryService imageryService
@@ -92,28 +92,37 @@ namespace SampleApp
             string WKT_MONACO = "POLYGON((7.392147587957001 43.75577569838535,7.4410710803886415 43.75577569838535,7.4410710803886415 43.71757458493263,7.392147587957001 43.71757458493263,7.392147587957001 43.75577569838535))";
 
             string WKT_MONACO_DEBUG = "POLYGON((7.421709439122424 43.73663530909531,7.433961769902453 43.73663530909531,7.433961769902453 43.733007331111345,7.421709439122424 43.733007331111345,7.421709439122424 43.73663530909531))";//"POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
+            string WKT_HK = "POLYGON((114.13119740014092 22.360520982593926,114.21050495629326 22.360520982593926,114.21050495629326 22.28874575980822,114.13119740014092 22.28874575980822,114.13119740014092 22.360520982593926))";
+            string WKT_FRISCO = "POLYGON((-122.5235839391063 37.81433638393927,-122.36222224477036 37.81433638393927,-122.36222224477036 37.71228516909579,-122.5235839391063 37.71228516909579,-122.5235839391063 37.81433638393927))";
 
-
-
-            var bbox = GeometryService.GetBoundingBox(WKT_PRIPYAT_FULL);
+            DEMDataSet dataset = DEMDataSet.NASADEM;
+            var name = nameof(WKT_FRISCO);
+            var bbox = GeometryService.GetBoundingBox(WKT_FRISCO);
+            bool computeElevations = true;
 
             ModelRoot model = null;
             bool withTerrain = false;
             if (withTerrain)
             {
-                var heightMap = _elevationService.GetHeightMap(ref bbox, DEMDataSet.NASADEM);
+                var heightMap = _elevationService.GetHeightMap(ref bbox, dataset);
                 var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
                 heightMap = transform.TransformHeightMap(heightMap);
-                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true);
-                model = _gltfService.AddTerrainMesh(model, heightMap, null);
+                TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.MapBoxSatellite, 15);
+
+                string fileName = Path.Combine(outputDir, "Texture.jpg");
+                TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
+                var pbrTexture = PBRTexture.Create(texInfo, null);
+                
+                model = _osmProcessor.Run(bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+                model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
             }
             else
             {
                 var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
-                model = _osmProcessor.Run(bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true);                
+                model = _osmProcessor.Run(bbox, transform, computeElevations, dataset, downloadMissingFiles: true);                
             }
 
-            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), "SF3857Centered.glb"));
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), name + ".glb"));
 
         }
 

@@ -50,7 +50,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         private readonly bool _useOsmColors;
         private readonly Vector4 _defaultColor = new Vector4(.9f, .9f, .9f, 1f); // Color.FromArgb(230, 230, 230);
 
-        public BuildingValidator(ILogger logger, bool useOsmColors, string defaultHtmlColor = null)
+        public BuildingValidator(ILogger logger, bool useOsmColors, string defaultHtmlColor = null) : base(logger)
         {
             this._logger = logger;
             this._useOsmColors = useOsmColors;
@@ -61,10 +61,11 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         }
 
-        public override void ParseTags(BuildingModel model)
+        public override bool ParseTags(BuildingModel model)
         {
+            ParseTag<string>(model, "building", v => model.Type = v);
             ParseTag<int>(model, "building:levels", v => model.Levels = v);
-            ParseTag<int>(model, "buildings:levels", v => model.Levels = v);            
+            ParseTag<int>(model, "buildings:levels", v => model.Levels = v);
             ParseTag<string>(model, "buildings:part", v => model.IsPart = v.ToLower() == "yes");
             ParseTag<string>(model, "building:part", v => model.IsPart = v.ToLower() == "yes");
             ParseLengthTag(model, "min_height", v => model.MinHeight = v);
@@ -88,6 +89,8 @@ namespace DEM.Net.Extension.Osm.Buildings
                 }
                 model.Height = v;
             });
+
+            return true;
         }
 
 
@@ -133,26 +136,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         }
 
 
-        private void ParseTag<T>(BuildingModel model, string tagName, Action<T> updateAction)
-        {
-            ParseTag<T, T>(model, tagName, t => t, updateAction);
-        }
-        private void ParseTag<Tin, Tout>(BuildingModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
-        {
-            if (model.Tags.TryGetValue(tagName, out object val))
-            {
-                try
-                {
-                    Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
-                    Tout outVal = transformFunc(typedVal);
-                    updateAction(outVal);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
-                }
-            }
-        }
+
         // Parse with unit conversion to meters
         private void ParseLengthTag(BuildingModel model, string tagName, Action<double> updateAction)
         {

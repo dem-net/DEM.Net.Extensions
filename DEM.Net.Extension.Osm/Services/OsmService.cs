@@ -113,17 +113,16 @@ namespace DEM.Net.Extension.Osm
                     {
                         _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Id}, type {feature.Geometry.Type} not supported.");
                     }
-                    else
+                    else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
                     {
-                        validator.ParseTags(model);
                         models.Add(model);
                     }
                 }
             }
 
-//#if DEBUG
-//            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
-//#endif
+            //#if DEBUG
+            //            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
+            //#endif
 
             _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
 

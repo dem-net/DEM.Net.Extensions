@@ -43,14 +43,14 @@ namespace DEM.Net.Extension.Osm.Ski
     /// </summary>
     public class SkiPisteValidator : OsmModelFactory<PisteModel>
     {
-        public SkiPisteValidator(ILogger logger)
+        public SkiPisteValidator(ILogger logger) : base(logger)
         {
             this._logger = logger;
         }
 
         private readonly ILogger _logger;
 
-        public override void ParseTags(PisteModel model)
+        public override bool ParseTags(PisteModel model)
         {
             ParseTag<string>(model, "piste:name", v => model.Name = v);
             ParseTag<string>(model, "piste:difficulty", v =>
@@ -60,6 +60,8 @@ namespace DEM.Net.Extension.Osm.Ski
             });
             ParseTag<string>(model, "man_made", v => model.ManMade = v);
             ParseTag<string>(model, "piste:type", v => model.Type = v);
+
+            return true;
         }
 
 
