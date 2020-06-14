@@ -101,7 +101,7 @@ namespace SampleApp
             var bbox = GeometryService.GetBoundingBox(WKT_DEFENSE);
             bool computeElevations = true;
 
-            ModelRoot model = null;
+            ModelRoot model = _gltfService.CreateNewModel();
             bool withTerrain = false;
             if (withTerrain)
             {
@@ -114,13 +114,13 @@ namespace SampleApp
                 TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
                 var pbrTexture = PBRTexture.Create(texInfo, null);
                 
-                model = _osmProcessor.Run(bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
                 model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
             }
             else
             {
                 var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
-                model = _osmProcessor.Run(bbox, transform, computeElevations, dataset, downloadMissingFiles: true);                
+                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);                
             }
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), name + ".glb"));

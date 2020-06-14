@@ -21,14 +21,21 @@ namespace DEM.Net.Extension.Osm.Buildings
     {
 
         const double LevelHeightMeters = 3;
+        private readonly bool withBuildingsColors;
+        private readonly string defaultBuildingsColor;
 
+        public OsmBuildingProcessor(bool withBuildingsColors, string defaultBuildingsColor)
+        {
+            this.withBuildingsColors = withBuildingsColors;
+            this.defaultBuildingsColor = defaultBuildingsColor;
+        }
 
         public override string[] WaysFilter { get; set; } = new string[] { "building", "building:part" };
         public override string[] RelationsFilter { get; set; } =
         new string[] { "building" };
         public override string[] NodesFilter { get; set; } = null;
         public override bool ComputeElevations { get; set; } = true;
-        public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, true, "white");
+        public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
         public override string glTFNodeName => "Buildings";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<BuildingModel> models)
@@ -327,6 +334,8 @@ namespace DEM.Net.Extension.Osm.Buildings
 
             return building;
         }
+
+        
 
         #endregion
     }

@@ -82,6 +82,5 @@ namespace DEM.Net.Extension.Osm
 
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<T> models);
 
-
     }
 }
