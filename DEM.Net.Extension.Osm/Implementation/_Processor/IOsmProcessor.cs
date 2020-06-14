@@ -3,6 +3,7 @@ using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,6 +21,8 @@ namespace DEM.Net.Extension.Osm
             , OsmService osmService
             , ILogger logger);
 
-        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox,bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
+        //ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox,bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
+        IEnumerable<CommonModel> Run(BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
+        ModelRoot AddToGlTFModel(ModelRoot model, IEnumerable<CommonModel> models);
     }
 }

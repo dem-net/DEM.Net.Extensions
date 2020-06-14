@@ -30,13 +30,18 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         public override string glTFNodeName => "SkiPiste";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<PisteModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<CommonModel> models)
         {
             if (models.Any())
             {
-                foreach (var difficultyGroup in models.GroupBy(m => m.Difficulty))
+                foreach (var difficultyGroup in models.GroupBy(m => ((PisteModel)m).Difficulty))
                 {
-                    gltfModel = _gltfService.AddLines(gltfModel, $"{glTFNodeName}_{difficultyGroup.Key}", difficultyGroup.Select(m => ((IEnumerable<GeoPoint>)m.LineString, PisteWidthMeters)), difficultyGroup.First().ColorVec4);
+                    var lines = difficultyGroup.Select(m =>
+                    {
+                        var typed = m as PisteModel;
+                        return ((IEnumerable<GeoPoint>)typed.LineString, PisteWidthMeters);
+                    });
+                    gltfModel = _gltfService.AddLines(gltfModel, $"{glTFNodeName}_{difficultyGroup.Key}", lines, ((PisteModel)(difficultyGroup.First())).ColorVec4);
                 }
             }
             return gltfModel;

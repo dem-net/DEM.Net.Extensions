@@ -40,7 +40,7 @@ namespace DEM.Net.Extension.Osm
 
         public abstract string glTFNodeName { get; }
 
-        public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        public IEnumerable<CommonModel> Run(BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
         {
             try
             {
@@ -63,12 +63,7 @@ namespace DEM.Net.Extension.Osm
                 if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
                 parsed.Models = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles, transform);
 
-                if (parsed.Models.Any())
-                {
-                    gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
-                }
-
-                return gltfModel;
+                return parsed.Models;
 
             }
             catch (Exception ex)
@@ -80,8 +75,12 @@ namespace DEM.Net.Extension.Osm
 
         protected abstract List<T> ComputeModelElevationsAndTransform(OsmModelList<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
 
-        protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<T> models);
+        protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<CommonModel> models);
 
-
+        public ModelRoot AddToGlTFModel(ModelRoot model, IEnumerable<CommonModel> models)
+        {
+            model = this.AddToModel(model, glTFNodeName, models);
+            return model;
+        }
     }
 }

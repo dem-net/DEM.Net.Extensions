@@ -31,9 +31,9 @@ namespace DEM.Net.Extension.Osm.Buildings
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, true, "white");
         public override string glTFNodeName => "Buildings";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<BuildingModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<CommonModel> models)
         {
-            TriangulationNormals triangulation = this.Triangulate(models.Models);
+            TriangulationNormals triangulation = this.Triangulate(models);
 
 
             gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
@@ -106,7 +106,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         #region Triangulation
 
-        public TriangulationNormals Triangulate(List<BuildingModel> buildingModels)
+        public TriangulationNormals Triangulate(IEnumerable<CommonModel> buildingModels)
         {
 
             List<Vector3> positions = new List<Vector3>();
@@ -121,8 +121,9 @@ namespace DEM.Net.Extension.Osm.Buildings
                 int numWithHeight = 0;
                 int numWithColor = 0;
 
-                foreach (var building in buildingModels)
+                foreach (var buildingBase in buildingModels)
                 {
+                    var building = buildingBase as BuildingModel;
                     numWithHeight += building.HasHeightInformation ? 1 : 0;
                     numWithColor += (building.Color.HasValue || building.RoofColor.HasValue) ? 1 : 0;
 
@@ -139,8 +140,8 @@ namespace DEM.Net.Extension.Osm.Buildings
                     normals.AddRange(buildingNormals);
                 }
 
-                _logger.LogInformation($"Building heights: {numWithHeight}/{buildingModels.Count} ({numWithHeight / (float)buildingModels.Count:P}) with height information.");
-                _logger.LogInformation($"Building colors: {numWithColor}/{buildingModels.Count} ({numWithColor / (float)buildingModels.Count:P}) with color information.");
+                //_logger.LogInformation($"Building heights: {numWithHeight}/{buildingModels.Count} ({numWithHeight / (float)buildingModels.Count:P}) with height information.");
+                //_logger.LogInformation($"Building colors: {numWithColor}/{buildingModels.Count} ({numWithColor / (float)buildingModels.Count:P}) with color information.");
             }
 
 

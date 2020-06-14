@@ -30,15 +30,6 @@ namespace DEM.Net.Extension.Osm.Highways
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
         public override string glTFNodeName => "Roads";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<HighwayModel> models)
-        {
-            if (models.Any())
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
-            }
-            return gltfModel;
-
-        }
 
         private float GetRoadWidth(HighwayModel road)
         {
@@ -48,7 +39,7 @@ namespace DEM.Net.Extension.Osm.Highways
             }
             else
             {
-                switch(road.Type)
+                switch (road.Type)
                 {
                     case "unclassified": return 3;
                     default:
@@ -73,15 +64,32 @@ namespace DEM.Net.Extension.Osm.Highways
                 }
                 else
                 {
-                    foreach(var model in models)
+                    foreach (var model in models)
                     {
                         model.LineString = new List<GeoPoint>(transform.TransformPoints(model.LineString));
                     }
                 }
-                
+
             }
 
             return models.Models;
+        }
+
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<CommonModel> models)
+        {
+            if (models.Any())
+            {
+                var color = ((HighwayModel)models.First()).ColorVec4;
+
+                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m =>
+                {
+                    var typed = m as HighwayModel;
+                    return ((IEnumerable<GeoPoint>)typed.LineString, this.GetRoadWidth(typed));
+                    }), color);
+
+
+            }
+            return gltfModel;
         }
     }
 }

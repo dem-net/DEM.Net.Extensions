@@ -42,7 +42,9 @@ namespace DEM.Net.Extension.Osm
             {
                 p.Init(_elevationService, _gltfService, _meshService, _osmService, _logger);
 
-                model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles, transform);
+                var models = p.Run(bbox, computeElevations, dataSet, downloadMissingFiles, transform);
+
+                model = p.AddToGlTFModel(model, models);
             }
 
             return model;
