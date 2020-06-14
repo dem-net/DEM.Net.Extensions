@@ -14,7 +14,7 @@ namespace DEM.Net.Extension.Osm.Protobuf
     ///     Represents header message of the PBF file.
     /// </summary>
     [Serializable, ProtoContract(Name = "HeaderBlock")]
-    internal class OsmHeader
+    public class OsmHeader
     {
         #region Private ImplicitFields
 

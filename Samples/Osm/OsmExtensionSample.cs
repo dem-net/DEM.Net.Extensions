@@ -47,7 +47,7 @@ namespace SampleApp
         public void Run()
         {
 
-            //RunOsmPbfSample(@"D:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
+            //RunOsmPbfSample(@"C:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
 
             Buildings3DOnly();
 
@@ -94,10 +94,11 @@ namespace SampleApp
             string WKT_MONACO_DEBUG = "POLYGON((7.421709439122424 43.73663530909531,7.433961769902453 43.73663530909531,7.433961769902453 43.733007331111345,7.421709439122424 43.733007331111345,7.421709439122424 43.73663530909531))";//"POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
             string WKT_HK = "POLYGON((114.13119740014092 22.360520982593926,114.21050495629326 22.360520982593926,114.21050495629326 22.28874575980822,114.13119740014092 22.28874575980822,114.13119740014092 22.360520982593926))";
             string WKT_FRISCO = "POLYGON((-122.5235839391063 37.81433638393927,-122.36222224477036 37.81433638393927,-122.36222224477036 37.71228516909579,-122.5235839391063 37.71228516909579,-122.5235839391063 37.81433638393927))";
+            string WKT_DEFENSE = "POLYGON((2.222075572216413 48.902615468120246,2.3024130966304757 48.902615468120246,2.3024130966304757 48.86355756505397,2.222075572216413 48.86355756505397,2.222075572216413 48.902615468120246))";
 
             DEMDataSet dataset = DEMDataSet.NASADEM;
-            var name = nameof(WKT_FRISCO);
-            var bbox = GeometryService.GetBoundingBox(WKT_FRISCO);
+            var name = nameof(WKT_DEFENSE);
+            var bbox = GeometryService.GetBoundingBox(WKT_DEFENSE);
             bool computeElevations = true;
 
             ModelRoot model = null;
@@ -175,43 +176,49 @@ namespace SampleApp
         //    _meshService.Tesselate(geoPoints, inners);
         //}
 
-        //private void RunOsmPbfSample(string pbfFileName)
-        //{
-        //    PbfOsmReader reader = new PbfOsmReader();
-        //    AttributeRegistry registry = new AttributeRegistry();
-        //    long count = 0;
-        //    using (TimeSpanBlock timer = new TimeSpanBlock("ReadNodes", _logger))
-        //    {
-        //        foreach (var node in reader.ReadNodes(pbfFileName, registry))
-        //        {
-        //            count++;
-        //            if (count % 1000000 == 0)
-        //                _logger.LogInformation($"{count} nodes read...");
-        //        }
-        //    }
+        private void RunOsmPbfSample(string pbfFileName)
+        {
+            PbfOsmReader reader = new PbfOsmReader();
+            AttributeRegistry registry = new AttributeRegistry();
 
-        //    count = 0;
-        //    using (TimeSpanBlock timer = new TimeSpanBlock("ReadWays", _logger))
-        //    {
-        //        foreach (var node in reader.ReadWays(pbfFileName, registry))
-        //        {
-        //            count++;
-        //            if (count % 1000000 == 0)
-        //                _logger.LogInformation($"{count} ways read...");
-        //        }
-        //    }
+            using (TimeSpanBlock timer = new TimeSpanBlock("ReadNodes", _logger))
+            {
+                var header = reader.ReadOsmHeader(pbfFileName);
+            }
 
-        //    count = 0;
-        //    using (TimeSpanBlock timer = new TimeSpanBlock("ReadRelations", _logger))
-        //    {
-        //        foreach (var node in reader.ReadRelations(pbfFileName, registry))
-        //        {
-        //            count++;
-        //            if (count % 1000000 == 0)
-        //                _logger.LogInformation($"{count} relations read...");
-        //        }
-        //    }
-        //}
+            long count = 0;
+            using (TimeSpanBlock timer = new TimeSpanBlock("ReadNodes", _logger))
+            {
+                foreach (var node in reader.ReadNodes(pbfFileName, registry))
+                {
+                    count++;
+                    if (count % 1000000 == 0)
+                        _logger.LogInformation($"{count} nodes read...");
+                }
+            }
+
+            count = 0;
+            using (TimeSpanBlock timer = new TimeSpanBlock("ReadWays", _logger))
+            {
+                foreach (var node in reader.ReadWays(pbfFileName, registry))
+                {
+                    count++;
+                    if (count % 1000000 == 0)
+                        _logger.LogInformation($"{count} ways read...");
+                }
+            }
+
+            count = 0;
+            using (TimeSpanBlock timer = new TimeSpanBlock("ReadRelations", _logger))
+            {
+                foreach (var node in reader.ReadRelations(pbfFileName, registry))
+                {
+                    count++;
+                    if (count % 1000000 == 0)
+                        _logger.LogInformation($"{count} relations read...");
+                }
+            }
+        }
 
         //private void Run3DModelSamples_Buildings()
         //{
