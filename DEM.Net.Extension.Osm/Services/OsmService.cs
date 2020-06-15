@@ -73,14 +73,36 @@ namespace DEM.Net.Extension.Osm
             }
 
         }
-        public OverpassCountResult GetOsmDataCount(BoundingBox bbox, string fullQueryBody)
+        //public OverpassCountResult GetOsmDataCount(BoundingBox bbox, string fullQueryBody)
+        //{
+        //    try
+        //    {
+        //        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
+        //        {
+        //            var task = new OverpassQuery(bbox).AsCount()
+        //                .RunQueryQL(fullQueryBody)
+        //                .ToCount();
+
+        //            OverpassCountResult count = task.GetAwaiter().GetResult();
+
+        //            return count;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
+        //        throw;
+        //    }
+
+        //}
+        public OverpassCountResult GetOsmDataCount(BoundingBox bbox, OverpassQuery query)
         {
             try
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    var task = new OverpassQuery(bbox).AsCount()
-                        .RunQueryQL(fullQueryBody)
+                    var task = query.AsCount()
+                        .RunQuery()
                         .ToCount();
 
                     OverpassCountResult count = task.GetAwaiter().GetResult();

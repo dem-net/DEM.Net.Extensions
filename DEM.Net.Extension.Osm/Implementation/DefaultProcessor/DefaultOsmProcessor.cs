@@ -74,8 +74,7 @@ namespace DEM.Net.Extension.Osm
                 if (p.NodesFilter != null) foreach (var filter in p.NodesFilter) q.WithNodes(filter);
             }
 
-            var queryString = q.ToString();
-            OverpassCountResult countResult = _osmService.GetOsmDataCount(bbox, queryString);
+            OverpassCountResult countResult = _osmService.GetOsmDataCount(bbox, q);
 
             return countResult.Tags.Nodes * 2;
         }
