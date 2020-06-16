@@ -24,7 +24,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         private readonly bool withBuildingsColors;
         private readonly string defaultBuildingsColor;
 
-        public OsmBuildingProcessor(bool withBuildingsColors, string defaultBuildingsColor)
+        public OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : base(transformPipeline)
         {
             this.withBuildingsColors = withBuildingsColors;
             this.defaultBuildingsColor = defaultBuildingsColor;

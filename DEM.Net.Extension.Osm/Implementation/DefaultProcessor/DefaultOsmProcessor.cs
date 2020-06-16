@@ -38,31 +38,33 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, IGeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null)
+        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
             List<IOsmProcessor> processors = new List<IOsmProcessor>();
 
-            if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(withBuildingsColors, defaultBuildingsColor) { Transform = transform });
+            if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor));
             if (layers.HasFlag(OsmLayer.Highways))
             {
-                var processor = new OsmHighwayProcessor();
-                processor.Transform = computeElevations ?
-                                        new GeoTransformPipelineFacade(transform).AddPostTransformPoints(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters))
-                                        : transform;
+                var processor = new OsmHighwayProcessor(transform);
+                if (computeElevations)
+                {
+                    processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
+                }
                 processors.Add(processor);
             }
             if (layers.HasFlag(OsmLayer.PisteSki))
             {
-                var processor = new OsmPisteSkiProcessor();
-                processor.Transform = computeElevations ?
-                                        new GeoTransformPipelineFacade(transform).AddPostTransformPoints(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters))
-                                        : transform;
+                var processor = new OsmPisteSkiProcessor(transform);
+                if (computeElevations)
+                {
+                    processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
+                }
                 processors.Add(processor);
             }
 
             return processors;
         }
-        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, IGeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
+        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
             List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
 

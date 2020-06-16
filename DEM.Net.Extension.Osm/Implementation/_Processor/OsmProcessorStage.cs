@@ -31,6 +31,16 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
+        public OsmProcessorStage(GeoTransformPipeline transform)
+        {
+            this.Transform = transform?.Clone();
+        }
+
+        public void AddPostTransform(Func<IEnumerable<GeoPoint>, IEnumerable<GeoPoint>> postTransform)
+        {
+            Transform.TransformPoints = Transform.TransformPoints.PostTransform(p => postTransform(p));
+        }
+
         public abstract string[] WaysFilter { get; set; }
         public abstract string[] RelationsFilter { get; set; }
         public abstract string[] NodesFilter { get; set; }
@@ -40,7 +50,7 @@ namespace DEM.Net.Extension.Osm
 
         public abstract string glTFNodeName { get; }
 
-        public virtual IGeoTransformPipeline Transform { get; set; }
+        public virtual GeoTransformPipeline Transform { get; set; }
 
 
         public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)

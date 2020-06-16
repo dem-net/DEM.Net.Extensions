@@ -23,6 +23,10 @@ namespace DEM.Net.Extension.Osm.Highways
 
         private const float LaneWidthMeters = 3.5F;
 
+        public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
+        {
+        }
+
         public override string[] WaysFilter { get; set; } = new string[] { "highway" };
         public override string[] RelationsFilter { get; set; } = null;
         public override string[] NodesFilter { get; set; } = null;
@@ -48,7 +52,7 @@ namespace DEM.Net.Extension.Osm.Highways
             }
             else
             {
-                switch(road.Type)
+                switch (road.Type)
                 {
                     case "unclassified": return 3;
                     default:
@@ -64,24 +68,28 @@ namespace DEM.Net.Extension.Osm.Highways
             {
                 if (computeElevations)
                 {
-                    {
-                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                                             .ToList();
-                    }
+                    int parallelCount = -1;
+                    Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                       {
+
+                           model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                                                .ToList();
+                       }
+                    );
                 }
                 else
                 {
-                    foreach(var model in models)
+                    foreach (var model in models)
                     {
                         model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
                     }
                 }
-                
+
             }
 
             return models.Models;
         }
 
-        
+
     }
 }

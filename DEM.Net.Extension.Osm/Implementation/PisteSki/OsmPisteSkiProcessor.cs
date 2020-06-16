@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DEM.Net.Extension.Osm.Buildings
@@ -26,6 +27,10 @@ namespace DEM.Net.Extension.Osm.Buildings
         public override string[] NodesFilter { get; set; } = null;
         public override bool ComputeElevations { get; set; } = true;
 
+        public OsmPisteSkiProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
+        {
+
+        }
         public override OsmModelFactory<PisteModel> ModelFactory => new SkiPisteValidator(base._logger);
 
         public override string glTFNodeName => "SkiPiste";
