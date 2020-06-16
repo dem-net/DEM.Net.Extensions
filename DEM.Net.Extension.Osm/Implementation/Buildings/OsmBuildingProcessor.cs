@@ -49,7 +49,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         }
 
-        protected override List<BuildingModel> ComputeModelElevationsAndTransform(OsmModelList<BuildingModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        protected override List<BuildingModel> ComputeModelElevationsAndTransform(OsmModelList<BuildingModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
             if (models.Count == 0) return models.Models;
 
@@ -80,7 +80,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                                                                         , downloadMissingFiles: downloadMissingFiles)
                                                                     : allBuildingPoints;
 
-                geoPoints = transform?.TransformPoints(geoPoints);
+                geoPoints = Transform?.TransformPoints(geoPoints);
 
                 reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
                 //.ZScale(zScale)

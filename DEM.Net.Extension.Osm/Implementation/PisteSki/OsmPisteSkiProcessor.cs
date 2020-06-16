@@ -42,7 +42,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             return gltfModel;
         }
 
-        protected override List<PisteModel> ComputeModelElevationsAndTransform(OsmModelList<PisteModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        protected override List<PisteModel> ComputeModelElevationsAndTransform(OsmModelList<PisteModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
@@ -50,7 +50,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 {
                     Parallel.ForEach(models, model =>
                     {
-                        model.LineString = transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
                                              .ToList();
                     });
                 }
@@ -58,7 +58,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 {
                     foreach (var model in models)
                     {
-                        model.LineString = new List<GeoPoint>(transform.TransformPoints(model.LineString));
+                        model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
                     }
                 }
 

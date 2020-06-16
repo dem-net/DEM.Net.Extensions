@@ -25,7 +25,9 @@ namespace DEM.Net.Extension.Osm
             , OsmService osmService
             , ILogger logger);
 
-        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform);
+        IGeoTransformPipeline Transform { get; set; }
+
+        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
 
 
     }

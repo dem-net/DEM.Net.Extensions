@@ -57,25 +57,23 @@ namespace DEM.Net.Extension.Osm.Highways
             }
         }
 
-        protected override List<HighwayModel> ComputeModelElevationsAndTransform(OsmModelList<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles, IGeoTransformPipeline transform)
+        protected override List<HighwayModel> ComputeModelElevationsAndTransform(OsmModelList<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
+
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 if (computeElevations)
                 {
-                    Parallel.ForEach(models, model =>
-                    //foreach (var model in models)
                     {
-                        model.LineString = transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
                                              .ToList();
                     }
-                    );
                 }
                 else
                 {
                     foreach(var model in models)
                     {
-                        model.LineString = new List<GeoPoint>(transform.TransformPoints(model.LineString));
+                        model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
                     }
                 }
                 
@@ -83,5 +81,7 @@ namespace DEM.Net.Extension.Osm.Highways
 
             return models.Models;
         }
+
+        
     }
 }
