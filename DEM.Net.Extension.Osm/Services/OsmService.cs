@@ -27,7 +27,7 @@ namespace DEM.Net.Extension.Osm
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    OverpassQuery query = new OverpassQuery(bbox);
+                    OverpassQuery query = new OverpassQuery(bbox, _logger);
                     if (filter != null)
                     {
                         query = filter(query);
@@ -55,7 +55,7 @@ namespace DEM.Net.Extension.Osm
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    var task = new OverpassQuery(bbox)
+                    var task = new OverpassQuery(bbox, _logger)
                         .RunQueryQL(fullQueryBody)
                         .ToGeoJSON();
 

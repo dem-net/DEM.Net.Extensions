@@ -86,7 +86,7 @@ namespace DEM.Net.Extension.Osm
         {
             List<IOsmProcessor> processors = Build(layers);
 
-            OverpassQuery q = new OverpassQuery(bbox);
+            OverpassQuery q = new OverpassQuery(bbox, _logger);
             foreach (var p in processors)
             {
                 // Download buildings and convert them to GeoJson
