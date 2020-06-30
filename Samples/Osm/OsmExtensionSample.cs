@@ -25,7 +25,6 @@ namespace SampleApp
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
-        private readonly IMeshService _meshService;
         private readonly ILogger _logger;
 
         private float ZScale = 2f;
@@ -34,14 +33,12 @@ namespace SampleApp
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
-                , IMeshService meshService
                 , ILogger<OsmExtensionSample> logger)
         {
             this._osmProcessor = osmProcessor;
             this._imageryService = imageryService;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
-            this._meshService = meshService;
             this._logger = logger;
         }
         public void Run()

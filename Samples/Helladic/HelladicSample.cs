@@ -306,7 +306,7 @@ namespace SampleApp
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
         {
             Location3DModelResponse response = new Location3DModelResponse();
-            var transform = new ModelGenerationTransform(Reprojection.SRID_PROJECTED_MERCATOR, true, settings.ZScale);
+
             try
             {
                 bool imageryFailed = false;
@@ -315,6 +315,7 @@ namespace SampleApp
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
                     HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
                     response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model

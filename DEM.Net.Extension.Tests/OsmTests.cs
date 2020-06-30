@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using System.Text;
 using Xunit;
+using DEM.Net.Extension.Osm;
 
 namespace DEM.Net.Extension.Tests
 {
@@ -32,11 +33,11 @@ namespace DEM.Net.Extension.Tests
         const string WKT_RELATION_NAPOLI = "POLYGON((14.364430059744153 40.78433307340424, 14.365218629194532 40.78433307340424, 14.365218629194532 40.785023575175295, 14.364430059744153 40.785023575175295, 14.364430059744153 40.78433307340424))";
 
 
-        private readonly BuildingService _buildingService;
+        private readonly DefaultOsmProcessor _osmProcessor;
 
         public OsmTests(DemNetFixture fixture)
         {
-            _buildingService = fixture.ServiceProvider.GetService<BuildingService>();
+            _osmProcessor = fixture.ServiceProvider.GetService<DefaultOsmProcessor>();
         }
 
 
@@ -55,13 +56,10 @@ namespace DEM.Net.Extension.Tests
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
-            var b = _buildingService.GetBuildingsModel(bbox, useOsmColors: true, defaultHtmlColor: "#ffffff");
-
-            var model = _buildingService.GetBuildings3DModel(b.Buildings, DEMDataSet.NASADEM, downloadMissingFiles: true
-                , transform);
+            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
 
