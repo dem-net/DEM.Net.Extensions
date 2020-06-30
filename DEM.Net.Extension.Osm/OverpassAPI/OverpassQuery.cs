@@ -30,6 +30,7 @@ using System.Threading;
 using DEM.Net.Core;
 using System.Globalization;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 #endregion
 
@@ -41,6 +42,19 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
     /// </summary>
     public class OverpassQuery
     {
+
+        private static SemaphoreSlim semaphore;
+        // A padding interval to make the output more orderly.
+        private static int waitTime = 500;
+        private const int RATE_LIMIT = 2; // 2 simultaneous requests
+
+        static OverpassQuery()
+        {
+            // Create the semaphore.
+            semaphore = new SemaphoreSlim(RATE_LIMIT, RATE_LIMIT);
+        }
+
+        private readonly ILogger _logger;
         private UInt64 _AreaId;
         private BoundingBox _BBox;
         private string _Filter;
@@ -71,9 +85,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <summary>
         /// The URI of the OverpassAPI. List of public instances here : https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances
         /// </summary>
-        public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
+        //public static readonly Uri OverpassAPI_URI = new Uri("http://overpass-api.de/api/interpreter");
         //public static readonly Uri OverpassAPI_URI = new Uri("http://overpass.openstreetmap.fr/api/interpreter");
-        //https://lz4.overpass-api.de/api/interpreter
+        public static readonly Uri OverpassAPI_URI = new Uri("https://lz4.overpass-api.de/api/interpreter");
+
 
 
         /// <summary>
@@ -184,9 +199,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <summary>
         /// Create a new OverpassQuery.
         /// </summary>
-        public OverpassQuery()
+        public OverpassQuery(ILogger logger = null)
         {
-
+            _logger = logger;
             _AreaId = 0;
             _BBox = null;
 
@@ -227,8 +242,8 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         {
             InArea(AreaName);
         }
-        public OverpassQuery(BoundingBox bbox)
-            : this()
+        public OverpassQuery(BoundingBox bbox, ILogger logger)
+            : this(logger)
         {
             InBBox(bbox);
         }
@@ -544,94 +559,74 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
             if (Timeout > 0)
                 _QueryTimeout = Timeout;
-
-            using (var HTTPClient = new HttpClient())
+            try
             {
+                Stopwatch wait = Stopwatch.StartNew();                
+                await semaphore.WaitAsync();
+                _logger.LogInformation($"Overpass entered after {wait.Elapsed:G}...");
 
-                try
+                using (var HTTPClient = new HttpClient())
                 {
-                    Debug.WriteLine("Overpass query:" + Environment.NewLine + queryBody);
-                    using (var ResponseMessage = await HTTPClient.PostAsync(OverpassAPI_URI, new StringContent(queryBody)))
-                    {
 
-                        if (ResponseMessage.StatusCode == HttpStatusCode.OK)
+                    try
+                    {
+                        var headers = HTTPClient.DefaultRequestHeaders;
+                        headers.Referrer = new Uri("https://api.elevationapi.com");
+                        Debug.WriteLine("Overpass query:" + Environment.NewLine + queryBody);
+                        using (var ResponseMessage = await HTTPClient.PostAsync(OverpassAPI_URI, new StringContent(queryBody)))
                         {
 
-                            using (var ResponseContent = ResponseMessage.Content)
+                            if (ResponseMessage.StatusCode == HttpStatusCode.OK)
                             {
 
-                                // {
-                                //   "version": 0.6,
-                                //   "generator": "Overpass API",
-                                //   "osm3s": {
-                                //     "timestamp_osm_base":    "2014-11-29T20:02:02Z",
-                                //     "timestamp_areas_base":  "2014-11-29T08:42:02Z",
-                                //     "copyright":             "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
-                                //   },
-                                //   "elements": [
-                                //                   {
-                                //                     "type": "node",
-                                //                     "id": 1875593753,
-                                //                     "lat": 50.9292604,
-                                //                     "lon": 11.5824008,
-                                //                     "tags": {
-                                //                       "addr:city": "Jena",
-                                //                       "addr:housenumber": "26",
-                                //                       "addr:postcode": "07743",
-                                //                       "addr:street": "Krautgasse",
-                                //                       "amenity": "community_centre",
-                                //                       "building:level": "1",
-                                //                       "club": "it",
-                                //                       "contact:phone": "0162/6318746",
-                                //                       "contact:website": "https://www.krautspace.de",
-                                //                       "drink:club-mate": "yes",
-                                //                       "leisure": "hackerspace",
-                                //                       "name": "Krautspace",
-                                //                       "office": "club",
-                                //                       "operator": "Hackspace Jena e.V."
-                                //                     }
-                                //                   }
-                                //               ]
-                                // }
+                                using (var ResponseContent = ResponseMessage.Content)
+                                {
 
-                                return await ResponseContent.
-                                                 ReadAsStringAsync().
-                                                 ContinueWith(QueryTask => new OverpassResult(this,
-                                                                                              JObject.Parse(QueryTask.Result)));
+                                    return await ResponseContent.
+                                                     ReadAsStringAsync().
+                                                     ContinueWith(QueryTask => new OverpassResult(this,
+                                                                                                  JObject.Parse(QueryTask.Result)));
 
+
+                                }
+
+                            }
+
+                            else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
+                            {
+                                var message = await ResponseMessage.Content.ReadAsStringAsync();
+                                throw new Exception("Bad request: " + message);
+                            }
+
+
+                            else if (((Int32)ResponseMessage.StatusCode) == 429)
+                                throw new Exception("Too Many Requests!");
+
+                            else
+                            {
                             }
 
                         }
 
-                        else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
-                        {
-                            var message = await ResponseMessage.Content.ReadAsStringAsync();
-                            throw new Exception("Bad request: " + message);
-                        }
+                    }
 
+                    catch (OperationCanceledException)
+                    { }
 
-                        else if (((Int32)ResponseMessage.StatusCode) == 429)
-                            throw new Exception("Too Many Requests!");
-
-                        else
-                        {
-                        }
-
+                    catch (Exception e)
+                    {
+                        throw new Exception("The OverpassQuery led to an error: " + e.Message, e);
                     }
 
                 }
 
-                catch (OperationCanceledException)
-                { }
-
-                catch (Exception e)
-                {
-                    throw new Exception("The OverpassQuery led to an error!", e);
-                }
-
+                throw new Exception("General HTTP client error!");
             }
-
-            throw new Exception("General HTTP client error!");
+            finally
+            {
+                await Task.Delay(waitTime);
+                semaphore.Release();
+            }
 
         }
         #endregion

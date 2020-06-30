@@ -34,8 +34,6 @@ namespace DEM.Net.Extension.Osm.Ski
         public string Name { get; internal set; }
         public string Difficulty { get; internal set; }
         public string ManMade { get; internal set; }
-        public string Type { get; internal set; }
-
         public List<GeoPoint> LineString { get; internal set; }
 
         public IEnumerable<GeoPoint> Points

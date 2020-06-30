@@ -38,6 +38,25 @@ namespace DEM.Net.Extension.Osm
             }
         }
 
+        public OsmHeader ReadOsmHeader(string fileName)
+        {
+            using (var file = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                BlobHeader blobHeader = null;
+
+                while ((blobHeader = ReadBlobHeader(file)) != null)
+                {
+                    var block = ReadBlob(file, blobHeader) as OsmHeader;
+                    if (block != null)
+                    {
+
+                        return block;
+                    }
+                }
+            }
+            return null;
+        }
+
         public IEnumerable<Relation> ReadRelations(string fileName, AttributeRegistry attributeRegistry)
         {
             using (var file = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))

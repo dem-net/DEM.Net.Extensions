@@ -13,7 +13,7 @@ namespace DEM.Net.Extension.Osm.Protobuf
     ///     Represents rectangular envelope of data.
     /// </summary>
     [Serializable, ProtoContract(Name = "HeaderBBox")]
-    internal class HeaderBBox
+    public class HeaderBBox
     {
         #region Public Properties
 

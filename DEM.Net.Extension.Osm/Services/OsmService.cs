@@ -27,7 +27,7 @@ namespace DEM.Net.Extension.Osm
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    OverpassQuery query = new OverpassQuery(bbox);
+                    OverpassQuery query = new OverpassQuery(bbox, _logger);
                     if (filter != null)
                     {
                         query = filter(query);
@@ -55,7 +55,7 @@ namespace DEM.Net.Extension.Osm
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    var task = new OverpassQuery(bbox)
+                    var task = new OverpassQuery(bbox, _logger)
                         .RunQueryQL(fullQueryBody)
                         .ToGeoJSON();
 
@@ -73,14 +73,36 @@ namespace DEM.Net.Extension.Osm
             }
 
         }
-        public OverpassCountResult GetOsmDataCount(BoundingBox bbox, string fullQueryBody)
+        //public OverpassCountResult GetOsmDataCount(BoundingBox bbox, string fullQueryBody)
+        //{
+        //    try
+        //    {
+        //        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
+        //        {
+        //            var task = new OverpassQuery(bbox).AsCount()
+        //                .RunQueryQL(fullQueryBody)
+        //                .ToCount();
+
+        //            OverpassCountResult count = task.GetAwaiter().GetResult();
+
+        //            return count;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
+        //        throw;
+        //    }
+
+        //}
+        public OverpassCountResult GetOsmDataCount(BoundingBox bbox, OverpassQuery query)
         {
             try
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
-                    var task = new OverpassQuery(bbox).AsCount()
-                        .RunQueryQL(fullQueryBody)
+                    var task = query.AsCount()
+                        .RunQuery()
                         .ToCount();
 
                     OverpassCountResult count = task.GetAwaiter().GetResult();
@@ -96,11 +118,10 @@ namespace DEM.Net.Extension.Osm
 
         }
 
-        public (List<T> models, int totalPoints) CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator)
-            where T : class
+        public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
         {
 
-            List<T> models = new List<T>(features.Features.Count);
+            OsmModelList<T> models = new OsmModelList<T>(features.Features.Count);
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
             {
                 int count = 0;
@@ -114,21 +135,22 @@ namespace DEM.Net.Extension.Osm
                     {
                         _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Id}, type {feature.Geometry.Type} not supported.");
                     }
-                    else
+                    else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
                     {
-                        validator.ParseTags(model);
                         models.Add(model);
                     }
                 }
             }
 
-//#if DEBUG
-//            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
-//#endif
+            //#if DEBUG
+            //            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
+            //#endif
 
             _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
 
-            return (models, validator._totalPoints);
+            models.TotalPoints = validator._totalPoints;
+
+            return models;
 
         }
     }

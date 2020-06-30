@@ -2,10 +2,12 @@
 using DEM.Net.Core.Configuration;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Core.Services.Lab;
+using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Win32.SafeHandles;
 using SharpGLTF.Schema2;
 using SketchFab;
 using System;
@@ -22,7 +24,7 @@ namespace SampleApp
 {
     public class HelladicSample
     {
-        private readonly BuildingService _buildingService;
+        private readonly DefaultOsmProcessor _sampleOsmProcessor;
         private readonly ImageryService _imageryService;
         private readonly IElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
@@ -32,7 +34,7 @@ namespace SampleApp
         private readonly ILogger _logger;
 
 
-        public HelladicSample(BuildingService buildingService
+        public HelladicSample(DefaultOsmProcessor sampleOsmProcessor
                 , ImageryService imageryService
                 , IElevationService elevationService
                 , SharpGltfService gltfService
@@ -41,7 +43,7 @@ namespace SampleApp
                 , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
         {
-            this._buildingService = buildingService;
+            this._sampleOsmProcessor = sampleOsmProcessor;
             this._imageryService = imageryService;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
@@ -304,6 +306,7 @@ namespace SampleApp
         private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
         {
             Location3DModelResponse response = new Location3DModelResponse();
+
             try
             {
                 bool imageryFailed = false;
@@ -312,7 +315,7 @@ namespace SampleApp
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
                     HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
-
+                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
                     response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
@@ -332,8 +335,8 @@ namespace SampleApp
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
-                        hMap = hMap.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR)
-                                    .ZScale(settings.ZScale);
+                        transform.BoundingBox = bbox;
+                        hMap = transform.TransformHeightMap(hMap);
 
 
                         //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
@@ -345,22 +348,12 @@ namespace SampleApp
                     //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
 
                     ModelRoot model = _gltfService.CreateNewModel();
+
                     //=======================
                     // Buildings
                     if (settings.OsmBuildings)
                     {
-                        var triangulationNormals = _buildingService.GetBuildings3DTriangulation(bbox, settings.Dataset, settings.DownloadMissingFiles, settings.ZScale, useOsmColors: true);
-                        var indexedTriangulation = new IndexedTriangulation(triangulationNormals);
-
-                        if (indexedTriangulation.Positions.Count > 0)
-                        {
-                            //if (!transform.IsIdentity)
-                            //{
-                            //    indexedTriangulation.Positions = indexedTriangulation.Positions.Select(v => Vector3.Transform(v, transform)).ToList();
-                            //}
-
-                            model = _gltfService.AddMesh(model, indexedTriangulation, null, null, doubleSided: true);
-                        }
+                        model = _sampleOsmProcessor.Run(model, OsmLayer.Buildings, bbox, transform, computeElevations: true, settings.Dataset, settings.DownloadMissingFiles);
                     }
 
 

@@ -352,3 +352,4 @@ MigrationBackup/
 Samples/secrets.json
 .DS_Store
 *.DS_Store
+DEM.Net.Extension.Tests/secrets.json

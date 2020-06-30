@@ -25,19 +25,31 @@
 // THE SOFTWARE.
 using GeoJSON.Net;
 using GeoJSON.Net.Feature;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
 namespace DEM.Net.Extension.Osm
 {
-    public abstract class OsmModelFactory<TModel>
+    public abstract class OsmModelFactory<TModel> where TModel : CommonModel
     {
+        public OsmModelFactory(ILogger logger)
+        {
+            _logger = logger;
+        }
         public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
         internal int _totalPoints;
+        private readonly ILogger _logger;
 
-        public abstract void ParseTags(TModel model);
+        /// <summary>
+        /// Parse model tags and return bool indicating if the model is valid.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public abstract bool ParseTags(TModel model);
         public abstract TModel CreateModel(Feature feature);
 
         public virtual void RegisterTags(Feature feature)
@@ -49,6 +61,28 @@ namespace DEM.Net.Extension.Osm
         {
             return TagRegistry.GetReport();
         }
+
+        protected void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
+        {
+            ParseTag<T, T>(model, tagName, t => t, updateAction);
+        }
+        protected void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
+        {
+            if (model.Tags.TryGetValue(tagName, out object val))
+            {
+                try
+                {
+                    Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
+                    Tout outVal = transformFunc(typedVal);
+                    updateAction(outVal);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
+                }
+            }
+        }
+      
     }
     public class TagRegistry
     {
@@ -61,7 +95,7 @@ namespace DEM.Net.Extension.Osm
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(string.Join(Separator, "GeometryType", "Tag", "Value", "Occurences"));
-            foreach (var occur in _geomTypes.OrderBy(k=>k.Key))
+            foreach (var occur in _geomTypes.OrderBy(k => k.Key))
             {
                 sb.AppendLine(string.Join(Separator, occur.Key, "", "", occur.Value));
             }
