@@ -17,15 +17,15 @@ namespace DEM.Net.Extension.Osm
     public class DefaultOsmProcessor
     {
         private readonly DEMNetOptions _options;
-        private readonly IElevationService _elevationService;
+        private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
-        private readonly IMeshService _meshService;
+        private readonly MeshService _meshService;
         private readonly OsmService _osmService;
         private readonly ILogger<DefaultOsmProcessor> _logger;
 
-        public DefaultOsmProcessor(IElevationService elevationService
+        public DefaultOsmProcessor(ElevationService elevationService
             , SharpGltfService gltfService
-            , IMeshService meshService
+            , MeshService meshService
             , OsmService osmService
             , IOptions<DEMNetOptions> options
             , ILogger<DefaultOsmProcessor> logger)
