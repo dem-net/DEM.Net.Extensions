@@ -12,15 +12,15 @@ namespace DEM.Net.Extension.Osm
     public abstract class OsmProcessorStage<T> : IOsmProcessor
         where T : CommonModel
     {
-        protected IElevationService _elevationService;
+        protected ElevationService _elevationService;
         protected SharpGltfService _gltfService;
-        protected IMeshService _meshService;
+        protected MeshService _meshService;
         protected OsmService _osmService;
         protected ILogger _logger;
 
-        public void Init(IElevationService elevationService
+        public void Init(ElevationService elevationService
             , SharpGltfService gltfService
-            , IMeshService meshService
+            , MeshService meshService
             , OsmService osmService
             , ILogger logger)
         {

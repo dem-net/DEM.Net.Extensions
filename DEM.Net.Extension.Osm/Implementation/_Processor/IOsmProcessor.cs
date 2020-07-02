@@ -19,9 +19,9 @@ namespace DEM.Net.Extension.Osm
         string[] RelationsFilter { get; set; }
         string[] NodesFilter { get; set; }
 
-        void Init(IElevationService elevationService
+        void Init(ElevationService elevationService
             , SharpGltfService gltfService
-            , IMeshService meshService
+            , MeshService meshService
             , OsmService osmService
             , ILogger logger);
 

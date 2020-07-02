@@ -23,7 +23,7 @@ namespace SampleApp
     {
         private readonly DefaultOsmProcessor _osmProcessor;
         private readonly ImageryService _imageryService;
-        private readonly IElevationService _elevationService;
+        private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly ILogger _logger;
 
@@ -31,7 +31,7 @@ namespace SampleApp
 
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
                 , ImageryService imageryService
-                , IElevationService elevationService
+                , ElevationService elevationService
                 , SharpGltfService gltfService
                 , ILogger<OsmExtensionSample> logger)
         {

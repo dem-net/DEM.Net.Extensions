@@ -26,9 +26,9 @@ namespace SampleApp
     {
         private readonly DefaultOsmProcessor _sampleOsmProcessor;
         private readonly ImageryService _imageryService;
-        private readonly IElevationService _elevationService;
+        private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
-        private readonly IMeshService _meshService;
+        private readonly MeshService _meshService;
         private readonly SketchFab.SketchFabApi _sketchFabApi;
         private readonly string _sketchFabToken;
         private readonly ILogger _logger;
@@ -36,9 +36,9 @@ namespace SampleApp
 
         public HelladicSample(DefaultOsmProcessor sampleOsmProcessor
                 , ImageryService imageryService
-                , IElevationService elevationService
+                , ElevationService elevationService
                 , SharpGltfService gltfService
-                , IMeshService meshService
+                , MeshService meshService
                 , SketchFab.SketchFabApi sketchFabApi
                 , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
