@@ -135,7 +135,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
                     var triangulation = this.Triangulate(building);
 
-                    var positionsVec3 = triangulation.Positions.ToVector3().ToList();
+                    var positionsVec3 = triangulation.Positions.ToVector3GlTFSpace().ToList();
                     var buildingNormals = _meshService.ComputeMeshNormals(positionsVec3, triangulation.Indices);
 
                     int initialPositionsCount = positions.Count;
