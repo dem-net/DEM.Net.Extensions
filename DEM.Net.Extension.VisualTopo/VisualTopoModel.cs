@@ -92,6 +92,7 @@ namespace DEM.Net.Extension.VisualTopo
         public (float left, float right, float up, float down) CutSection { get; internal set; }
         public Vector3 GlobalVector { get; internal set; }
         public GeoPointRays GlobalGeoPoint { get; internal set; }
+        public double TerrainElevationAbove { get; set; }
         public bool IsRoot { get; internal set; }
         public VisualTopoSet Set { get; internal set; }
         public bool IsSectionStart { get; internal set; }

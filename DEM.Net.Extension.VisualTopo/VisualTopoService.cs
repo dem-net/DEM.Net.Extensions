@@ -52,7 +52,7 @@ namespace DEM.Net.Extension.VisualTopo
         {
             var model = ParseFile(vtopoFile, encoding, decimalDegrees, ignoreRadialBeams);
 
-            model = ComputeTopology(model, zFactor);
+            model = CreateGraph(model, zFactor);
 
             return model;
         }
@@ -75,18 +75,23 @@ namespace DEM.Net.Extension.VisualTopo
 
             return model;
         }
-        private VisualTopoModel ComputeTopology(VisualTopoModel model, float zFactor)
+        private VisualTopoModel CreateGraph(VisualTopoModel model, float zFactor)
         {
             // ========================
             // Graph
             CreateGraph(model);
 
             // ========================
-            // 3D model
+            // 3D model - do not remove
             Build3DTopology_Lines(model, zFactor);
-            Build3DTopology_Triangulation(model, zFactor);
 
             return model;
+        }
+        public void Create3DTriangulation(VisualTopoModel model, float zFactor)
+        {
+            // ========================
+            // 3D model
+            Build3DTopology_Triangulation(model, zFactor);
         }
 
         private void CreateGraph(VisualTopoModel model)
@@ -104,7 +109,6 @@ namespace DEM.Net.Extension.VisualTopo
 
                 if (data.Entree != data.Sortie)
                 {
-
                     var node = model.Graph.CreateNode(data, data.Sortie);
                     if (!nodesByName.ContainsKey(data.Entree))
                     {
@@ -144,18 +148,23 @@ namespace DEM.Net.Extension.VisualTopo
 
             // Generate triangulation
             //
-            model.TriangulationFull3D = GraphTraversal_Triangulation(null, model.Graph.Root, model.Graph.Root.Model, zFactor, colorFunc);
+            model.TriangulationFull3D = GraphTraversal_Triangulation(model, null, model.Graph.Root, model.Graph.Root.Model, zFactor, colorFunc);
         }
 
 
-        private TriangulationList<Vector3> GraphTraversal_Triangulation(TriangulationList<Vector3> triangulation, Node<VisualTopoData> node, VisualTopoData local, float zFactor, Func<VisualTopoData, Vector3, Vector4> colorFunc)
+        private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, Node<VisualTopoData> node, VisualTopoData local, float zFactor, Func<VisualTopoData, Vector3, Vector4> colorFunc)
         {
             triangulation = triangulation ?? new TriangulationList<Vector3>();
 
             var model = node.Model;
             if (model.IsSectionStart && triangulation.NumPositions > 0)
             {
-                triangulation += _meshService.CreateCylinder(model.GlobalVector, 1, -model.GlobalVector.Z * 1.5f, model.Set.Color);
+                // Cylinder height = point depth + (terrain height above - entry Z)
+                float cylinderHeight = -model.GlobalVector.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation.Value);
+                triangulation += _meshService.CreateCylinder(model.GlobalVector, 0.5f, cylinderHeight * zFactor, model.Set.Color);
+
+                //var surfacePos = new Vector3(model.GlobalVector.X, model.GlobalVector.Y, (float)model.TerrainElevationAbove);
+                triangulation += _meshService.CreateCone(model.GlobalVector, 5, 10, model.Set.Color).Translate(Vector3.UnitZ* cylinderHeight * zFactor);
             }
 
             if (node.Arcs.Count == 0) // leaf
@@ -173,7 +182,7 @@ namespace DEM.Net.Extension.VisualTopo
                     triangulation = AddCorridorRectangleSection(triangulation, model, arc.Child.Model, posIndex, false, colorFunc);
                     posIndex = triangulation.NumPositions - 4;
 
-                    triangulation = GraphTraversal_Triangulation(triangulation, arc.Child, model, zFactor, colorFunc);
+                    triangulation = GraphTraversal_Triangulation(visualTopoModel, triangulation, arc.Child, model, zFactor, colorFunc);
 
                 }
             }

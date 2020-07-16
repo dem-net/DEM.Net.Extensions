@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Numerics;
 using System.Text;
 
@@ -125,11 +127,11 @@ namespace SampleApp
 
                 //=======================
                 // Get entry elevation (need to reproject to DEM coordinate system first)
+                // and sections entry elevations
                 // 
-                var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-                _elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
-                model.EntryPoint.Elevation = _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
-                timeLog.LogTime("Entry point elevation", reset: true);
+                ComputeCavityElevations(model, dataset);
+                _visualTopoService.Create3DTriangulation(model, zFactor);
+                timeLog.LogTime("Cavity points elevation", reset: true);
 
                 //=======================
                 // Local transform function from model coordinates (relative to entry, in meters)
@@ -217,6 +219,24 @@ namespace SampleApp
                 _logger.LogError("Error :" + ex.Message);
             }
 
+        }
+
+        private void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset)
+        {
+            var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
+            _elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
+            model.EntryPoint.Elevation = _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
+            
+            foreach(var set in model.Sets)
+            {
+                VisualTopoData setStartData = set.Data.First();
+                var setStartPoint = setStartData.GlobalGeoPoint;
+                setStartPoint.Longitude += model.EntryPoint.Longitude;
+                setStartPoint.Latitude+= model.EntryPoint.Latitude;
+                var setStartPointDem = setStartPoint.ReprojectTo(model.SRID, dataset.SRID);
+                _elevationService.DownloadMissingFiles(dataset, setStartPointDem); // download required DEM files
+                setStartData.TerrainElevationAbove  = _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
+            }
         }
 
         private IEnumerable<GeoPoint> BuildAxis(GeoPoint axisEnd)
