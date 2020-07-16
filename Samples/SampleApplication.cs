@@ -65,7 +65,8 @@ namespace SampleApp
             services.AddScoped<OsmExtensionSample>()
                     .AddScoped<HelladicSample>()
                     .AddScoped<SketchFab.SketchFabApi>()
-                    .AddScoped<SketchFabSample>();
+                    .AddScoped<SketchFabSample>()
+                    .AddScoped<VisualTopoSample>();
             // .. more samples here
 
             services.AddScoped<SampleApplication>();
@@ -77,7 +78,11 @@ namespace SampleApp
             _logger.LogInformation("OnStarted has been called.");
 
             try
-            { 
+            {
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
+                {
+                    services.GetService<VisualTopoSample>().Run();
+                }
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 {
                     services.GetService<OsmExtensionSample>().Run();
