@@ -31,7 +31,7 @@ namespace SampleApp
                 , MeshService meshService
                 , ElevationService elevationService
                 , ImageryService imageryService
-                , VisualTopoService visualTopoService )
+                , VisualTopoService visualTopoService)
         {
             _logger = logger;
             _meshService = meshService;
@@ -45,8 +45,7 @@ namespace SampleApp
         {
 
             // Single file
-            Run(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500);
-
+            Run(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true);
 
             Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 3 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
 
@@ -86,6 +85,7 @@ namespace SampleApp
                 var dataset = DEMDataSet.AW3D30;                        // DEM dataset for terrain and elevation
                 int TEXTURE_TILES = 12;                                 // Texture quality (number of tiles for bigger side) 4: med, 8: high, 12: ultra
                 string outputDir = Directory.GetCurrentDirectory();
+                bool GENERATE_LINE3D = false;
 
                 //=======================
                 // Open and parse file
@@ -104,7 +104,7 @@ namespace SampleApp
                 VisualTopoModel model = _visualTopoService.LoadFile(vtopoFile, Encoding.GetEncoding("ISO-8859-1")
                                                                     , decimalDegrees: true
                                                                     , ignoreRadialBeams: true
-                                                                    , zFactor);
+                                                                    , 1f);
                 timeLog.LogTime($"Loading {vtopoFile} model file", reset: true);
 
                 // Warn if badly supported projection
@@ -137,7 +137,7 @@ namespace SampleApp
                 // Local transform function from model coordinates (relative to entry, in meters)
                 // and global coordinates absolute in final 3D model space
                 //
-                IEnumerable<GeoPoint> Transform(IEnumerable<GeoPoint> line)
+                IEnumerable<GeoPoint> TransformLine(IEnumerable<GeoPoint> line)
                 {
                     var newLine = line.Translate(model.EntryPoint)              // Translate to entry (=> global topo coord space)
                                         .ReprojectTo(model.SRID, outputSRID)    // Reproject to terrain coord space
@@ -145,7 +145,9 @@ namespace SampleApp
                                         .CenterOnOrigin(bboxTerrainSpace);      // Center on terrain space origin
                     return newLine;
                 };
-                Vector3 axisOrigin = model.EntryPoint.ReprojectTo(model.SRID, outputSRID).CenterOnOrigin(bboxTerrainSpace).AsVector3();
+                GeoPoint axisOriginPt = model.EntryPoint.ReprojectTo(model.SRID, outputSRID).CenterOnOrigin(bboxTerrainSpace);
+                Vector3 axisOrigin = axisOriginPt.AsVector3();
+
 
                 //=======================
                 // 3D model
@@ -158,18 +160,23 @@ namespace SampleApp
 
                 int i = 0;
                 var triangulation = model.TriangulationFull3D.Translate(model.EntryPoint.AsVector3())
-                                                                .ReprojectTo(model.SRID, outputSRID)
-                                                                .CenterOnOrigin(bboxTerrainSpace);
+                                                .ReprojectTo(model.SRID, outputSRID)
+                                                .ZScale(zFactor)
+                                                .CenterOnOrigin(bboxTerrainSpace);
                 gltfModel = _gltfService.AddMesh(gltfModel, "Cavite3D", model.TriangulationFull3D, VectorsExtensions.CreateColor(0, 255, 0), doubleSided: false);
-                //foreach (var line in model.Topology3D) // model.Topology3D is the graph of topo paths
-                //{
-                //    // Add line to model
-                //    gltfModel = _gltfService.AddLine(gltfModel
-                //                                    , string.Concat("GPX", i++)     // name of 3D node
-                //                                    , Transform(line)               // call transform function
-                //                                    , color: VectorsExtensions.CreateColor(255, 0, 0, 128)
-                //                                    , lineWidth);
-                //}
+
+                if (GENERATE_LINE3D)
+                {
+                    foreach (var line in model.Topology3D) // model.Topology3D is the graph of topo paths
+                    {
+                        // Add line to model
+                        gltfModel = _gltfService.AddLine(gltfModel
+                                                        , string.Concat("GPX", i++)     // name of 3D node
+                                                        , TransformLine(line)               // call transform function
+                                                        , color: VectorsExtensions.CreateColor(255, 0, 0, 128)
+                                                        , lineWidth);
+                    }
+                }
                 timeLog.LogTime("Topo 3D model", reset: true);
 
                 if (generateTopoOnlyModel)
@@ -226,16 +233,16 @@ namespace SampleApp
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
             _elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
             model.EntryPoint.Elevation = _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
-            
-            foreach(var set in model.Sets)
+
+            foreach (var set in model.Sets.Where(s => s.Data.First().GlobalGeoPoint != null))
             {
-                VisualTopoData setStartData = set.Data.First();
-                var setStartPoint = setStartData.GlobalGeoPoint;
+                VisualTopoData setStartData = set.Data.First(d => d.GlobalGeoPoint != null);
+                var setStartPoint = setStartData.GlobalGeoPoint.Clone();
                 setStartPoint.Longitude += model.EntryPoint.Longitude;
-                setStartPoint.Latitude+= model.EntryPoint.Latitude;
+                setStartPoint.Latitude += model.EntryPoint.Latitude;
                 var setStartPointDem = setStartPoint.ReprojectTo(model.SRID, dataset.SRID);
                 _elevationService.DownloadMissingFiles(dataset, setStartPointDem); // download required DEM files
-                setStartData.TerrainElevationAbove  = _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
+                setStartData.TerrainElevationAbove = _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
             }
         }
 
