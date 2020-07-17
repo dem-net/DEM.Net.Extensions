@@ -91,6 +91,9 @@
     <None Update="SampleData\VisualTopo\small\0 bifurc\Test 3 arcs.tro">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\TestSections.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="SampleData\VisualTopo\small\0 bifurc\Test 4 arcs.tro">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
