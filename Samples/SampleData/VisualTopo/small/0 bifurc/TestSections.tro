@@ -11,12 +11,12 @@ Param Deca Degd Clino Degd 0.0000 Dir,Dir,Dir Inc Std --/--/---- M
 
 A          A                         0.00    0.00    0.00   2.00   2.00   2.00   2.00 N I * N ;Grand porche d'entrée;
 A          B                         40.70   315.00  0.00   2.00   2.00   2.00   2.00 N I * N
-B          C                         70.10   315.00  0.00   2.00   2.00   2.00   2.00 N I * N ;la hauteur de la galerie devient basse et ne permet plus la station debout.;
+B          C                         70.10   315.00  -45.00   2.00   2.00   2.00   2.00 N I * N ;la hauteur de la galerie devient basse et ne permet plus la station debout.;
 
 Param Deca Deg Clino Deg 0.0000 Dir,Dir,Dir Inc 0,64,0 --/--/---- M ;réseau 1978;
 
 C          D                         60.00   315.00  0.00   2.00   2.00   2.00   2.00 N I * N ;passage agrandi ce passage n'avait jamais été franchi.;
-D          E                         50.00   315.00  0.00   2.00   2.00   2.00   2.00 N I * N ;passage agrandi ce passage n'avait jamais été franchi.;
+D          E                         50.00   315.00  -45.00   2.00   2.00   2.00   2.00 N I * N ;passage agrandi ce passage n'avait jamais été franchi.;
 E          F                         40.00   315.00  0.00   2.00   2.00   2.00   2.00 N I * N ;passage agrandi ce passage n'avait jamais été franchi.;
 
 [Configuration 5.12]

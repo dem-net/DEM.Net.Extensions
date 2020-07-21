@@ -87,11 +87,11 @@ namespace DEM.Net.Extension.VisualTopo
 
             return model;
         }
-        public void Create3DTriangulation(VisualTopoModel model, float zFactor)
+        public void Create3DTriangulation(VisualTopoModel model)
         {
             // ========================
             // 3D model
-            Build3DTopology_Triangulation(model, zFactor);
+            Build3DTopology_Triangulation(model);
         }
 
         private void CreateGraph(VisualTopoModel model)
@@ -134,10 +134,10 @@ namespace DEM.Net.Extension.VisualTopo
             //return Vector4.Lerp(VectorsExtensions.CreateColor(0, 255, 255), VectorsExtensions.CreateColor(0, 255, 0), lerpAmout);
         }
 
-        private void Build3DTopology_Triangulation(VisualTopoModel model, float zFactor)
+        private void Build3DTopology_Triangulation(VisualTopoModel model)
         {
             // Build color function
-            float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z) * zFactor;
+            float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
             Func<VisualTopoData, Vector3, Vector4> colorFunc = null;
 
             // Gradient
@@ -149,13 +149,13 @@ namespace DEM.Net.Extension.VisualTopo
             // Generate triangulation
             //
             TriangulationList<Vector3> markersTriangulation = new TriangulationList<Vector3>();
-            TriangulationList<Vector3> triangulation = GraphTraversal_Triangulation(model, null, ref markersTriangulation, model.Graph.Root, zFactor, colorFunc);
+            TriangulationList<Vector3> triangulation = GraphTraversal_Triangulation(model, null, ref markersTriangulation, model.Graph.Root, colorFunc);
 
             model.TriangulationFull3D = triangulation + markersTriangulation;
         }
 
 
-        private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, float zFactor, Func<VisualTopoData, Vector3, Vector4> colorFunc)
+        private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, Func<VisualTopoData, Vector3, Vector4> colorFunc)
         {
             triangulation = triangulation ?? new TriangulationList<Vector3>();
 
@@ -164,7 +164,7 @@ namespace DEM.Net.Extension.VisualTopo
             {
                 // Cylinder height = point depth + (terrain height above - entry Z)
                 float cylinderHeight = -model.GlobalVector.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation.Value);
-                markersTriangulation += _meshService.CreateCylinder(model.GlobalVector, 0.2f, cylinderHeight * zFactor, model.Set.Color);
+                markersTriangulation += _meshService.CreateCylinder(model.GlobalVector, 0.2f, cylinderHeight, model.Set.Color);
 
                 //var surfacePos = new Vector3(model.GlobalVector.X, model.GlobalVector.Y, (float)model.TerrainElevationAbove);
                 float coneHeight = 10;
@@ -172,7 +172,7 @@ namespace DEM.Net.Extension.VisualTopo
                                             //.Translate(Vector3.UnitZ * -coneHeight / 2F)
                                             .Transform(Matrix4x4.CreateRotationY((float)Math.PI, new Vector3(model.GlobalVector.X, model.GlobalVector.Y, model.GlobalVector.Z+coneHeight/2f)))
                                             //.Translate(Vector3.UnitZ * coneHeight / 2F)
-                                            .Translate(Vector3.UnitZ * cylinderHeight * zFactor);
+                                            .Translate(Vector3.UnitZ * cylinderHeight);
             }
 
             if (node.Arcs.Count == 0) // leaf
@@ -180,7 +180,7 @@ namespace DEM.Net.Extension.VisualTopo
                 Debug.Assert(triangulation.NumPositions > 0, "Triangulation should not be empty");
 
                 // Make a rectangle perpendicual to direction centered on point(should be centered at human eye(y = 2m)
-                triangulation = AddCorridorRectangleSection(triangulation, model, null, triangulation.NumPositions - 4, zFactor, colorFunc);
+                triangulation = AddCorridorRectangleSection(triangulation, model, null, triangulation.NumPositions - 4, colorFunc);
             }
             else
             {
@@ -188,10 +188,10 @@ namespace DEM.Net.Extension.VisualTopo
                 foreach (var arc in node.Arcs)
                 {
                     // Make a rectangle perpendicual to direction centered on point(should be centered at human eye(y = 2m)
-                    triangulation = AddCorridorRectangleSection(triangulation, model, arc.Child.Model, posIndex, zFactor, colorFunc);
+                    triangulation = AddCorridorRectangleSection(triangulation, model, arc.Child.Model, posIndex, colorFunc);
                     posIndex = triangulation.NumPositions - 4;
 
-                    triangulation = GraphTraversal_Triangulation(visualTopoModel, triangulation, ref markersTriangulation, arc.Child, zFactor, colorFunc);
+                    triangulation = GraphTraversal_Triangulation(visualTopoModel, triangulation, ref markersTriangulation, arc.Child, colorFunc);
 
                 }
             }
@@ -205,14 +205,13 @@ namespace DEM.Net.Extension.VisualTopo
         /// <param name="current"></param>
         /// <param name="next"></param>
         /// <returns></returns>
-        private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, float zFactor, Func<VisualTopoData, Vector3, Vector4> colorFunc)
+        private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, Func<VisualTopoData, Vector3, Vector4> colorFunc)
         {
             Vector3 next = (nextData == null) ? current.GlobalVector : nextData.GlobalVector;
             GeoPointRays rays = current.GlobalGeoPoint;
             Vector3 direction = (nextData == null) ? Vector3.UnitZ * -1 : next - current.GlobalVector;
             direction = (direction == Vector3.Zero) ? Vector3.UnitZ * -1 : direction;
             var position = current.GlobalVector;
-            position.Z *= zFactor;
 
             Vector3 side = Vector3.Normalize(Vector3.Cross(direction, Vector3.UnitY));
             if (IsInvalid(side)) // Vector3 is UnitY
@@ -285,10 +284,13 @@ namespace DEM.Net.Extension.VisualTopo
 
             var p = node.Model;
             var direction = Vector3.UnitX * p.Longueur;
-            var matrix = Matrix4x4.CreateRotationY((float)MathHelper.ToRadians(-p.Pente)) * Matrix4x4.CreateRotationZ((float)(Math.PI / 2f - MathHelper.ToRadians(p.Cap)));
+            var matrix = Matrix4x4.CreateRotationY((float)MathHelper.ToRadians(-p.Pente)) 
+                * Matrix4x4.CreateRotationZ((float)(Math.PI / 2f - MathHelper.ToRadians(p.Cap)))
+                * Matrix4x4.CreateScale(1,1,zFactor);
+
             direction = Vector3.Transform(direction, matrix);
             p.GlobalVector = direction + local;
-            p.GlobalGeoPoint = new GeoPointRays(p.GlobalVector.Y, p.GlobalVector.X, p.GlobalVector.Z * zFactor
+            p.GlobalGeoPoint = new GeoPointRays(p.GlobalVector.Y, p.GlobalVector.X, p.GlobalVector.Z
                                                 , Vector3.Normalize(direction)
                                                 , p.CutSection.left, p.CutSection.right, p.CutSection.up, p.CutSection.down);
 
