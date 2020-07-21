@@ -95,13 +95,8 @@ namespace SampleApp
                 //=======================
                 // Open and parse file
                 //
-                //string vtopoFile = Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO");
-                //string vtopoFile = Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO");
-                //string vtopoFile = Path.Combine("SampleData", "VisualTopo", "Olivier4326.TRO");
-                //string vtopoFile = Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO");
-
-                // Open and parse file
                 // model will have available properties
+                // => Graph (nodes/arcs)
                 // => BoundingBox
                 // => Topology3D -> list of point-to-point lines
                 // => SRID of model file
@@ -134,7 +129,7 @@ namespace SampleApp
                 // Get entry elevation (need to reproject to DEM coordinate system first)
                 // and sections entry elevations
                 // 
-                ComputeCavityElevations(model, dataset, zFactor);
+                ComputeCavityElevations(model, dataset, zFactor); // will add TerrainElevationAbove and entry elevations
                 _visualTopoService.Create3DTriangulation(model);
                 timeLog.LogTime("Cavity points elevation", reset: true);
 
@@ -149,11 +144,11 @@ namespace SampleApp
                                         .CenterOnOrigin(bboxTerrainSpace);      // Center on terrain space origin
                     return newLine;
                 };
-                Vector3 axisOrigin = model.EntryPoint.ReprojectTo(model.SRID, outputSRID)
+                // Model origin
+                Vector3 axisOriginWorldSpace = model.EntryPoint.ReprojectTo(model.SRID, outputSRID)
                                         .CenterOnOrigin(bboxTerrainSpace)
-                                        //.Scale(1, 1, zFactor)
                                         .AsVector3();
-
+                Vector3 axisOriginModelSpace = model.EntryPoint.AsVector3();
 
                 //=======================
                 // 3D model
@@ -162,13 +157,11 @@ namespace SampleApp
 
                 // Add X/Y/Z axis on entry point
                 var axis = _meshService.CreateAxis();
-                _gltfService.AddMesh(gltfModel, "Axis", axis.Translate(axisOrigin), doubleSided: false);
+                _gltfService.AddMesh(gltfModel, "Axis", axis.Translate(axisOriginWorldSpace), doubleSided: false);
 
                 int i = 0;
 
-                var entryVec3ZScaled = model.EntryPoint.AsVector3();
-                //entryVec3ZScaled.Z = entryVec3ZScaled.Z * zFactor;
-                var triangulation = model.TriangulationFull3D.Translate(entryVec3ZScaled) //model.EntryPoint.AsVector3())
+                var triangulation = model.TriangulationFull3D.Translate(axisOriginModelSpace) // already zScaled if zFactor > 1
                                                 .ReprojectTo(model.SRID, outputSRID)
                                                 .CenterOnOrigin(bboxTerrainSpace);
                 gltfModel = _gltfService.AddMesh(gltfModel, "Cavite3D", model.TriangulationFull3D, VectorsExtensions.CreateColor(0, 255, 0), doubleSided: false);

@@ -83,7 +83,7 @@ namespace DEM.Net.Extension.VisualTopo
 
             // ========================
             // 3D model - do not remove
-            Build3DTopology_Lines(model, zFactor);
+            Build3DTopology(model, zFactor);
 
             return model;
         }
@@ -134,17 +134,24 @@ namespace DEM.Net.Extension.VisualTopo
             //return Vector4.Lerp(VectorsExtensions.CreateColor(0, 255, 255), VectorsExtensions.CreateColor(0, 255, 0), lerpAmout);
         }
 
-        private void Build3DTopology_Triangulation(VisualTopoModel model)
+        private void Build3DTopology_Triangulation(VisualTopoModel model, ColorStrategy colorStrategy = ColorStrategy.FromModel)
         {
             // Build color function
             float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
             Func<VisualTopoData, Vector3, Vector4> colorFunc = null;
 
-            // Gradient
-            //colorFunc = (data, pos) => GetDepthColorGradient(pos, minElevation);
+            switch(colorStrategy)
+            {
+                case ColorStrategy.FromModel:
+                    // Color in section header
+                    colorFunc = (data, pos) => data.Set.Color;
+                    break;
 
-            // Color in section header
-            colorFunc = (data, pos) => data.Set.Color;
+                default:
+                    // Gradient
+                    colorFunc = (data, pos) => GetDepthColorGradient(pos, minElevation);
+                    break;
+            }
 
             // Generate triangulation
             //
@@ -270,9 +277,9 @@ namespace DEM.Net.Extension.VisualTopo
 
         #endregion
 
-        #region Graph Traversal (lines)
+        #region Graph Traversal and vectors computation
 
-        private void Build3DTopology_Lines(VisualTopoModel model, float zFactor)
+        private void Build3DTopology(VisualTopoModel model, float zFactor)
         {
             List<List<GeoPointRays>> branches = new List<List<GeoPointRays>>();
             GraphTraversal_Lines(model.Graph.Root, branches, null, Vector3.Zero, zFactor);
