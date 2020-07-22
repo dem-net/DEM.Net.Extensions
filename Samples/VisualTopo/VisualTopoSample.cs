@@ -133,6 +133,11 @@ namespace SampleApp
                 _visualTopoService.Create3DTriangulation(model);
                 timeLog.LogTime("Cavity points elevation", reset: true);
 
+                // Model origin
+                GeoPoint axisOriginWorldSpace = model.EntryPoint.ReprojectTo(model.SRID, outputSRID)
+                                        .CenterOnOrigin(bboxTerrainSpace);
+                Vector3 axisOriginModelSpace = model.EntryPoint.AsVector3();
+
                 //=======================
                 // Local transform function from model coordinates (relative to entry, in meters)
                 // and global coordinates absolute in final 3D model space
@@ -141,14 +146,11 @@ namespace SampleApp
                 {
                     var newLine = line.Translate(model.EntryPoint)              // Translate to entry (=> global topo coord space)
                                         .ReprojectTo(model.SRID, outputSRID)    // Reproject to terrain coord space
-                                        .CenterOnOrigin(bboxTerrainSpace);      // Center on terrain space origin
+                                        .CenterOnOrigin(bboxTerrainSpace)      // Center on terrain space origin
+                                        .CenterOnOrigin(axisOriginWorldSpace);
                     return newLine;
                 };
-                // Model origin
-                Vector3 axisOriginWorldSpace = model.EntryPoint.ReprojectTo(model.SRID, outputSRID)
-                                        .CenterOnOrigin(bboxTerrainSpace)
-                                        .AsVector3();
-                Vector3 axisOriginModelSpace = model.EntryPoint.AsVector3();
+               
 
                 //=======================
                 // 3D model
@@ -157,13 +159,14 @@ namespace SampleApp
 
                 // Add X/Y/Z axis on entry point
                 var axis = _meshService.CreateAxis();
-                _gltfService.AddMesh(gltfModel, "Axis", axis.Translate(axisOriginWorldSpace), doubleSided: false);
+                _gltfService.AddMesh(gltfModel, "Axis", axis, doubleSided: false);
 
                 int i = 0;
 
                 var triangulation = model.TriangulationFull3D.Translate(axisOriginModelSpace) // already zScaled if zFactor > 1
                                                 .ReprojectTo(model.SRID, outputSRID)
-                                                .CenterOnOrigin(bboxTerrainSpace);
+                                                .CenterOnOrigin(bboxTerrainSpace)
+                                                .CenterOnOrigin(axisOriginWorldSpace.AsVector3());
                 gltfModel = _gltfService.AddMesh(gltfModel, "Cavite3D", model.TriangulationFull3D, VectorsExtensions.CreateColor(0, 255, 0), doubleSided: false);
 
                 if (GENERATE_LINE3D)
@@ -180,6 +183,10 @@ namespace SampleApp
                 }
                 timeLog.LogTime("Topo 3D model", reset: true);
 
+
+                //axis = _meshService.CreateAxis(10,100);
+                //_gltfService.AddMesh(gltfModel, "Axis", axis, doubleSided: false);
+
                 if (generateTopoOnlyModel)
                 {
                     // Uncomment this to save 3D model for topo only (without terrain)
@@ -189,7 +196,8 @@ namespace SampleApp
                 // Reproject and center height map coordinates
                 heightMap = heightMap.ReprojectTo(dataset.SRID, outputSRID)
                                     .CenterOnOrigin(bboxTerrainSpace)
-                                    .ZScale(zFactor);
+                                    .ZScale(zFactor)
+                                    .CenterOnOrigin(axisOriginWorldSpace);
                 //.BakeCoordinates();
                 timeLog.LogTime("Height map transform", reset: true);
 
