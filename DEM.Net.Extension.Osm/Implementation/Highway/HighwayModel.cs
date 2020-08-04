@@ -18,7 +18,7 @@ namespace DEM.Net.Extension.Osm.Highways
         public bool Bridge { get; internal set; } = false;
         public int Layer { get; internal set; } = 0;
 
-        public List<GeoPoint> LineString { get; internal set; }
+        public List<GeoPoint> LineString { get; set; }
 
         public IEnumerable<GeoPoint> Points
         {

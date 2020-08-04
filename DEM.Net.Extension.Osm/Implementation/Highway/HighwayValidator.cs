@@ -2,6 +2,7 @@
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,7 +14,7 @@ namespace DEM.Net.Extension.Osm.Highways
     {
         public HighwayValidator(ILogger logger) : base(logger)
         {
-            this._logger = logger;
+            this._logger = logger ?? NullLogger<HighwayValidator>.Instance;
         }
 
         private readonly ILogger _logger;
@@ -57,9 +58,9 @@ namespace DEM.Net.Extension.Osm.Highways
                     break;
                 case GeoJSON.Net.GeoJSONObjectType.Polygon:
                     var poly = (Polygon)feature.Geometry;
-                    
+
                     model = BuildModelFromGeometry(poly.Coordinates.First(), ref _totalPoints);
-                    
+
                     if (poly.Coordinates.Count > 1) _logger.LogWarning($"Polygon has {poly.Coordinates.Count} rings. Single ring processing supported so far. {nameof(HighwayModel)} {feature.Id}.");
 
                     break;

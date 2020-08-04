@@ -66,7 +66,8 @@ namespace SampleApp
                     .AddScoped<HelladicSample>()
                     .AddScoped<SketchFab.SketchFabApi>()
                     .AddScoped<SketchFabSample>()
-                    .AddScoped<VisualTopoSample>();
+                    .AddScoped<VisualTopoSample>()
+                    .AddScoped<HighestPointFinder>();
             // .. more samples here
 
             services.AddScoped<SampleApplication>();
@@ -79,6 +80,10 @@ namespace SampleApp
 
             try
             {
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HighestPointFinder), _logger))
+                {
+                    services.GetService<HighestPointFinder>().Run();
+                }
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
                 {
                     services.GetService<VisualTopoSample>().Run();
