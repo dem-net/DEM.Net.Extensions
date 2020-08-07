@@ -12,7 +12,7 @@ namespace DEM.Net.Extension.Osm.Highways
 {
     internal class HighwayValidator : OsmModelFactory<HighwayModel>
     {
-        public HighwayValidator(ILogger logger) : base(logger)
+        public HighwayValidator(ILogger logger) : base(logger ?? NullLogger<HighwayValidator>.Instance)
         {
             this._logger = logger ?? NullLogger<HighwayValidator>.Instance;
         }

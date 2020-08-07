@@ -33,11 +33,14 @@ namespace SampleApp
         {
             try
             {
-                GeoPoint location4326 = new GeoPoint(43.542544, 5.445379);
-                GeoPoint location3857 = location4326.ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
+                // SF
+                GeoPoint location4326 = new GeoPoint(37.766974, -122.431062);
+                //GeoPoint location4326 = new GeoPoint( 43.542544, 5.445379);
                 DEMDataSet dataset = DEMDataSet.NASADEM;
+                double radius = 5000;
 
-                BoundingBox bbox3857 = BoundingBox.AroundPoint(location3857, 5000); // 5km around point
+                GeoPoint location3857 = location4326.ReprojectTo(4326, 3857);
+                BoundingBox bbox3857 = BoundingBox.AroundPoint(location3857, radius); // 5km around point
                 bbox3857.SRID = 3857;
                 BoundingBox bbox4326 = bbox3857.ReprojectTo(Reprojection.SRID_PROJECTED_MERCATOR, Reprojection.SRID_GEODETIC);
 
@@ -54,37 +57,63 @@ namespace SampleApp
                 // Create internal building model
                 OsmModelList<HighwayModel> parsed = _osmService.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
 
-                int parallelCount = -1;
-                Parallel.ForEach(parsed.Models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
-                {
-
-                    model.LineString = _elevationService.GetLineGeometryElevation(model.LineString, dataset);
-                }
-                );
+                Dictionary<string, HighwayModel> osmRoads = parsed.Models.ToDictionary(p => p.Id, p => p);
+                Dictionary<string, List<GeoPoint>> osmRoadLines = parsed.Models.ToDictionary(p => p.Id, p => p.LineString);
+                osmRoadLines = _elevationService.GetLinesGeometryElevation(osmRoadLines, dataset);
 
                 (Slope Slope, HighwayModel Road) maxSlope = (Slope.Zero, null);
                 (Slope Slope, HighwayModel Road) maxAvgSlope = (Slope.Zero, null);
-                foreach (var model in parsed.Models)
+                foreach (var model in osmRoadLines)
                 {
-                    var metrics = model.LineString.ComputeMetrics();
+                    var metrics = model.Value.ComputeMetrics();
 
-                    var slope = GetMaxSlope(model.LineString);
+                    var slope = GetMaxSlope(model.Value);
                     if (slope > maxSlope.Slope)
                     {
                         maxSlope.Slope = slope;
-                        maxSlope.Road = model;
+                        maxSlope.Road = osmRoads[model.Key];
                     }
 
 
-                    var slopeAvg = ComputeSlope(model.LineString.First(), model.LineString.Last());
+                    var slopeAvg = ComputeSlope(model.Value.First(), model.Value.Last());
                     if (slopeAvg > maxAvgSlope.Slope)
                     {
                         maxAvgSlope.Slope = slopeAvg;
-                        maxAvgSlope.Road = model;
+                        maxSlope.Road = osmRoads[model.Key];
                     }
                 }
 
+                //int parallelCount = -1;
+                //Parallel.ForEach(parsed.Models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                ////foreach (var model in parsed.Models)
+                //{
 
+                //    model.LineString =_elevationService.GetLineGeometryElevation(model.LineString, dataset);
+                //}
+                //);
+                //osmRoadLines = parsed.Models.ToDictionary(p => p.Id, p => p.LineString);
+
+                //maxSlope = (Slope.Zero, null);
+                //maxAvgSlope = (Slope.Zero, null);
+                //foreach (var model in osmRoadLines)
+                //{
+                //    var metrics = model.Value.ComputeMetrics();
+
+                //    var slope = GetMaxSlope(model.Value);
+                //    if (slope > maxSlope.Slope)
+                //    {
+                //        maxSlope.Slope = slope;
+                //        maxSlope.Road = osmRoads[model.Key];
+                //    }
+
+
+                //    var slopeAvg = ComputeSlope(model.Value.First(), model.Value.Last());
+                //    if (slopeAvg > maxAvgSlope.Slope)
+                //    {
+                //        maxAvgSlope.Slope = slopeAvg;
+                //        maxSlope.Road = osmRoads[model.Key];
+                //    }
+                //}
 
 
             }
