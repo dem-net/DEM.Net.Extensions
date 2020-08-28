@@ -66,6 +66,8 @@ namespace SampleApp
                     model.LineString = _elevationService.GetLineGeometryElevation(model.LineString, dataset);
                 }
                 );
+                var osmRoads = parsed.Models.ToDictionary(p => p.Id, p => p);
+                var osmRoadLines = parsed.Models.ToDictionary(p => p.Id, p => p.LineString);
 
                 (Slope Slope, HighwayModel Road) maxSlope = (Slope.Zero, null);
                 (Slope Slope, HighwayModel Road) maxAvgSlope = (Slope.Zero, null);
