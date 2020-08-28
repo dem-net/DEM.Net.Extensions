@@ -43,32 +43,93 @@ namespace SampleApp
 
         public void Run()
         {
-           
+            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
+            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
+
+            Run_3DModelGeneration();
+
+        }
+
+        /// <summary>
+        /// Generate an excel output of all nodes with 
+        /// - their computed coordinates relative to entry
+        /// - their distance from entry
+        /// - their distance from the ground surface above them
+        /// </summary>
+        /// <param name="visualTopoFile"></param>
+        /// <param name="dataSet"></param>
+        private void Run_ExcelExport(string visualTopoFile, DEMDataSet dataSet)
+        {
+            try
+            {
+                StopwatchLog timeLog = StopwatchLog.StartNew(_logger);
+
+                //=======================
+                // Generation params
+                //
+                string outputDir = Directory.GetCurrentDirectory();
+
+                VisualTopoModel model = _visualTopoService.LoadFile(visualTopoFile, Encoding.GetEncoding("ISO-8859-1")
+                                                                    , decimalDegrees: true
+                                                                    , ignoreRadialBeams: true);
+
+                // for debug, 
+                //var b = GetBranches(model); // graph list of all nodes
+                //var lowestPoint = model.Sets.Min(s => s.Data.Min(d => d.GlobalGeoPoint?.Elevation ?? 0));
+
+                BoundingBox bbox = model.BoundingBox // relative coords
+                                        .Translate(model.EntryPoint.Longitude, model.EntryPoint.Latitude, model.EntryPoint.Elevation ?? 0) // absolute coords
+                                        .Pad(50) // margin around model
+                                        .ReprojectTo(model.SRID, dataSet.SRID);
+                _elevationService.DownloadMissingFiles(dataSet, bbox);
+
+                timeLog.LogTime("Terrain height map");
+
+                //=======================
+                // Get entry elevation (need to reproject to DEM coordinate system first)
+                // and sections entry elevations
+                // 
+                _visualTopoService.ComputeFullCavityElevations(model, dataSet); // will add TerrainElevationAbove and entry elevations
 
 
-            Run(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
+                File.WriteAllBytes(Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".csv")), _visualTopoService.ExportToCsv(model).ToArray());
 
-            Run(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true, zFactor: 1f);
 
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 3 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+                timeLog.LogTime("Cavity points elevation");
 
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 4 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
 
-            Run(Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), imageryProvider: ImageryProvider.OpenTopoMap, bboxMarginMeters: 50);
+                timeLog.LogTime("3D model");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error :" + ex.Message);
+            }
+        }
 
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
+        private void Run_3DModelGeneration()
+        {
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
+
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true, zFactor: 1f);
+
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 3 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 4 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), imageryProvider: ImageryProvider.OpenTopoMap, bboxMarginMeters: 50);
+
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
 
             // Single file
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
+            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
 
 
             // All files in given directory
             foreach (var file in Directory.EnumerateFileSystemEntries(Path.Combine("SampleData", "VisualTopo"), "*.tro", SearchOption.AllDirectories))
             {
                 _logger.LogInformation("Generating model for file " + file);
-                Run(file, ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+                Run_3DModelGeneration(file, ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true);
             }
-
         }
 
         /// <summary>
@@ -78,7 +139,7 @@ namespace SampleApp
         /// <param name="vtopoFile">VisualTopo .TRO file</param>
         /// <param name="imageryProvider">Imagery provider for terrain texture. Set to null for untextured model</param>
         /// <param name="bboxMarginMeters">Terrain margin (meters) around VisualTopo model</param>
-        public void Run(string vtopoFile, ImageryProvider imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
+        public void Run_3DModelGeneration(string vtopoFile, ImageryProvider imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
         {
             try
             {
@@ -101,16 +162,12 @@ namespace SampleApp
                 // => BoundingBox
                 // => Topology3D -> list of point-to-point lines
                 // => SRID of model file
-                StopwatchLog timeLog = new StopwatchLog(_logger);
+                StopwatchLog timeLog = StopwatchLog.StartNew(_logger);
                 VisualTopoModel model = _visualTopoService.LoadFile(vtopoFile, Encoding.GetEncoding("ISO-8859-1")
                                                                     , decimalDegrees: true
                                                                     , ignoreRadialBeams: true
                                                                     , zFactor);
-                timeLog.LogTime($"Loading {vtopoFile} model file", reset: true);
-
-                // Warn if badly supported projection
-                if (model.EntryPointProjectionCode.StartsWith("LT"))
-                    _logger.LogWarning($"Model entry projection is Lambert Carto and is not fully supported. Will result in 20m shifts. Consider changing projection to UTM");
+                timeLog.LogTime($"Loading {vtopoFile} model file");
 
                 // for debug, 
                 //var b = GetBranches(model); // graph list of all nodes
@@ -124,15 +181,15 @@ namespace SampleApp
                                                                                 // Note that ref Bbox means that the bbox will be adjusted to match DEM data
                 var heightMap = _elevationService.GetHeightMap(ref bbox, dataset, downloadMissingFiles: true);
                 var bboxTerrainSpace = bbox.ReprojectTo(dataset.SRID, outputSRID); // terrain coords
-                timeLog.LogTime("Terrain height map", reset: true);
+                timeLog.LogTime("Terrain height map");
 
                 //=======================
                 // Get entry elevation (need to reproject to DEM coordinate system first)
                 // and sections entry elevations
                 // 
-                ComputeCavityElevations(model, dataset, zFactor); // will add TerrainElevationAbove and entry elevations
+                _visualTopoService.ComputeFullCavityElevations(model, dataset, zFactor); // will add TerrainElevationAbove and entry elevations
                 _visualTopoService.Create3DTriangulation(model);
-                timeLog.LogTime("Cavity points elevation", reset: true);
+                timeLog.LogTime("Cavity points elevation");
 
                 // Model origin
                 GeoPoint axisOriginWorldSpace = model.EntryPoint.ReprojectTo(model.SRID, outputSRID)
@@ -151,7 +208,7 @@ namespace SampleApp
                                         .CenterOnOrigin(axisOriginWorldSpace);
                     return newLine;
                 };
-               
+
 
                 //=======================
                 // 3D model
@@ -182,7 +239,7 @@ namespace SampleApp
                                                         , lineWidth);
                     }
                 }
-                timeLog.LogTime("Topo 3D model", reset: true);
+                timeLog.LogTime("Topo 3D model");
 
 
                 //axis = _meshService.CreateAxis(10,100);
@@ -200,7 +257,7 @@ namespace SampleApp
                                     .ZScale(zFactor)
                                     .CenterOnOrigin(axisOriginWorldSpace);
                 //.BakeCoordinates();
-                timeLog.LogTime("Height map transform", reset: true);
+                timeLog.LogTime("Height map transform");
 
                 //=======================
                 // Textures
@@ -210,7 +267,7 @@ namespace SampleApp
                 {
                     TileRange tiles = _imageryService.DownloadTiles(bbox, imageryProvider, TEXTURE_TILES);
                     string fileName = Path.Combine(outputDir, "Texture.jpg");
-                    timeLog.LogTime("Imagery download", reset: true);
+                    timeLog.LogTime("Imagery download");
 
                     Console.WriteLine("Construct texture...");
                     TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
@@ -219,7 +276,7 @@ namespace SampleApp
                     //    , topoTexture, false);
 
                     pbrTexture = PBRTexture.Create(texInfo, null);
-                    timeLog.LogTime("Texture creation", reset: true);
+                    timeLog.LogTime("Texture creation");
                 }
                 //
                 //=======================
@@ -229,7 +286,7 @@ namespace SampleApp
 
                 gltfModel = _gltfService.AddTerrainMesh(gltfModel, heightMap, pbrTexture);
                 gltfModel.SaveGLB(string.Concat(Path.GetFileNameWithoutExtension(vtopoFile) + $"Z{zFactor}.glb"));
-                timeLog.LogTime("3D model", reset: true);
+                timeLog.LogTime("3D model");
             }
             catch (Exception ex)
             {
@@ -238,28 +295,6 @@ namespace SampleApp
 
         }
 
-        private void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor)
-        {
-            var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-            //_elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
-            model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
 
-            foreach (var set in model.Sets.Where(s => s.Data.First().GlobalGeoPoint != null))
-            {
-                VisualTopoData setStartData = set.Data.First(d => d.GlobalGeoPoint != null);
-                var ptCopy = setStartData.GlobalGeoPoint.Clone();
-                ptCopy.Longitude += model.EntryPoint.Longitude;
-                ptCopy.Latitude += model.EntryPoint.Latitude;
-                var setStartPointDem = ptCopy.ReprojectTo(model.SRID, dataset.SRID);
-                //_elevationService.DownloadMissingFiles(dataset, setStartPointDem); // download required DEM files
-                setStartData.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
-            }
-        }
-
-        private IEnumerable<GeoPoint> BuildAxis(GeoPoint axisEnd)
-        {
-            yield return GeoPoint.Zero;
-            yield return axisEnd * 50F;
-        }
     }
 }

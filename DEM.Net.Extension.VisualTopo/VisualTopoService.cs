@@ -26,6 +26,7 @@
 using DEM.Net.Core;
 using DEM.Net.Core.Graph;
 using DEM.Net.glTF.SharpglTF;
+using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using System;
@@ -43,12 +44,16 @@ namespace DEM.Net.Extension.VisualTopo
     public class VisualTopoService
     {
         private readonly MeshService _meshService;
+        private readonly ElevationService _elevationService;
+        private readonly ILogger<VisualTopoService> _logger;
 
-        public VisualTopoService(MeshService meshService)
+        public VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
         {
             _meshService = meshService;
+            _elevationService = elevationService;
+            _logger = logger;
         }
-        public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor)
+        public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
         {
             var model = ParseFile(vtopoFile, encoding, decimalDegrees, ignoreRadialBeams);
 
@@ -94,7 +99,6 @@ namespace DEM.Net.Extension.VisualTopo
             Build3DTopology_Triangulation(model, ColorStrategy.CreateFromModel);
             //Build3DTopology_Triangulation(model, ColorStrategy.CreateDepthGradient(model));
         }
-
         private void CreateGraph(VisualTopoModel model)
         {
             Dictionary<string, Node<VisualTopoData>> nodesByName = new Dictionary<string, Node<VisualTopoData>>();
@@ -122,14 +126,70 @@ namespace DEM.Net.Extension.VisualTopo
             }
         }
 
+        public MemoryStream ExportToCsv(VisualTopoModel model)
+        {
+            MemoryStream ms = new MemoryStream();
+            using (StreamWriter sw = new StreamWriter(ms))
+            {
+                sw.WriteLine(string.Join("\t", "Entree", "Sortie", "Longueur", "Cap", "Pente", "Gauche", "Droite", "Haut", "Bas", "X", "Y", "Z", "Distance", "Profondeur", "Commentaire"));
+
+                foreach (var set in model.Sets)
+                {
+                    sw.WriteLine(string.Join("\t", "Entree", "Sortie", "Longueur", "Cap", "Pente", set.Color.ToRgbString(), "", "", "", "", "", "", "", "", set.Name));
+
+                    foreach (var data in set.Data)
+                    {
+                        sw.WriteLine(string.Join("\t", data.Entree, data.Sortie, data.Longueur, data.Cap, data.Pente
+                            , data.CutSection.left, data.CutSection.right, data.CutSection.up, data.CutSection.down
+                            , data.GlobalVector.X, data.GlobalVector.Y, data.GlobalVector.Z
+                            , data.DistanceFromEntry, data.Depth, data.Comment));
+                    }
+                }
+
+            }
+            return ms;
+        }
+
+        // Elevations
+        public void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
+        {
+            var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
+            model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
+
+            foreach (var set in model.Sets.Where(s => s.Data.First().GlobalGeoPoint != null))
+            {
+                VisualTopoData setStartData = set.Data.First(d => d.GlobalGeoPoint != null);
+                GeoPoint dataPoint = setStartData.GlobalGeoPoint.Clone();
+                dataPoint.Longitude += model.EntryPoint.Longitude;
+                dataPoint.Latitude += model.EntryPoint.Latitude;
+                var setStartPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
+                setStartData.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
+            }
+        }
+        public void ComputeFullCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
+        {
+            var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
+            model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
+
+            foreach (var data in model.Graph.AllNodes.Select(n => n.Model))
+            {
+                GeoPoint dataPoint = data.GlobalGeoPoint.Clone();
+                dataPoint.Longitude += model.EntryPoint.Longitude;
+                dataPoint.Latitude += model.EntryPoint.Latitude;
+                var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
+                data.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(dataPointDem, dataset).Elevation ?? 0;                
+                data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.GlobalVector.Z;
+            }
+        }
+
         #region Graph Traversal (full 3D)
 
-        
+
         private void Build3DTopology_Triangulation(VisualTopoModel model, IColorCalculator colorFunc)
         {
             // Build color function
             float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
-            
+
 
             // Generate triangulation
             //
@@ -155,7 +215,7 @@ namespace DEM.Net.Extension.VisualTopo
                 float coneHeight = 10;
                 markersTriangulation += _meshService.CreateCone(model.GlobalVector, 5, coneHeight, model.Set.Color)
                                             //.Translate(Vector3.UnitZ * -coneHeight / 2F)
-                                            .Transform(Matrix4x4.CreateRotationY((float)Math.PI, new Vector3(model.GlobalVector.X, model.GlobalVector.Y, model.GlobalVector.Z+coneHeight/2f)))
+                                            .Transform(Matrix4x4.CreateRotationY((float)Math.PI, new Vector3(model.GlobalVector.X, model.GlobalVector.Y, model.GlobalVector.Z + coneHeight / 2f)))
                                             //.Translate(Vector3.UnitZ * coneHeight / 2F)
                                             .Translate(Vector3.UnitZ * cylinderHeight);
             }
@@ -260,24 +320,26 @@ namespace DEM.Net.Extension.VisualTopo
         private void Build3DTopology(VisualTopoModel model, float zFactor)
         {
             List<List<GeoPointRays>> branches = new List<List<GeoPointRays>>();
-            GraphTraversal_Lines(model.Graph.Root, branches, null, Vector3.Zero, zFactor);
+            GraphTraversal_Lines(model.Graph.Root, branches, null, Vector3.Zero, 0, zFactor);
             model.Topology3D = branches;
         }
 
-        private void GraphTraversal_Lines(Node<VisualTopoData> node, List<List<GeoPointRays>> branches, List<GeoPointRays> current, Vector3 local, float zFactor)
+        private void GraphTraversal_Lines(Node<VisualTopoData> node, List<List<GeoPointRays>> branches, List<GeoPointRays> current, Vector3 local, double runningTotalLength, float zFactor)
         {
 
             var p = node.Model;
             var direction = Vector3.UnitX * p.Longueur;
-            var matrix = Matrix4x4.CreateRotationY((float)MathHelper.ToRadians(-p.Pente)) 
+            var matrix = Matrix4x4.CreateRotationY((float)MathHelper.ToRadians(-p.Pente))
                 * Matrix4x4.CreateRotationZ((float)(Math.PI / 2f - MathHelper.ToRadians(p.Cap)))
-                * Matrix4x4.CreateScale(1,1,zFactor);
+                * Matrix4x4.CreateScale(1, 1, zFactor);
 
             direction = Vector3.Transform(direction, matrix);
             p.GlobalVector = direction + local;
             p.GlobalGeoPoint = new GeoPointRays(p.GlobalVector.Y, p.GlobalVector.X, p.GlobalVector.Z
                                                 , Vector3.Normalize(direction)
                                                 , p.CutSection.left, p.CutSection.right, p.CutSection.up, p.CutSection.down);
+            p.DistanceFromEntry = runningTotalLength;
+            runningTotalLength += p.Longueur; // on pourrait aussi utiliser p.GlobalVector.Length()
 
             if (current == null) current = new List<GeoPointRays>();
             if (node.Arcs.Count == 0) // leaf
@@ -296,18 +358,19 @@ namespace DEM.Net.Extension.VisualTopo
                         firstArc = false;
 
                         current.Add(node.Model.GlobalGeoPoint);
-
-                        GraphTraversal_Lines(arc.Child, branches, current, node.Model.GlobalVector, zFactor);
+                        GraphTraversal_Lines(arc.Child, branches, current, node.Model.GlobalVector, runningTotalLength, zFactor);
                     }
                     else
                     {
                         var newBranch = new List<GeoPointRays>();
                         newBranch.Add(node.Model.GlobalGeoPoint);
-                        GraphTraversal_Lines(arc.Child, branches, newBranch, node.Model.GlobalVector, zFactor);
+                        GraphTraversal_Lines(arc.Child, branches, newBranch, node.Model.GlobalVector, runningTotalLength, zFactor);
                     }
                 }
             }
         }
+
+
 
         #endregion
 
@@ -383,6 +446,11 @@ namespace DEM.Net.Extension.VisualTopo
                 , double.Parse(data[3], CultureInfo.InvariantCulture));
             model.SRID = srid;
             model.EntryPoint = model.EntryPoint;
+
+            // Warn if badly supported projection
+            if (model.EntryPointProjectionCode.StartsWith("LT"))
+                _logger.LogWarning($"Model entry projection is Lambert Carto and is not fully supported. Will result in 20m shifts. Consider changing projection to UTM");
+
         }
 
         private VisualTopoModel ParseHeader(VisualTopoModel model, StreamReader sr)
