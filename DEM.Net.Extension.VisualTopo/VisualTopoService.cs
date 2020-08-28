@@ -91,7 +91,8 @@ namespace DEM.Net.Extension.VisualTopo
         {
             // ========================
             // 3D model
-            Build3DTopology_Triangulation(model);
+            Build3DTopology_Triangulation(model, ColorStrategy.CreateFromModel);
+            //Build3DTopology_Triangulation(model, ColorStrategy.CreateDepthGradient(model));
         }
 
         private void CreateGraph(VisualTopoModel model)
@@ -123,35 +124,12 @@ namespace DEM.Net.Extension.VisualTopo
 
         #region Graph Traversal (full 3D)
 
-        // Color functions
-        Vector4 GetDepthColorGradient(Vector3 position, float maxDepth)
-        {
-            float lerpAmout = maxDepth == 0 ? 0 : Math.Abs(position.Z / maxDepth);
-            Hsv hsvColor = new Hsv(MathHelper.Lerp(0f, 360f, lerpAmout), 1, 1);
-            var rgb = new ColorSpaceConverter().ToRgb(hsvColor);
-
-            return new Vector4(rgb.R, rgb.G, rgb.B, 255);
-            //return Vector4.Lerp(VectorsExtensions.CreateColor(0, 255, 255), VectorsExtensions.CreateColor(0, 255, 0), lerpAmout);
-        }
-
-        private void Build3DTopology_Triangulation(VisualTopoModel model, ColorStrategy colorStrategy = ColorStrategy.FromModel)
+        
+        private void Build3DTopology_Triangulation(VisualTopoModel model, IColorCalculator colorFunc)
         {
             // Build color function
             float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
-            Func<VisualTopoData, Vector3, Vector4> colorFunc = null;
-
-            switch(colorStrategy)
-            {
-                case ColorStrategy.FromModel:
-                    // Color in section header
-                    colorFunc = (data, pos) => data.Set.Color;
-                    break;
-
-                default:
-                    // Gradient
-                    colorFunc = (data, pos) => GetDepthColorGradient(pos, minElevation);
-                    break;
-            }
+            
 
             // Generate triangulation
             //
@@ -162,7 +140,7 @@ namespace DEM.Net.Extension.VisualTopo
         }
 
 
-        private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, Func<VisualTopoData, Vector3, Vector4> colorFunc)
+        private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, IColorCalculator colorFunc)
         {
             triangulation = triangulation ?? new TriangulationList<Vector3>();
 
@@ -212,7 +190,7 @@ namespace DEM.Net.Extension.VisualTopo
         /// <param name="current"></param>
         /// <param name="next"></param>
         /// <returns></returns>
-        private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, Func<VisualTopoData, Vector3, Vector4> colorFunc)
+        private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, IColorCalculator colorFunc)
         {
             Vector3 next = (nextData == null) ? current.GlobalVector : nextData.GlobalVector;
             GeoPointRays rays = current.GlobalGeoPoint;
@@ -240,7 +218,7 @@ namespace DEM.Net.Extension.VisualTopo
 
             //Vector4 color = (colorIndex++) % 2 == 0 ? VectorsExtensions.CreateColor(0, 255, 0) : VectorsExtensions.CreateColor(0, 0, 255);
 
-            triangulation.Colors.AddRange(Enumerable.Repeat(colorFunc(current, position), 4));
+            triangulation.Colors.AddRange(Enumerable.Repeat(colorFunc.GetColor(current, position), 4));
 
             // corridor sides
             if (triangulation.NumPositions > 4)

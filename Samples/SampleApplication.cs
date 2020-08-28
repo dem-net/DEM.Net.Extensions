@@ -80,14 +80,15 @@ namespace SampleApp
 
             try
             {
-                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HighestPointFinder), _logger))
-                {
-                    services.GetService<HighestPointFinder>().Run();
-                }
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
                 {
                     services.GetService<VisualTopoSample>().Run();
                 }
+                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HighestPointFinder), _logger))
+                {
+                    services.GetService<HighestPointFinder>().Run();
+                }
+               
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
                 {
                     services.GetService<OsmExtensionSample>().Run();

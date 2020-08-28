@@ -3,6 +3,7 @@ using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Highways;
 using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
+using SketchFab;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -57,9 +58,14 @@ namespace SampleApp
                 // Create internal building model
                 OsmModelList<HighwayModel> parsed = _osmService.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
 
-                Dictionary<string, HighwayModel> osmRoads = parsed.Models.ToDictionary(p => p.Id, p => p);
-                Dictionary<string, List<GeoPoint>> osmRoadLines = parsed.Models.ToDictionary(p => p.Id, p => p.LineString);
-                osmRoadLines = _elevationService.GetLinesGeometryElevation(osmRoadLines, dataset);
+                int parallelCount = -1;
+                Parallel.ForEach(parsed.Models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                //foreach(var model in parsed.Models)
+                {
+
+                    model.LineString = _elevationService.GetLineGeometryElevation(model.LineString, dataset);
+                }
+                );
 
                 (Slope Slope, HighwayModel Road) maxSlope = (Slope.Zero, null);
                 (Slope Slope, HighwayModel Road) maxAvgSlope = (Slope.Zero, null);

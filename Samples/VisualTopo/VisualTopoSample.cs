@@ -43,10 +43,7 @@ namespace SampleApp
 
         public void Run()
         {
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
-
-            // Single file
-            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
+           
 
 
             Run(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
@@ -59,6 +56,10 @@ namespace SampleApp
 
             Run(Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), imageryProvider: ImageryProvider.OpenTopoMap, bboxMarginMeters: 50);
 
+            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
+
+            // Single file
+            Run(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
 
 
             // All files in given directory
@@ -121,7 +122,7 @@ namespace SampleApp
                                         .ReprojectTo(model.SRID, dataset.SRID); // DEM coords
                                                                                 // Get height map
                                                                                 // Note that ref Bbox means that the bbox will be adjusted to match DEM data
-                var heightMap = _elevationService.GetHeightMap(ref bbox, dataset, true);
+                var heightMap = _elevationService.GetHeightMap(ref bbox, dataset, downloadMissingFiles: true);
                 var bboxTerrainSpace = bbox.ReprojectTo(dataset.SRID, outputSRID); // terrain coords
                 timeLog.LogTime("Terrain height map", reset: true);
 
@@ -240,7 +241,7 @@ namespace SampleApp
         private void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor)
         {
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-            _elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
+            //_elevationService.DownloadMissingFiles(dataset, entryPoint4326); // download required DEM files
             model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
 
             foreach (var set in model.Sets.Where(s => s.Data.First().GlobalGeoPoint != null))
@@ -250,7 +251,7 @@ namespace SampleApp
                 ptCopy.Longitude += model.EntryPoint.Longitude;
                 ptCopy.Latitude += model.EntryPoint.Latitude;
                 var setStartPointDem = ptCopy.ReprojectTo(model.SRID, dataset.SRID);
-                _elevationService.DownloadMissingFiles(dataset, setStartPointDem); // download required DEM files
+                //_elevationService.DownloadMissingFiles(dataset, setStartPointDem); // download required DEM files
                 setStartData.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
             }
         }
