@@ -23,6 +23,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+using ClosedXML.Excel;
 using DEM.Net.Core;
 using DEM.Net.Core.Graph;
 using DEM.Net.glTF.SharpglTF;
@@ -149,6 +150,95 @@ namespace DEM.Net.Extension.VisualTopo
             }
             return ms;
         }
+        public void ExportToExcel(VisualTopoModel model, string fileName)
+        {
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add($"Cavité entrée Z={model.EntryPoint.Elevation:N1} m");
+
+                int ro = 1;
+                int co = 0;
+
+                ws.Cell(ro, ++co).Value = "Pt Départ";
+                ws.Cell(ro, ++co).Value = "Pt Arrivée";
+                ws.Cell(ro, ++co).Value = "Longueur";
+                ws.Cell(ro, ++co).Value = "Cap";
+                ws.Cell(ro, ++co).Value = "Pente";
+                ws.Cell(ro, ++co).Value = "Gauche";
+                ws.Cell(ro, ++co).Value = "Droite";
+                ws.Cell(ro, ++co).Value = "Haut";
+                ws.Cell(ro, ++co).Value = "Bas";
+                ws.Cell(ro, ++co).Value = "X";
+                ws.Cell(ro, ++co).Value = "Y";
+                ws.Cell(ro, ++co).Value = "Z";
+                ws.Cell(ro, ++co).Value = "Distance";
+                ws.Cell(ro, ++co).Value = "Profondeur relative entrée";
+                ws.Cell(ro, ++co).Value = "Altitude terrain";
+                ws.Cell(ro, ++co).Value = "Profondeur réelle";
+                ws.Cell(ro, ++co).Value = "Commentaire";
+
+                var row = ws.Row(ro);
+                row.Style.Fill.BackgroundColor = XLColor.GreenYellow;
+                row.Style.Font.Bold = true;
+
+                foreach (var set in model.Sets)
+                {
+                    ro++;
+                    co = 0;
+                    ws.Cell(ro, ++co).Value = "Section";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "Pente";
+                    ws.Cell(ro, ++co).Value = set.Color.ToRgbString();
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = set.Name;
+
+                    var setRow = ws.Row(ro);
+                    setRow.Style.Fill.BackgroundColor = XLColor.GreenYellow;
+                    setRow.Style.Font.Bold = true;
+
+                    foreach (var data in set.Data)
+                    {
+                        ro++;
+                        co = 1;
+                        ws.Cell(ro, co++).Value = data.Entree; 
+                        ws.Cell(ro, co++).Value = data.Sortie;
+                        ws.Cell(ro, co++).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.Pente; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.CutSection.left; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.CutSection.right; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.CutSection.up; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.CutSection.down; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.GlobalVector.X; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.GlobalVector.Y; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.GlobalVector.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.DistanceFromEntry; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.GlobalVector.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.TerrainElevationAbove; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        var formula = string.Format(CultureInfo.InvariantCulture, "=RC[-1]-{0:N2}-RC[-2]", model.EntryPoint.Elevation ?? 0);
+                        ws.Cell(ro, co++).FormulaR1C1 = formula; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, co++).Value = data.Comment;
+
+                    }
+                }
+
+                ws.Columns().AdjustToContents();
+                wb.CalculateMode = XLCalculateMode.Auto;
+
+                wb.SaveAs(fileName);
+            }
+        }
 
         // Elevations
         public void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
@@ -177,7 +267,7 @@ namespace DEM.Net.Extension.VisualTopo
                 dataPoint.Longitude += model.EntryPoint.Longitude;
                 dataPoint.Latitude += model.EntryPoint.Latitude;
                 var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
-                data.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(dataPointDem, dataset).Elevation ?? 0;                
+                data.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(dataPointDem, dataset).Elevation ?? 0;
                 data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.GlobalVector.Z;
             }
         }
@@ -587,4 +677,5 @@ namespace DEM.Net.Extension.VisualTopo
 
 
 }
+
 

@@ -92,8 +92,13 @@ namespace SampleApp
                 _visualTopoService.ComputeFullCavityElevations(model, dataSet); // will add TerrainElevationAbove and entry elevations
 
 
-                File.WriteAllBytes(Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".csv")), _visualTopoService.ExportToCsv(model).ToArray());
+                // CSV
+                string csvFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".csv"));
+                File.WriteAllBytes(csvFileName, _visualTopoService.ExportToCsv(model).ToArray());
 
+                // Excel
+                string xlsFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".xlsx"));
+                _visualTopoService.ExportToExcel(model, xlsFileName);
 
                 timeLog.LogTime("Cavity points elevation");
 
