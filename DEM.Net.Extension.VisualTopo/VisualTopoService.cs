@@ -58,7 +58,13 @@ namespace DEM.Net.Extension.VisualTopo
         {
             var model = ParseFile(vtopoFile, encoding, decimalDegrees, ignoreRadialBeams);
 
-            model = CreateGraph(model, zFactor);
+            // ========================
+            // Graph
+            CreateGraph(model);
+
+            // ========================
+            // 3D model - do not remove
+            Build3DTopology(model, zFactor);
 
             return model;
         }
@@ -78,18 +84,6 @@ namespace DEM.Net.Extension.VisualTopo
                     model = this.ParseSet(model, sr, decimalDegrees, ignoreRadialBeams);
                 }
             }
-
-            return model;
-        }
-        private VisualTopoModel CreateGraph(VisualTopoModel model, float zFactor)
-        {
-            // ========================
-            // Graph
-            CreateGraph(model);
-
-            // ========================
-            // 3D model - do not remove
-            Build3DTopology(model, zFactor);
 
             return model;
         }
@@ -424,12 +418,13 @@ namespace DEM.Net.Extension.VisualTopo
                 * Matrix4x4.CreateScale(1, 1, zFactor);
 
             direction = Vector3.Transform(direction, matrix);
+            runningTotalLength += p.Longueur; // on pourrait aussi utiliser p.GlobalVector.Length()
             p.GlobalVector = direction + local;
             p.GlobalGeoPoint = new GeoPointRays(p.GlobalVector.Y, p.GlobalVector.X, p.GlobalVector.Z
                                                 , Vector3.Normalize(direction)
                                                 , p.CutSection.left, p.CutSection.right, p.CutSection.up, p.CutSection.down);
             p.DistanceFromEntry = runningTotalLength;
-            runningTotalLength += p.Longueur; // on pourrait aussi utiliser p.GlobalVector.Length()
+            
 
             if (current == null) current = new List<GeoPointRays>();
             if (node.Arcs.Count == 0) // leaf
