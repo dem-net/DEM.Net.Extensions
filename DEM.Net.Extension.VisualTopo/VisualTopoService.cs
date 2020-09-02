@@ -58,6 +58,21 @@ namespace DEM.Net.Extension.VisualTopo
         {
             var model = ParseFile(vtopoFile, encoding, decimalDegrees, ignoreRadialBeams);
 
+            model = PreAnalyzeFile(model, zFactor);
+
+            return model;
+        }
+        public VisualTopoModel LoadFile(Stream vtopoStream, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
+        {
+            var model = ParseFile(vtopoStream, encoding, decimalDegrees, ignoreRadialBeams);
+
+            model = PreAnalyzeFile(model, zFactor);
+
+            return model;
+        }
+
+        private VisualTopoModel PreAnalyzeFile(VisualTopoModel model, float zFactor = 1f)
+        {
             // ========================
             // Graph
             CreateGraph(model);
@@ -71,19 +86,45 @@ namespace DEM.Net.Extension.VisualTopo
 
         private VisualTopoModel ParseFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams)
         {
-            VisualTopoModel model = new VisualTopoModel();
+            VisualTopoModel model = null;
 
             // ========================
             // Parsing
             using (StreamReader sr = new StreamReader(vtopoFile, encoding))
             {
-                model = this.ParseHeader(model, sr);
-
-                while (!sr.EndOfStream)
-                {
-                    model = this.ParseSet(model, sr, decimalDegrees, ignoreRadialBeams);
-                }
+                model = ParseFile(sr, decimalDegrees, ignoreRadialBeams);
             }
+
+            return model;
+        }
+        private VisualTopoModel ParseFile(Stream vtopoStream, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams)
+        {
+            VisualTopoModel model = null;
+
+            // ========================
+            // Parsing
+            using (StreamReader sr = new StreamReader(vtopoStream, encoding))
+            {
+                model = ParseFile(sr, decimalDegrees, ignoreRadialBeams);
+            }
+
+            return model;
+        }
+
+        private VisualTopoModel ParseFile(StreamReader vtopoFileReader, bool decimalDegrees, bool ignoreRadialBeams)
+        {
+            VisualTopoModel model = new VisualTopoModel();
+
+            // ========================
+            // Parsing
+
+            model = this.ParseHeader(model, vtopoFileReader);
+
+            while (!vtopoFileReader.EndOfStream)
+            {
+                model = this.ParseSet(model, vtopoFileReader, decimalDegrees, ignoreRadialBeams);
+            }
+
 
             return model;
         }
@@ -144,7 +185,7 @@ namespace DEM.Net.Extension.VisualTopo
             }
             return ms;
         }
-        public void ExportToExcel(VisualTopoModel model, string fileName)
+        public MemoryStream ExportToExcel(VisualTopoModel model)
         {
             using (var wb = new XLWorkbook())
             {
@@ -205,7 +246,7 @@ namespace DEM.Net.Extension.VisualTopo
                     {
                         ro++;
                         co = 1;
-                        ws.Cell(ro, co++).Value = data.Entree; 
+                        ws.Cell(ro, co++).Value = data.Entree;
                         ws.Cell(ro, co++).Value = data.Sortie;
                         ws.Cell(ro, co++).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         ws.Cell(ro, co++).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
@@ -230,7 +271,11 @@ namespace DEM.Net.Extension.VisualTopo
                 ws.Columns().AdjustToContents();
                 wb.CalculateMode = XLCalculateMode.Auto;
 
-                wb.SaveAs(fileName);
+                MemoryStream ms = new MemoryStream();
+                wb.SaveAs(ms, validate: true, evaluateFormulae: true);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                return ms;
             }
         }
 
@@ -424,7 +469,7 @@ namespace DEM.Net.Extension.VisualTopo
                                                 , Vector3.Normalize(direction)
                                                 , p.CutSection.left, p.CutSection.right, p.CutSection.up, p.CutSection.down);
             p.DistanceFromEntry = runningTotalLength;
-            
+
 
             if (current == null) current = new List<GeoPointRays>();
             if (node.Arcs.Count == 0) // leaf

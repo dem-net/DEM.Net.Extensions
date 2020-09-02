@@ -98,7 +98,11 @@ namespace SampleApp
 
                 // Excel
                 string xlsFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".xlsx"));
-                _visualTopoService.ExportToExcel(model, xlsFileName);
+
+                using (MemoryStream ms = _visualTopoService.ExportToExcel(model))
+                {
+                    File.WriteAllBytes(xlsFileName, ms.ToArray());
+                }
 
                 timeLog.LogTime("Cavity points elevation");
 
