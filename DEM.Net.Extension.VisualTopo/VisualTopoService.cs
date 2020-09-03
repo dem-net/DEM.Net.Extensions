@@ -246,8 +246,8 @@ namespace DEM.Net.Extension.VisualTopo
                     {
                         ro++;
                         co = 1;
-                        ws.Cell(ro, co++).Value = data.Entree;
-                        ws.Cell(ro, co++).Value = data.Sortie;
+                        ws.Cell(ro, co++).Value = string.Concat("'", data.Entree);
+                        ws.Cell(ro, co++).Value = string.Concat("'", data.Sortie);
                         ws.Cell(ro, co++).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         ws.Cell(ro, co++).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         ws.Cell(ro, co++).Value = data.Pente; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
@@ -301,7 +301,7 @@ namespace DEM.Net.Extension.VisualTopo
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
             model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
 
-            foreach (var data in model.Graph.AllNodes.Select(n => n.Model))
+            foreach (var data in model.Graph.AllNodes.Where(n => n.Model.GlobalGeoPoint != null).Select(n => n.Model))
             {
                 GeoPoint dataPoint = data.GlobalGeoPoint.Clone();
                 dataPoint.Longitude += model.EntryPoint.Longitude;
