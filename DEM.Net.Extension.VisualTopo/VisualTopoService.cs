@@ -185,7 +185,7 @@ namespace DEM.Net.Extension.VisualTopo
             }
             return ms;
         }
-        public MemoryStream ExportToExcel(VisualTopoModel model)
+        public MemoryStream ExportToExcel(VisualTopoModel model, bool autoFitColumns = true)
         {
             using (var wb = new XLWorkbook())
             {
@@ -268,7 +268,8 @@ namespace DEM.Net.Extension.VisualTopo
                     }
                 }
 
-                ws.Columns().AdjustToContents();
+                if (autoFitColumns) ws.Columns().AdjustToContents();
+
                 wb.CalculateMode = XLCalculateMode.Auto;
 
                 MemoryStream ms = new MemoryStream();
