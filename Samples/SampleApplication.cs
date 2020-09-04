@@ -33,7 +33,7 @@ using Microsoft.Extensions.Options;
 using DEM.Net.Core.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
-using SketchFab;
+using Sketchfab;
 
 namespace SampleApp
 {
@@ -64,8 +64,8 @@ namespace SampleApp
         {
             services.AddScoped<OsmExtensionSample>()
                     .AddScoped<HelladicSample>()
-                    .AddScoped<SketchFab.SketchFabApi>()
-                    .AddScoped<SketchFabSample>()
+                    .AddScoped<Sketchfab.SketchfabApi>()
+                    .AddScoped<SketchfabSample>()
                     .AddScoped<VisualTopoSample>()
                     .AddScoped<HighestPointFinder>();
             // .. more samples here
@@ -100,9 +100,9 @@ namespace SampleApp
 
                 Debugger.Break();
 
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchFabSample), _logger))
+                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchfabSample), _logger))
                 //{
-                //    services.GetService<SketchFabSample>().Run();
+                //    services.GetService<SketchfabSample>().Run();
                 //}
 
                 //Debugger.Break();

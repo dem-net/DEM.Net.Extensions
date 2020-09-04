@@ -3,7 +3,7 @@ using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Highways;
 using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
-using SketchFab;
+using Sketchfab;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;

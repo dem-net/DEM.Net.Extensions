@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Win32.SafeHandles;
 using SharpGLTF.Schema2;
-using SketchFab;
+using Sketchfab;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +29,7 @@ namespace SampleApp
         private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly MeshService _meshService;
-        private readonly SketchFab.SketchFabApi _sketchFabApi;
+        private readonly Sketchfab.SketchfabApi _sketchFabApi;
         private readonly string _sketchFabToken;
         private readonly ILogger _logger;
 
@@ -39,7 +39,7 @@ namespace SampleApp
                 , ElevationService elevationService
                 , SharpGltfService gltfService
                 , MeshService meshService
-                , SketchFab.SketchFabApi sketchFabApi
+                , Sketchfab.SketchfabApi sketchFabApi
                 , IOptions<AppSecrets> secrets
                 , ILogger<HelladicSample> logger)
         {
@@ -54,7 +54,7 @@ namespace SampleApp
 
             if (string.IsNullOrEmpty(_sketchFabToken))
             {
-                _logger.LogWarning($"SketchFabToken is not set. Ensure you have a secrets.json file with a SketchFabToken entry with your api token (see https://sketchfab.com/settings/password)");
+                _logger.LogWarning($"SketchfabToken is not set. Ensure you have a secrets.json file with a SketchfabToken entry with your api token (see https://Sketchfab.com/settings/password)");
             }
         }
 
@@ -146,7 +146,7 @@ namespace SampleApp
                                 var sfResponse = _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken).GetAwaiter().GetResult();
                                 response.UploadedFileId = sfResponse.ModelId;
                                 response.UploadStatus = sfResponse.StatusCode == HttpStatusCode.Created ? UploadStatus.OK : UploadStatus.Error;
-                                _logger.LogInformation($"SketchFab upload ok : {response.UploadedFileId}");
+                                _logger.LogInformation($"Sketchfab upload ok : {response.UploadedFileId}");
                             }
                             catch (Exception ex)
                             {
