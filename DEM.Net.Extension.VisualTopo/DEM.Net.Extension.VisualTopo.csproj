@@ -1,11 +1,59 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>DEM.Net.Extension.VisualTopo</PackageId>
+    <Version>0.2.7.3</Version>
+    <Authors>Xavier Fischer</Authors>
+    <Copyright>Xavier Fischer and Contributors</Copyright>
+    <Owners>Xavier Fischer</Owners>
+    <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
+    <PackageReleaseNotes>Intial release</PackageReleaseNotes>
+    <PackageTags>Speleology, Geology, Vtopo, VisualTopo</PackageTags>
+    <Title>DEM.Net.Extension.VisualTopo</Title>
+    <Product>DEM.Net Elevation API</Product>
+    <Description>VisualTopo extension for DEM.Net</Description>
+    <Summary>VisualTopo extension for DEM.Net</Summary>
+    <RepositoryUrl>https://github.com/dem-net/DEM.Net.Extensions</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>
+    </PackageLicenseExpression>
+    <PackageIconUrl>https://raw.githubusercontent.com/dem-net/Resources/master/images/DEMnet_512.png</PackageIconUrl>
+    <PackageIcon>DEMnet_64.png</PackageIcon>
+    <AssemblyVersion>0.2.7.3</AssemblyVersion>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
+  <!-- Build package only in Release -->
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <!-- Build package only in Release -->
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\DEM.Net\LICENSE.md" Link="LICENSE.md">
+      <PackagePath>
+      </PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.95.3" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
