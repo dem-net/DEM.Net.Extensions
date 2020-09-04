@@ -36,6 +36,7 @@ using Microsoft.Extensions.Configuration;
 using DEM.Net.Core.Configuration;
 using System.Threading.Tasks;
 using DEM.Net.Extension.Osm;
+using DEM.Net.Extension.VisualTopo;
 
 namespace SampleApp
 {
@@ -60,6 +61,7 @@ namespace SampleApp
             {
                 Console.WriteLine("Missing or invalid appsettings.json file.");
                 return;
+
             }
 
             // Setting up dependency injection
@@ -92,30 +94,37 @@ namespace SampleApp
         }
 
 
-        private static void ConfigureServices(IConfigurationRoot config, IServiceCollection services)
+        private static void ConfigureServices(IConfigurationRoot appConfig, IServiceCollection services)
         {
-            services.AddLogging(config =>
+            services
+            .AddLogging(config =>
             {
-                config.AddDebug(); // Log to debug (debug window in Visual Studio or any debugger attached)
+                // clear out default configuration
+                config.ClearProviders();
+
+                config.AddConfiguration(appConfig.GetSection("Logging"));
+                config.AddDebug();
                 config.AddConsole(o =>
                         {
                             o.IncludeScopes = false;
                             o.DisableColors = false;
                         }); // Log to console (colored !)
             })
-           .Configure<LoggerFilterOptions>(options =>
-           {
-               options.AddFilter<DebugLoggerProvider>(null /* category*/ , LogLevel.Information /* min level */);
-               options.AddFilter<ConsoleLoggerProvider>(null  /* category*/ , LogLevel.Information /* min level */);
+           //.Configure<LoggerFilterOptions>(options =>
+           //{
+           //    options.AddFilter<DebugLoggerProvider>(null /* category*/ , LogLevel.Information /* min level */);
+           //    options.AddFilter<ConsoleLoggerProvider>(null  /* category*/ , LogLevel.Information /* min level */);
+           //    options.AddFilter<ConsoleLoggerProvider>("System.Net.Http.HttpClient", LogLevel.Warning);
 
-               // Comment this line to see all internal DEM.Net logs
-               //options.AddFilter<ConsoleLoggerProvider>("DEM.Net", LogLevel.Information);
-           })
-           .Configure<AppSecrets>(config.GetSection(nameof(AppSecrets)))
-           .Configure<DEMNetOptions>(config.GetSection(nameof(DEMNetOptions)))
+           //    // Comment this line to see all internal DEM.Net logs
+           //    //options.AddFilter<ConsoleLoggerProvider>("DEM.Net", LogLevel.Information);
+           //})
+           .Configure<AppSecrets>(appConfig.GetSection(nameof(AppSecrets)))
+           .Configure<DEMNetOptions>(appConfig.GetSection(nameof(DEMNetOptions)))
            .AddDemNetCore()
            .AddDemNetglTF()
-           .AddDemNetOsmExtension();
+           .AddDemNetOsmExtension()
+           .AddDemNetVisualTopoExtension();
 
             SampleApplication.RegisterSamples(services);
 

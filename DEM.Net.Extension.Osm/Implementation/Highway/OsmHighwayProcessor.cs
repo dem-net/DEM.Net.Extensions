@@ -46,7 +46,7 @@ namespace DEM.Net.Extension.Osm.Highways
 
         private float GetRoadWidth(HighwayModel road)
         {
-            if (road.Lanes.HasValue)
+            if ((road.Lanes ?? 0) > 0)
             {
                 return road.Lanes.Value * LaneWidthMeters;
             }

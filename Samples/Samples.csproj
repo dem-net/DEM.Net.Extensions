@@ -20,12 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.5" />
     <PackageReference Include="ScottPlot" Version="4.0.29" />
-    <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0015" />
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
   </ItemGroup>
 
@@ -34,6 +32,7 @@
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
     <ProjectReference Include="..\..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj" />
     <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
+    <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
   </ItemGroup>
 
 
@@ -83,6 +82,39 @@
     <None Update="SampleData\trail.gpx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="SampleData\VisualTopo\LA SALLE.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\Olivier.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\Test 3 arcs.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\TestSections.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\Test 4 arcs.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\Topographie  CAMPELS2.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\Topographie fourchette v1 13 04 2014.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\0 bifurc\Topographieporche de la salle .tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\1 bifurc\Grotte de La Breyere.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\small\1 bifurc\Grottes des Allemands.tro">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleData\VisualTopo\topo asperge avec ruisseau.TRO">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="secrets.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -100,4 +132,5 @@
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
   </ItemGroup>
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 </Project>
