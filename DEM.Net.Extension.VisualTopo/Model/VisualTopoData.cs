@@ -37,8 +37,10 @@ namespace DEM.Net.Extension.VisualTopo
         public float Cap { get; internal set; }
         public float Pente { get; internal set; }
         public (float left, float right, float up, float down) CutSection { get; internal set; }
-        public Vector3 GlobalVector { get; internal set; }
-        public GeoPointRays GlobalGeoPoint { get; internal set; }
+        public Vector3 VectorLocal { get; internal set; }
+        public GeoPointRays GeoPointLocal { get; internal set; }
+        public GeoPoint GeoPointGlobal_DEMProjection { get; internal set; }
+        public GeoPoint GeoPointGlobal_ProjectedCoords { get; internal set; }
         public double TerrainElevationAbove { get; set; }
         public double Depth { get; set; }
         public bool IsRoot { get; internal set; }
