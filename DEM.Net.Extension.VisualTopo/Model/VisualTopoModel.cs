@@ -54,7 +54,7 @@ namespace DEM.Net.Extension.VisualTopo
             get
             {
                 var bbox = new BoundingBox() { SRID = this.SRID };
-                Graph.AllNodes.ForEach(n => { if (n.Model.GlobalGeoPoint != null) bbox.UnionWith(n.Model.GlobalGeoPoint.Longitude, n.Model.GlobalGeoPoint.Latitude, n.Model.GlobalGeoPoint.Elevation ?? 0); });
+                Graph.AllNodes.ForEach(n => { if (n.Model.GeoPointLocal != null) bbox.UnionWith(n.Model.GeoPointLocal.Longitude, n.Model.GeoPointLocal.Latitude, n.Model.GeoPointLocal.Elevation ?? 0); });
                 return bbox;
             }
         }

@@ -177,7 +177,7 @@ namespace DEM.Net.Extension.VisualTopo
                     {
                         sw.WriteLine(string.Join("\t", data.Entree, data.Sortie, data.Longueur, data.Cap, data.Pente
                             , data.CutSection.left, data.CutSection.right, data.CutSection.up, data.CutSection.down
-                            , data.GlobalVector.X, data.GlobalVector.Y, data.GlobalVector.Z
+                            , data.VectorLocal.X, data.VectorLocal.Y, data.VectorLocal.Z
                             , data.DistanceFromEntry, data.Depth, data.Comment));
                     }
                 }
@@ -187,13 +187,12 @@ namespace DEM.Net.Extension.VisualTopo
         }
         public MemoryStream ExportToExcel(VisualTopoModel model, bool autoFitColumns = true)
         {
-            using (var wb = new XLWorkbook())
+            using (var wb = new XLWorkbook(XLEventTracking.Disabled))
             {
                 var ws = wb.Worksheets.Add($"Cavité entrée Z={model.EntryPoint.Elevation:N1} m");
 
                 int ro = 1;
                 int co = 0;
-
                 ws.Cell(ro, ++co).Value = "Pt Départ";
                 ws.Cell(ro, ++co).Value = "Pt Arrivée";
                 ws.Cell(ro, ++co).Value = "Longueur";
@@ -206,6 +205,10 @@ namespace DEM.Net.Extension.VisualTopo
                 ws.Cell(ro, ++co).Value = "X";
                 ws.Cell(ro, ++co).Value = "Y";
                 ws.Cell(ro, ++co).Value = "Z";
+                ws.Cell(ro, ++co).Value = "Latitude";
+                ws.Cell(ro, ++co).Value = "Longitude";
+                ws.Cell(ro, ++co).Value = "X (Lambert 93)";
+                ws.Cell(ro, ++co).Value = "Y (Lambert 93)";
                 ws.Cell(ro, ++co).Value = "Distance";
                 ws.Cell(ro, ++co).Value = "Profondeur relative entrée";
                 ws.Cell(ro, ++co).Value = "Altitude terrain";
@@ -236,6 +239,10 @@ namespace DEM.Net.Extension.VisualTopo
                     ws.Cell(ro, ++co).Value = "";
                     ws.Cell(ro, ++co).Value = "";
                     ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
+                    ws.Cell(ro, ++co).Value = "";
                     ws.Cell(ro, ++co).Value = set.Name;
 
                     var setRow = ws.Row(ro);
@@ -245,25 +252,31 @@ namespace DEM.Net.Extension.VisualTopo
                     foreach (var data in set.Data)
                     {
                         ro++;
-                        co = 1;
-                        ws.Cell(ro, co++).Value = string.Concat("'", data.Entree);
-                        ws.Cell(ro, co++).Value = string.Concat("'", data.Sortie);
-                        ws.Cell(ro, co++).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.Pente; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.CutSection.left; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.CutSection.right; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.CutSection.up; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.CutSection.down; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.GlobalVector.X; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.GlobalVector.Y; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.GlobalVector.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.DistanceFromEntry; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.GlobalVector.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.TerrainElevationAbove; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        co = 0;
+                        ws.Cell(ro, ++co).Value = string.Concat("'", data.Entree);
+                        ws.Cell(ro, ++co).Value = string.Concat("'", data.Sortie);
+                        ws.Cell(ro, ++co).Value = data.Longueur;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Cap;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Pente;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.left;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.right;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.up;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.down;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.X;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Y;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        // Latitude, Long, X,Y
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection.Latitude;//  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection.Longitude;  //ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords.Longitude;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords.Latitude;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+
+                        ws.Cell(ro, ++co).Value = data.DistanceFromEntry;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.TerrainElevationAbove;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         var formula = string.Format(CultureInfo.InvariantCulture, "=RC[-1]-{0:N2}-RC[-2]", model.EntryPoint.Elevation ?? 0);
-                        ws.Cell(ro, co++).FormulaR1C1 = formula; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, co++).Value = data.Comment;
+                        ws.Cell(ro, ++co).FormulaR1C1 = formula;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Comment;
 
                     }
                 }
@@ -286,10 +299,10 @@ namespace DEM.Net.Extension.VisualTopo
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
             model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
 
-            foreach (var set in model.Sets.Where(s => s.Data.First().GlobalGeoPoint != null))
+            foreach (var set in model.Sets.Where(s => s.Data.First().GeoPointLocal != null))
             {
-                VisualTopoData setStartData = set.Data.First(d => d.GlobalGeoPoint != null);
-                GeoPoint dataPoint = setStartData.GlobalGeoPoint.Clone();
+                VisualTopoData setStartData = set.Data.First(d => d.GeoPointLocal != null);
+                GeoPoint dataPoint = setStartData.GeoPointLocal.Clone();
                 dataPoint.Longitude += model.EntryPoint.Longitude;
                 dataPoint.Latitude += model.EntryPoint.Latitude;
                 var setStartPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
@@ -301,14 +314,18 @@ namespace DEM.Net.Extension.VisualTopo
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
             model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
 
-            foreach (var data in model.Graph.AllNodes.Where(n => n.Model.GlobalGeoPoint != null).Select(n => n.Model))
+            foreach (var data in model.Graph.AllNodes.Where(n => n.Model.GeoPointLocal != null).Select(n => n.Model))
             {
-                GeoPoint dataPoint = data.GlobalGeoPoint.Clone();
+                GeoPoint dataPoint = data.GeoPointLocal.Clone();
                 dataPoint.Longitude += model.EntryPoint.Longitude;
                 dataPoint.Latitude += model.EntryPoint.Latitude;
                 var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
+                
+                data.GeoPointGlobal_ProjectedCoords = dataPoint;
+                data.GeoPointGlobal_DEMProjection = dataPointDem;
+
                 data.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(dataPointDem, dataset).Elevation ?? 0;
-                data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.GlobalVector.Z;
+                data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.VectorLocal.Z;
             }
         }
 
@@ -318,7 +335,7 @@ namespace DEM.Net.Extension.VisualTopo
         private void Build3DTopology_Triangulation(VisualTopoModel model, IColorCalculator colorFunc)
         {
             // Build color function
-            float minElevation = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
+            float minElevation = model.Graph.AllNodes.Min(n => n.Model.VectorLocal.Z);
 
 
             // Generate triangulation
@@ -338,14 +355,14 @@ namespace DEM.Net.Extension.VisualTopo
             if (model.IsSectionStart && triangulation.NumPositions > 0)
             {
                 // Cylinder height = point depth + (terrain height above - entry Z)
-                float cylinderHeight = -model.GlobalVector.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation.Value);
-                markersTriangulation += _meshService.CreateCylinder(model.GlobalVector, 0.2f, cylinderHeight, model.Set.Color);
+                float cylinderHeight = -model.VectorLocal.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation.Value);
+                markersTriangulation += _meshService.CreateCylinder(model.VectorLocal, 0.2f, cylinderHeight, model.Set.Color);
 
                 //var surfacePos = new Vector3(model.GlobalVector.X, model.GlobalVector.Y, (float)model.TerrainElevationAbove);
                 float coneHeight = 10;
-                markersTriangulation += _meshService.CreateCone(model.GlobalVector, 5, coneHeight, model.Set.Color)
+                markersTriangulation += _meshService.CreateCone(model.VectorLocal, 5, coneHeight, model.Set.Color)
                                             //.Translate(Vector3.UnitZ * -coneHeight / 2F)
-                                            .Transform(Matrix4x4.CreateRotationY((float)Math.PI, new Vector3(model.GlobalVector.X, model.GlobalVector.Y, model.GlobalVector.Z + coneHeight / 2f)))
+                                            .Transform(Matrix4x4.CreateRotationY((float)Math.PI, new Vector3(model.VectorLocal.X, model.VectorLocal.Y, model.VectorLocal.Z + coneHeight / 2f)))
                                             //.Translate(Vector3.UnitZ * coneHeight / 2F)
                                             .Translate(Vector3.UnitZ * cylinderHeight);
             }
@@ -382,11 +399,11 @@ namespace DEM.Net.Extension.VisualTopo
         /// <returns></returns>
         private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, IColorCalculator colorFunc)
         {
-            Vector3 next = (nextData == null) ? current.GlobalVector : nextData.GlobalVector;
-            GeoPointRays rays = current.GlobalGeoPoint;
-            Vector3 direction = (nextData == null) ? Vector3.UnitZ * -1 : next - current.GlobalVector;
+            Vector3 next = (nextData == null) ? current.VectorLocal : nextData.VectorLocal;
+            GeoPointRays rays = current.GeoPointLocal;
+            Vector3 direction = (nextData == null) ? Vector3.UnitZ * -1 : next - current.VectorLocal;
             direction = (direction == Vector3.Zero) ? Vector3.UnitZ * -1 : direction;
-            var position = current.GlobalVector;
+            var position = current.VectorLocal;
 
             Vector3 side = Vector3.Normalize(Vector3.Cross(direction, Vector3.UnitY));
             if (IsInvalid(side)) // Vector3 is UnitY
@@ -465,8 +482,8 @@ namespace DEM.Net.Extension.VisualTopo
 
             direction = Vector3.Transform(direction, matrix);
             runningTotalLength += p.Longueur; // on pourrait aussi utiliser p.GlobalVector.Length()
-            p.GlobalVector = direction + local;
-            p.GlobalGeoPoint = new GeoPointRays(p.GlobalVector.Y, p.GlobalVector.X, p.GlobalVector.Z
+            p.VectorLocal = direction + local;
+            p.GeoPointLocal = new GeoPointRays(p.VectorLocal.Y, p.VectorLocal.X, p.VectorLocal.Z
                                                 , Vector3.Normalize(direction)
                                                 , p.CutSection.left, p.CutSection.right, p.CutSection.up, p.CutSection.down);
             p.DistanceFromEntry = runningTotalLength;
@@ -475,7 +492,7 @@ namespace DEM.Net.Extension.VisualTopo
             if (current == null) current = new List<GeoPointRays>();
             if (node.Arcs.Count == 0) // leaf
             {
-                current.Add(node.Model.GlobalGeoPoint);
+                current.Add(node.Model.GeoPointLocal);
                 branches.Add(current);
                 return;
             }
@@ -488,14 +505,14 @@ namespace DEM.Net.Extension.VisualTopo
                     {
                         firstArc = false;
 
-                        current.Add(node.Model.GlobalGeoPoint);
-                        GraphTraversal_Lines(arc.Child, branches, current, node.Model.GlobalVector, runningTotalLength, zFactor);
+                        current.Add(node.Model.GeoPointLocal);
+                        GraphTraversal_Lines(arc.Child, branches, current, node.Model.VectorLocal, runningTotalLength, zFactor);
                     }
                     else
                     {
                         var newBranch = new List<GeoPointRays>();
-                        newBranch.Add(node.Model.GlobalGeoPoint);
-                        GraphTraversal_Lines(arc.Child, branches, newBranch, node.Model.GlobalVector, runningTotalLength, zFactor);
+                        newBranch.Add(node.Model.GeoPointLocal);
+                        GraphTraversal_Lines(arc.Child, branches, newBranch, node.Model.VectorLocal, runningTotalLength, zFactor);
                     }
                 }
             }

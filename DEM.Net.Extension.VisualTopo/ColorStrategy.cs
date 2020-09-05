@@ -25,7 +25,7 @@ namespace DEM.Net.Extension.VisualTopo
 
         public ColorFromDepthCalculation(VisualTopoModel model)
         {
-            _maxDepth = model.Graph.AllNodes.Min(n => n.Model.GlobalVector.Z);
+            _maxDepth = model.Graph.AllNodes.Min(n => n.Model.VectorLocal.Z);
             _colorConverter = new ColorSpaceConverter();
         }
 
