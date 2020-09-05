@@ -1,24 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>SampleApp</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
     <None Remove=".DS_Store" />
     <None Remove="._.DS_Store" />
     <None Remove="appsettings.json" />
     <None Remove="Osm\OsmExtensionSample.cs~RFb1716a.TMP" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
@@ -26,16 +22,6 @@
     <PackageReference Include="ScottPlot" Version="4.0.29" />
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
-    <ProjectReference Include="..\..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj" />
-    <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
-    <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
-  </ItemGroup>
-
-
   <ItemGroup>
     <None Update="Helladic\3D_debug.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -129,8 +115,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
+    <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
+    <ProjectReference Include="..\..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj" />
+    <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
+    <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
   </ItemGroup>
-  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties appsettings_1json__JsonSchema="" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
