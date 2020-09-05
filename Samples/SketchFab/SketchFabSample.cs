@@ -24,7 +24,7 @@ namespace SampleApp
 
             if (string.IsNullOrEmpty(this._sketchFabToken))
             {
-                _logger.LogWarning($"SketchfabToken is not set. Ensure you have a secrets.json file with a SketchfabToken entry with your api token (see https://Sketchfab.com/settings/password)");
+                _logger.LogWarning($"SketchfabToken is not set. Ensure you have a secrets.json file with a SketchfabToken entry with your api token (see https://sketchfab.com/settings/password)");
             }
         }
 
