@@ -47,6 +47,7 @@ namespace DEM.Net.Extension.VisualTopo
         public VisualTopoSet Set { get; internal set; }
         public bool IsSectionStart { get; internal set; }
         public double DistanceFromEntry { get; internal set; }
+        public bool IsDisconnected { get; internal set; } 
     }
 
 

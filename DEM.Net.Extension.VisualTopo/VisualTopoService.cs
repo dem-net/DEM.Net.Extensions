@@ -154,6 +154,8 @@ namespace DEM.Net.Extension.VisualTopo
                     if (!nodesByName.ContainsKey(data.Entree))
                     {
                         // Début graphe disjoint
+                        _logger.LogWarning($"Disconnected node {data.Entree} found");
+                        node.Model.IsDisconnected = true;
                         nodesByName[data.Entree] = node;
                     }
                     nodesByName[data.Entree].AddArc(node, data.Longueur);
@@ -187,6 +189,7 @@ namespace DEM.Net.Extension.VisualTopo
         }
         public MemoryStream ExportToExcel(VisualTopoModel model, bool autoFitColumns = true)
         {
+            using (TimeSpanBlock timer = new TimeSpanBlock("VisualTopo Excel export", _logger))
             using (var wb = new XLWorkbook(XLEventTracking.Disabled))
             {
                 var ws = wb.Worksheets.Add($"Cavité entrée Z={model.EntryPoint.Elevation:N1} m");
@@ -255,28 +258,40 @@ namespace DEM.Net.Extension.VisualTopo
                         co = 0;
                         ws.Cell(ro, ++co).Value = string.Concat("'", data.Entree);
                         ws.Cell(ro, ++co).Value = string.Concat("'", data.Sortie);
-                        ws.Cell(ro, ++co).Value = data.Longueur;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.Cap;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.Pente;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.CutSection.left;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.CutSection.right;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.CutSection.up;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.CutSection.down;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.VectorLocal.X;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.VectorLocal.Y;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.Pente; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.left; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.right; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.up; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.CutSection.down; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.X; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Y; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         // Latitude, Long, X,Y
-                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection.Latitude;//  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection.Longitude;  //ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords.Longitude;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords.Latitude;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection?.Latitude;//  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_DEMProjection?.Longitude;  //ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords?.Longitude; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.GeoPointGlobal_ProjectedCoords?.Latitude; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
 
-                        ws.Cell(ro, ++co).Value = data.DistanceFromEntry;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.TerrainElevationAbove;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.DistanceFromEntry; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.VectorLocal.Z; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+                        ws.Cell(ro, ++co).Value = data.TerrainElevationAbove; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         var formula = string.Format(CultureInfo.InvariantCulture, "=RC[-1]-{0:N2}-RC[-2]", model.EntryPoint.Elevation ?? 0);
-                        ws.Cell(ro, ++co).FormulaR1C1 = formula;  ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
-                        ws.Cell(ro, ++co).Value = data.Comment;
+                        ws.Cell(ro, ++co).FormulaR1C1 = formula; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
+
+                        // comment row (red for disconnected node)
+                        if (data.IsDisconnected)
+                        {
+                            var disconnectedRow = ws.Row(ro);
+                            setRow.Style.Fill.BackgroundColor = XLColor.Red;
+                            disconnectedRow.Style.Fill.BackgroundColor = XLColor.Red;
+                            ws.Cell(ro, ++co).Value = string.Concat("[DISCONNECTED] ", data.Comment);
+                        }
+                        else
+                        {
+                            ws.Cell(ro, ++co).Value = data.Comment;
+                        }
 
                     }
                 }
@@ -320,7 +335,7 @@ namespace DEM.Net.Extension.VisualTopo
                 dataPoint.Longitude += model.EntryPoint.Longitude;
                 dataPoint.Latitude += model.EntryPoint.Latitude;
                 var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
-                
+
                 data.GeoPointGlobal_ProjectedCoords = dataPoint;
                 data.GeoPointGlobal_DEMProjection = dataPointDem;
 
@@ -674,7 +689,7 @@ namespace DEM.Net.Extension.VisualTopo
                 }
                 dataLine = sr.ReadLine();
             }
-            while (dataLine != string.Empty);
+            while (!string.IsNullOrWhiteSpace(dataLine));
 
             model.Sets.Add(set);
 

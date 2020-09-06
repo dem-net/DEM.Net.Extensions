@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>DEM.Net.Extension.VisualTopo</PackageId>
-    <Version>1.0.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Version>1.0.0.1</Version>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
     <Authors>Xavier Fischer</Authors>
     <Copyright>Xavier Fischer and Contributors</Copyright>
     <Owners>Xavier Fischer</Owners>
     <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
-    <PackageReleaseNotes>Intial release</PackageReleaseNotes>
+    <PackageReleaseNotes>Annotate disconnected graphs</PackageReleaseNotes>
     <PackageTags>Speleology, Geology, Vtopo, VisualTopo</PackageTags>
     <Title>DEM.Net.Extension.VisualTopo</Title>
     <Product>DEM.Net Elevation API</Product>

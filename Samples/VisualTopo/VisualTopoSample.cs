@@ -43,7 +43,11 @@ namespace SampleApp
 
         public void Run()
         {
-            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
+            // Disconnected graph
+            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo","small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
+            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), dataSet: DEMDataSet.NASADEM);
+            
+
             Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
 
             Run_3DModelGeneration();
@@ -99,7 +103,7 @@ namespace SampleApp
                 // Excel
                 string xlsFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".xlsx"));
 
-                using (MemoryStream ms = _visualTopoService.ExportToExcel(model))
+                using (MemoryStream ms = _visualTopoService.ExportToExcel(model, autoFitColumns: false))
                 {
                     File.WriteAllBytes(xlsFileName, ms.ToArray());
                 }

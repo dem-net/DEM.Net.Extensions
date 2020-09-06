@@ -1,0 +1,32 @@
+Version 5.12
+Verification 1
+
+Trou CAVITES SECTEUR DE LA SALLE,492.72437,4818.90082,400.00,UTM31
+Club COLLECTIF
+Entree PN0
+Toporobot 0
+Couleur 0,0,0
+
+Param Deca Degd Clino Degd -3.5802 Dir,Dir,Dir Dep Std 03/08/1977 A ;PN77;
+
+PN0        PN0                       0.00    0.00    0.00   0.00   0.00   0.00   0.00 N I * N
+PN0        PN0a                      0.00    0.00    0.00   0.00   0.00   0.00   0.00 N I * N
+PN0a       PN1                      15.07  309.50  -84.45   0.93   0.93   0.93   0.00 N I * N
+PN1        PN2                      13.34  359.50  -22.02   2.46   1.67  15.00   0.00 N I * N
+PN2        PN3                       7.58  352.60    0.00   0.74   0.74  15.00   0.00 N I * N
+
+Param Deca Degd Clino Degd 1.2115 Dir,Dir,Dir Dep 192,192,192 05/12/2019 A
+
+PN0        CA0                      58.14  190.00   26.57   0.00   0.00   0.00   0.00 N E * N
+
+Param Deca Degd Clino Degd -4.0355 Dir,Dir,Dir Dep Std 01/12/1976 M ;AVEN DE CAMPEMAUX CENT;
+
+CA0        CA0                       0.00    0.00    0.00   0.00   0.00   0.00   0.00 N I * N
+CA0        CA0a                      0.00  360.00    0.00   1.00   1.00   0.70   0.00 N I * N
+CA0a       CA0b                      2.03  239.66    0.00   2.50   2.50   2.50   0.00 N I * N
+
+Param Deca Degd Clino Degd -4.2002 Dir,Dir,Dir Dep Std 30/01/1975 M ;GROTTE DE RAUTELY;
+
+RA0        RA0                       0.00    0.00    0.00   0.00   0.00   0.00   0.00 N I * N
+RA0        RA0a                      2.03  239.66    0.00   2.50   2.50   2.50   0.00 N I * N
+RA0a       RA0b                      2.03  239.66    0.00   2.50   2.50   2.50   0.00 N I * N
