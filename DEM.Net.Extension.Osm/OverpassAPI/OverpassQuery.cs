@@ -43,9 +43,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
     public class OverpassQuery
     {
 
-        private static SemaphoreSlim semaphore;
+        private static readonly SemaphoreSlim semaphore;
         // A padding interval to make the output more orderly.
-        private static int waitTime = 500;
+        private static readonly int waitTime = 500;
         private const int RATE_LIMIT = 2; // 2 simultaneous requests
 
         static OverpassQuery()
@@ -434,7 +434,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             return this;
 
         }
-        public OverpassQuery WithNodesHavingRelation(String RelationType, String Value = "")
+        public OverpassQuery WithNodesHavingRelation(String RelationType)
         {
 
             NodesRelations.Add(RelationType);
@@ -543,18 +543,18 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// Execute this Overpass query.
         /// </summary>
         /// <returns>A Overpass query result.</returns>
-        public Task<OverpassResult> RunQuery(UInt32 Timeout = 0)
+        public Task<OverpassResult> RunQueryAsync(UInt32 Timeout = 0)
         {
-            return this.RunQuery(this.ToString(), Timeout);
+            return this.RunQueryAsync(this.ToString(), Timeout);
 
         }
-        public Task<OverpassResult> RunQueryQL(string request, UInt32 Timeout = 0)
+        public Task<OverpassResult> RunQueryQLAsync(string request, UInt32 Timeout = 0)
         {
-            return this.RunQuery(this.ToStringWithQLInjection(request), Timeout);
+            return this.RunQueryAsync(this.ToStringWithQLInjection(request), Timeout);
         }
 
 
-        public async Task<OverpassResult> RunQuery(string queryBody, UInt32 Timeout = 0)
+        public async Task<OverpassResult> RunQueryAsync(string queryBody, UInt32 Timeout = 0)
         {
 
             if (Timeout > 0)

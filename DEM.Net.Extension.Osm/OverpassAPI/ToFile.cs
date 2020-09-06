@@ -42,12 +42,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="OverpassQuery">An Overpass query.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<OverpassResult> ToFile(this OverpassQuery OverpassQuery, String Filename)
+        public static Task<OverpassResult> ToFileAsync(this OverpassQuery OverpassQuery, String Filename)
         {
 
             return OverpassQuery.
-                       RunQuery().
-                       ToFile(Filename);
+                       RunQueryAsync().
+                       ToFileAsync(Filename);
 
         }
 
@@ -60,7 +60,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<OverpassResult> ToFile(this Task<OverpassResult>  ResultTask,
+        public static Task<OverpassResult> ToFileAsync(this Task<OverpassResult>  ResultTask,
                                                   String                     Filename)
         {
 
@@ -132,7 +132,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="JSONTask">A JSON query result task.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<JObject> ToFile(this Task<JObject> JSONTask, String Filename)
+        public static Task<JObject> ToFileAsync(this Task<JObject> JSONTask, String Filename)
         {
 
             return JSONTask.ContinueWith(task => {
@@ -141,7 +141,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                                         });
 
         }
-        public static Task<FeatureCollection> ToFile(this Task<FeatureCollection> JSONTask, String Filename)
+        public static Task<FeatureCollection> ToFileAsync(this Task<FeatureCollection> JSONTask, String Filename)
         {
 
             return JSONTask.ContinueWith(task => {

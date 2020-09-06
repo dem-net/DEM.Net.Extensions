@@ -33,7 +33,7 @@ namespace DEM.Net.Extension.Osm
                         query = filter(query);
                     }
 
-                    var task = query.ToGeoJSON();
+                    var task = query.ToGeoJSONAsync();
 
                     FeatureCollection ways = task.GetAwaiter().GetResult();
 
@@ -56,8 +56,8 @@ namespace DEM.Net.Extension.Osm
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
                     var task = new OverpassQuery(bbox, _logger)
-                        .RunQueryQL(fullQueryBody)
-                        .ToGeoJSON();
+                        .RunQueryQLAsync(fullQueryBody)
+                        .ToGeoJSONAsync();
 
                     FeatureCollection ways = task.GetAwaiter().GetResult();
 
@@ -102,8 +102,8 @@ namespace DEM.Net.Extension.Osm
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
                     var task = query.AsCount()
-                        .RunQuery()
-                        .ToCount();
+                        .RunQueryAsync()
+                        .ToCountAsync();
 
                     OverpassCountResult count = task.GetAwaiter().GetResult();
 
