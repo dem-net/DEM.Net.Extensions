@@ -17,13 +17,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DEM.Net.Core" Version="0.2.7.3" />
-    <PackageReference Include="DEM.Net.Extension.Osm" Version="0.2.7.3" />
-    <PackageReference Include="DEM.Net.Extension.VisualTopo" Version="0.2.7.3" />
+    <PackageReference Include="DEM.Net.Extension.Osm" Version="1.0.0" />
+    <PackageReference Include="DEM.Net.Extension.VisualTopo" Version="1.0.0" />
     <PackageReference Include="DEM.Net.glTF" Version="0.2.7.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.5" />
-    <PackageReference Include="ScottPlot" Version="4.0.29" />
+    <PackageReference Include="ScottPlot" Version="4.0.38" />
     <PackageReference Include="SketchfabApi.Net" Version="1.0.3" />
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
   </ItemGroup>
@@ -118,13 +118,6 @@
     <None Update="Sketchfab\sampleModel.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
-    <ProjectReference Include="..\..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj" />
-    <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
-    <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
   </ItemGroup>
   <ProjectExtensions>
     <VisualStudio>
