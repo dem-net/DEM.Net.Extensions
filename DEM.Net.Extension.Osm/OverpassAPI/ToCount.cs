@@ -16,7 +16,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
     public static partial class OverpassAPIExtentions
     {
 
-        public static Task<OverpassCountResult> ToCount(this Task<OverpassResult> ResultTask)
+        public static Task<OverpassCountResult> ToCountAsync(this Task<OverpassResult> ResultTask)
         {
             return ResultTask.ContinueWith(task => {
                 return ResultTask.Result.Elements.First().ToObject<OverpassCountResult>();

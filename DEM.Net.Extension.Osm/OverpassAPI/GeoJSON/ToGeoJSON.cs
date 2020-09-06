@@ -49,12 +49,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// Run the given Overpass query and convert the result to GeoJSON.
         /// </summary>
         /// <param name="OverpassQuery">An Overpass query.</param>
-        public static Task<FeatureCollection> ToGeoJSON(this OverpassQuery OverpassQuery)
+        public static Task<FeatureCollection> ToGeoJSONAsync(this OverpassQuery OverpassQuery)
         {
 
             return OverpassQuery.
-                       RunQuery().
-                       ToGeoJSON();
+                       RunQueryAsync().
+                       ToGeoJSONAsync();
 
         }
 
@@ -66,7 +66,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// Convert the given Overpass query result to GeoJSON.
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
-        public static Task<FeatureCollection> ToGeoJSON(this Task<OverpassResult> ResultTask)
+        public static Task<FeatureCollection> ToGeoJSONAsync(this Task<OverpassResult> ResultTask)
         {
             HashSet<ulong> nodesInRelation = new HashSet<ulong>();
             HashSet<ulong> waysInRelation = new HashSet<ulong>();
@@ -196,12 +196,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="OverpassQuery">An Overpass query.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<FeatureCollection> ToGeoJSONFile(this OverpassQuery OverpassQuery, String Filename)
+        public static Task<FeatureCollection> ToGeoJSONFileAsync(this OverpassQuery OverpassQuery, String Filename)
         {
 
             return OverpassQuery.
-                       RunQuery().
-                       ToGeoJSONFile(Filename);
+                       RunQueryAsync().
+                       ToGeoJSONFileAsync(Filename);
 
         }
 
@@ -214,10 +214,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<FeatureCollection> ToGeoJSONFile(this Task<OverpassResult> ResultTask,
+        public static Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
                                                   String Filename)
         {
-            return ResultTask.ToGeoJSON().ToFile(Filename);
+            return ResultTask.ToGeoJSONAsync().ToFileAsync(Filename);
         }
 
         #endregion
@@ -229,10 +229,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<FeatureCollection> ToGeoJSONFile(this Task<OverpassResult> ResultTask,
+        public static Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
                                                   Func<FeatureCollection, String> FilenameBuilder)
         {
-            return ResultTask.ToGeoJSON().ContinueWith(t1 => t1.ToFile(FilenameBuilder(t1.Result)).Result);
+            return ResultTask.ToGeoJSONAsync().ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result);
         }
 
         #endregion
@@ -244,10 +244,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="JSONTask">A GeoJSON task.</param>
         /// <param name="Filename">A file name.</param>
-        public static Task<JObject> ToGeoJSONFile(this Task<JObject> JSONTask,
+        public static Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
                                                   String Filename)
         {
-            return JSONTask.ToFile(Filename);
+            return JSONTask.ToFileAsync(Filename);
         }
 
         #endregion
@@ -259,10 +259,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="JSONTask">A GeoJSON task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<JObject> ToGeoJSONFile(this Task<JObject> JSONTask,
+        public static Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
                                                   Func<JObject, String> FilenameBuilder)
         {
-            return JSONTask.ContinueWith(t1 => t1.ToFile(FilenameBuilder(t1.Result)).Result);
+            return JSONTask.ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result);
         }
 
         #endregion
@@ -275,7 +275,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="GeoJSONTask">A GeoJSON task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<IEnumerable<JObject>> ToGeoJSONFile(this Task<IEnumerable<JObject>> GeoJSONTask,
+        public static Task<IEnumerable<JObject>> ToGeoJSONFileAsync(this Task<IEnumerable<JObject>> GeoJSONTask,
                                                                Func<JObject, String> FilenameBuilder)
         {
             return GeoJSONTask.ContinueWith(GeoJSONTasks => GeoJSONTasks.Result.Select(GeoJSON => GeoJSON.ToFile(FilenameBuilder)));
@@ -313,8 +313,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             try
             {
                 var id = string.Concat("node/", Node.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>();
-                props.Add("@id", id);
+                Dictionary<string, object> props = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
                 foreach (var tag in Node.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
@@ -371,8 +373,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 var isClosed = FirstNode.Latitude == LastNode.Latitude && FirstNode.Longitude == LastNode.Longitude;
 
                 var id = string.Concat("way/", Way.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>();
-                props.Add("@id", id);
+                Dictionary<string, object> props = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
                 foreach (var tag in Way.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
@@ -560,8 +564,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 }
 
                 var id = string.Concat("relation/", Relation.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>();
-                props.Add("@id", id);
+                Dictionary<string, object> props = new Dictionary<string, object>
+                {
+                    { "@id", id }
+                };
                 foreach (var tag in Relation.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
