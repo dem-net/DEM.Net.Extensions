@@ -510,8 +510,10 @@ namespace DEM.Net.Extension.VisualTopo
                     }
                     else
                     {
-                        var newBranch = new List<GeoPointRays>();
-                        newBranch.Add(node.Model.GeoPointLocal);
+                        var newBranch = new List<GeoPointRays>
+                        {
+                            node.Model.GeoPointLocal
+                        };
                         GraphTraversal_Lines(arc.Child, branches, newBranch, node.Model.VectorLocal, runningTotalLength, zFactor);
                     }
                 }
@@ -555,8 +557,10 @@ namespace DEM.Net.Extension.VisualTopo
                     }
                     else
                     {
-                        var newBranch = new List<T>();
-                        newBranch.Add(info);
+                        var newBranch = new List<T>
+                        {
+                            info
+                        };
                         GetBranches(arc.Child, branches, newBranch, extractInfo);
                     }
                 }
