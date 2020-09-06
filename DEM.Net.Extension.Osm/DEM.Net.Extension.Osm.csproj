@@ -62,4 +62,3 @@
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
   </ItemGroup>
 </Project>
-</Project>
