@@ -9,7 +9,7 @@ namespace DEM.Net.Extension.VisualTopo
     {
         public static IServiceCollection AddDemNetVisualTopoExtension(this IServiceCollection services)
         {
-            services.AddScoped<VisualTopoService>();
+            services.AddTransient<VisualTopoService>();
 
             return services;
         }
