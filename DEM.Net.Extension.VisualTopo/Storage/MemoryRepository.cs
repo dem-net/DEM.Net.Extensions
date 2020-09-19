@@ -24,51 +24,55 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace DEM.Net.Extension.VisualTopo.Storage
 {
-    public class MemoryRepository : IBasicRepository
+    public class MemoryRepository : IVisualTopoRepository
     {
         private readonly IMemoryCache memoryCache;
+        private readonly VisualTopoOptions options;
         private const string CacheKey = "_TopoModel";
-        private readonly TimeSpan SlidingExpiration = TimeSpan.FromHours(1);
 
-        public MemoryRepository(IMemoryCache memoryCache)
+        public MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptions> options)
         {
             this.memoryCache = memoryCache;
+            this.options = options.Value;
         }
 
-        public Guid AddModel(VisualTopoModel model)
+        public async Task<Guid> AddModelAsync(VisualTopoModel model)
         {
             Guid id = Guid.NewGuid();
 
-            memoryCache.GetOrCreate(GetKey(id), entry =>
+            await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
             {
-                entry.SetSlidingExpiration(SlidingExpiration);
-                return model;
+                entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
+                return Task.FromResult(model);
             });
 
             return id;
         }
 
-        public void DeleteModel(Guid id)
+        public Task DeleteModelAsync(Guid id)
         {
             memoryCache.Remove(GetKey(id));
+            return Task.CompletedTask;
         }
 
-        public VisualTopoModel GetModel(Guid id)
+        public Task<VisualTopoModel> GetModelAsync(Guid id)
         {
-            return memoryCache.Get<VisualTopoModel>(GetKey(id));
+            return Task.FromResult(memoryCache.Get<VisualTopoModel>(GetKey(id)));
         }
 
-        public void UpdateModel(VisualTopoModel model, Guid id)
+        public async Task UpdateModelAsync(VisualTopoModel model, Guid id)
         {
-            DeleteModel(id);
-            memoryCache.GetOrCreate(GetKey(id), entry =>
+            await DeleteModelAsync(id);
+            await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
             {
-                entry.SetSlidingExpiration(SlidingExpiration);
-                return model;
+                entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
+                return Task.FromResult(model);
             });
         }
 

@@ -1,5 +1,5 @@
 ﻿//
-// IVisualTopoRepository.cs
+// MemoryRepository.cs
 //
 // Author:
 //       Xavier Fischer 2020-9
@@ -23,16 +23,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using System;
-using System.Threading.Tasks;
-
-namespace DEM.Net.Extension.VisualTopo.Storage
+namespace DEM.Net.Extension.VisualTopo
 {
-    public interface IVisualTopoRepository
+    public class VisualTopoOptions
     {
-        Task<Guid> AddModelAsync(VisualTopoModel model);
-        Task UpdateModelAsync(VisualTopoModel model, Guid id);
-        Task<VisualTopoModel> GetModelAsync(Guid id);
-        Task DeleteModelAsync(Guid id);
+        public int MemoryCacheDurationMinutes { get; set; } = 60;
     }
 }
