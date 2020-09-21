@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+﻿using DEM.Net.Extension.VisualTopo.Storage;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +10,9 @@ namespace DEM.Net.Extension.VisualTopo
     {
         public static IServiceCollection AddDemNetVisualTopoExtension(this IServiceCollection services)
         {
-            services.AddTransient<VisualTopoService>();
+            services
+                .AddTransient<IVisualTopoRepository, MemoryRepository>()
+                .AddTransient<VisualTopoService>();
 
             return services;
         }
