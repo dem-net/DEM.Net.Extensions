@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>DEM.Net.Extension.VisualTopo</PackageId>
-    <Version>1.0.0.1</Version>
-    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <Version>1.0.0.2</Version>
+    <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <Authors>Xavier Fischer</Authors>
     <Copyright>Xavier Fischer and Contributors</Copyright>
     <Owners>Xavier Fischer</Owners>
     <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
-    <PackageReleaseNotes>Annotate disconnected graphs</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated to DEM Net 0.2.7.4 for triangulation Clone() support</PackageReleaseNotes>
     <PackageTags>Speleology, Geology, Vtopo, VisualTopo</PackageTags>
     <Title>DEM.Net.Extension.VisualTopo</Title>
     <Product>DEM.Net Elevation API</Product>
@@ -15,8 +15,6 @@
     <Summary>VisualTopo extension for DEM.Net</Summary>
     <RepositoryUrl>https://github.com/dem-net/DEM.Net.Extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>
-    </PackageLicenseExpression>
     <PackageIconUrl>https://raw.githubusercontent.com/dem-net/Resources/master/images/DEMnet_512.png</PackageIconUrl>
     <PackageIcon>DEMnet_64.png</PackageIcon>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -38,12 +36,12 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
     <None Include="..\..\DEM.Net\LICENSE.md" Link="LICENSE.md">
       <PackagePath>
-      </PackagePath>
+            </PackagePath>
       <Pack>True</Pack>
     </None>
+    <None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.95.3" />
