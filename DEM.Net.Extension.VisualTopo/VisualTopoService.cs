@@ -49,13 +49,13 @@ namespace DEM.Net.Extension.VisualTopo
         private readonly MeshService _meshService;
         private readonly ElevationService _elevationService;
         private readonly ILogger<VisualTopoService> _logger;
+        private const int ModelDefaultSRID = Reprojection.SRID_PROJECTED_LAMBERT_93;
 
         public VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
         {
             _meshService = meshService;
             _elevationService = elevationService;
-            _logger = logger;
-            
+            _logger = logger;            
         }
         public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
         {
@@ -614,8 +614,10 @@ namespace DEM.Net.Extension.VisualTopo
                 double.Parse(data[2], CultureInfo.InvariantCulture) * factor
                 , double.Parse(data[1], CultureInfo.InvariantCulture) * factor
                 , double.Parse(data[3], CultureInfo.InvariantCulture));
-            model.SRID = srid;
-            model.EntryPoint = model.EntryPoint;
+            
+            // Reproj vers Lambert93
+            model.EntryPoint = model.EntryPoint.ReprojectTo(srid, ModelDefaultSRID);
+            model.SRID = ModelDefaultSRID;
 
             // Warn if badly supported projection
             if (model.EntryPointProjectionCode.StartsWith("LT"))
