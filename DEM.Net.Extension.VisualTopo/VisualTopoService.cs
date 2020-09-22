@@ -26,6 +26,7 @@
 using ClosedXML.Excel;
 using DEM.Net.Core;
 using DEM.Net.Core.Graph;
+using DEM.Net.Core.Services.Lab;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp.ColorSpaces;
@@ -40,6 +41,7 @@ using System.Net.Http.Headers;
 using System.Numerics;
 using System.Text;
 
+
 namespace DEM.Net.Extension.VisualTopo
 {
     public class VisualTopoService
@@ -47,12 +49,13 @@ namespace DEM.Net.Extension.VisualTopo
         private readonly MeshService _meshService;
         private readonly ElevationService _elevationService;
         private readonly ILogger<VisualTopoService> _logger;
+        private const int ModelDefaultSRID = Reprojection.SRID_PROJECTED_LAMBERT_93;
 
         public VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
         {
             _meshService = meshService;
             _elevationService = elevationService;
-            _logger = logger;
+            _logger = logger;            
         }
         public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
         {
@@ -611,13 +614,15 @@ namespace DEM.Net.Extension.VisualTopo
                 double.Parse(data[2], CultureInfo.InvariantCulture) * factor
                 , double.Parse(data[1], CultureInfo.InvariantCulture) * factor
                 , double.Parse(data[3], CultureInfo.InvariantCulture));
-            model.SRID = srid;
-            model.EntryPoint = model.EntryPoint;
+            
+            // Reproj vers Lambert93
+            model.EntryPoint = model.EntryPoint.ReprojectTo(srid, ModelDefaultSRID);
+            model.SRID = ModelDefaultSRID;
 
             // Warn if badly supported projection
             if (model.EntryPointProjectionCode.StartsWith("LT"))
                 _logger.LogWarning($"Model entry projection is Lambert Carto and is not fully supported. Will result in 20m shifts. Consider changing projection to UTM");
-
+            
         }
 
         private VisualTopoModel ParseHeader(VisualTopoModel model, StreamReader sr)
@@ -666,7 +671,7 @@ namespace DEM.Net.Extension.VisualTopo
             // Set header
             var data = setHeader.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
             var headerSlots = data[0].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            set.Color = this.ParseColor(headerSlots[headerSlots.Length - 3]);
+            set.Color = this.ParseColor(headerSlots);
             set.Name = data.Length > 1 ? data[1].Trim() : string.Empty;
 
             sr.Skip(1);
@@ -679,7 +684,7 @@ namespace DEM.Net.Extension.VisualTopo
                 if (parts.Length > 1) topoData.Comment = parts[1].Trim();
                 var slots = parts[0].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                Debug.Assert(slots.Length == 13);
+                //Debug.Assert(slots.Length == 13);
 
                 // Parse data line
                 topoData = this.ParseData(topoData, slots, decimalDegrees, ignoreRadialBeams);
@@ -736,9 +741,18 @@ namespace DEM.Net.Extension.VisualTopo
             }
         }
 
+        // Find slot with color info and parse it
+        private Vector4 ParseColor(string[] slots)
+        {
+            var colorStr = slots.Select(s => s.ToLower())
+                 .Where(s => s == "std"
+                          || (s.Count(ch => ch == ',') >= 2 && !s.Contains("dir")))
+                 .FirstOrDefault();
+            return ParseColor(colorStr);
+        }
         private Vector4 ParseColor(string rgbCommaSeparated)
         {
-            if (rgbCommaSeparated == "Std")
+            if (string.IsNullOrEmpty(rgbCommaSeparated) || rgbCommaSeparated == "std")
                 return VectorsExtensions.CreateColor(255, 255, 255);
 
             var slots = rgbCommaSeparated.Split(',')

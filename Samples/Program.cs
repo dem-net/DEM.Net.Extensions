@@ -61,7 +61,6 @@ namespace SampleApp
             {
                 Console.WriteLine("Missing or invalid appsettings.json file.");
                 return;
-
             }
 
             // Setting up dependency injection

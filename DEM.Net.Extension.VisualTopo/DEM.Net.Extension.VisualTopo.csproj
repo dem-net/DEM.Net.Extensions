@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>DEM.Net.Extension.VisualTopo</PackageId>
-    <Version>1.0.0.2</Version>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <Version>1.0.0.3</Version>
+    <AssemblyVersion>1.0.0.3</AssemblyVersion>
     <Authors>Xavier Fischer</Authors>
     <Copyright>Xavier Fischer and Contributors</Copyright>
     <Owners>Xavier Fischer</Owners>
     <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
-    <PackageReleaseNotes>Updated to DEM Net 0.2.7.4 for triangulation Clone() support</PackageReleaseNotes>
+    <PackageReleaseNotes>Forced to Lambert93 projection for homogenous results</PackageReleaseNotes>
     <PackageTags>Speleology, Geology, Vtopo, VisualTopo</PackageTags>
     <Title>DEM.Net.Extension.VisualTopo</Title>
     <Product>DEM.Net Elevation API</Product>

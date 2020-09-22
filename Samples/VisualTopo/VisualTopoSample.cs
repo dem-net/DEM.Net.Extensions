@@ -43,6 +43,15 @@ namespace SampleApp
 
         public void Run()
         {
+
+            // All files in given directory
+            foreach (var file in Directory.EnumerateFileSystemEntries(@"C:\Users\xfischer\Dropbox\Perso\Projets\DEM.net\2020 IPVSMN\fichiers tro\temp", "*.tro", SearchOption.AllDirectories))
+            {
+                _logger.LogInformation("Generating model for file " + Path.GetFileName(file));
+                Run_3DModelGeneration(file, ImageryProvider.ThunderForestLandscape, bboxMarginMeters: 50, generateTopoOnlyModel: false);
+            }
+
+
             // Disconnected graph
             Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo","small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
             Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), dataSet: DEMDataSet.NASADEM);
@@ -121,6 +130,8 @@ namespace SampleApp
 
         private void Run_3DModelGeneration()
         {
+
+
             Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
 
             Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true, zFactor: 1f);
@@ -163,9 +174,9 @@ namespace SampleApp
                 int outputSRID = 3857;                                  // Output SRID
                 float lineWidth = 1.0F;                                 // Topo lines width (meters)
                 var dataset = DEMDataSet.AW3D30;                        // DEM dataset for terrain and elevation
-                int TEXTURE_TILES = 12;                                 // Texture quality (number of tiles for bigger side) 4: med, 8: high, 12: ultra
+                int TEXTURE_TILES = 8;                                 // Texture quality (number of tiles for bigger side) 4: med, 8: high, 12: ultra
                 string outputDir = Directory.GetCurrentDirectory();
-                bool GENERATE_LINE3D = true;
+                bool GENERATE_LINE3D = false;
 
                 //=======================
                 // Open and parse file
@@ -234,7 +245,8 @@ namespace SampleApp
 
                 int i = 0;
 
-                var triangulation = model.TriangulationFull3D.Translate(axisOriginModelSpace) // already zScaled if zFactor > 1
+                var triangulation = model.TriangulationFull3D.Clone()
+                                                .Translate(axisOriginModelSpace) // already zScaled if zFactor > 1
                                                 .ReprojectTo(model.SRID, outputSRID)
                                                 .CenterOnOrigin(bboxTerrainSpace)
                                                 .CenterOnOrigin(axisOriginWorldSpace.AsVector3());
@@ -283,10 +295,10 @@ namespace SampleApp
                     timeLog.LogTime("Imagery download");
 
                     Console.WriteLine("Construct texture...");
-                    TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
-                    //var topoTexture = topo3DLine.First().Translate(model.EntryPoint).ReprojectTo(model.SRID, 4326);
-                    //TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg
-                    //    , topoTexture, false);
+                    //TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
+                    var topoTexture = model.Topology3D.SelectMany(l => l).Translate(model.EntryPoint).ReprojectTo(model.SRID, 4326);
+                    TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg
+                        , topoTexture, false);
 
                     pbrTexture = PBRTexture.Create(texInfo, null);
                     timeLog.LogTime("Texture creation");
