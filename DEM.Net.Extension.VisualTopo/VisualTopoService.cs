@@ -50,11 +50,13 @@ namespace DEM.Net.Extension.VisualTopo
         private readonly ElevationService _elevationService;
         private readonly ILogger<VisualTopoService> _logger;
         private const int ModelDefaultSRID = Reprojection.SRID_PROJECTED_LAMBERT_93;
+        private readonly Convers3Reprojection convers3Reprojection;
 
         public VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
         {
             _meshService = meshService;
             _elevationService = elevationService;
+            convers3Reprojection = new Convers3Reprojection();
             _logger = logger;            
         }
         public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
@@ -594,35 +596,11 @@ namespace DEM.Net.Extension.VisualTopo
             var data = entry.Split(',');
             model.Name = data[0];
             model.EntryPointProjectionCode = data[4];
-            double factor = 1d;
-            int srid = 0;
-            switch (model.EntryPointProjectionCode)
-            {
-                case "UTM31":
-                    factor = 1000d;
-                    srid = 32631;
-                    break;
-                case "LT3":
-                    factor = 1000d;
-                    srid = 27573;
-                    break;
-                case "WGS84": factor = 1d; srid = 4326; break;
-                case "WebMercator": factor = 1d; srid = 3857; break;
-                default: throw new NotImplementedException($"Projection not {model.EntryPointProjectionCode} not implemented");
-            };
-            model.EntryPoint = new GeoPoint(
-                double.Parse(data[2], CultureInfo.InvariantCulture) * factor
-                , double.Parse(data[1], CultureInfo.InvariantCulture) * factor
-                , double.Parse(data[3], CultureInfo.InvariantCulture));
-            
-            // Reproj vers Lambert93
-            model.EntryPoint = model.EntryPoint.ReprojectTo(srid, ModelDefaultSRID);
+            model.EntryPoint = convers3Reprojection.CreateGeoPoint(inputProjectionCode: model.EntryPointProjectionCode, outputSrid: ModelDefaultSRID
+                , x: double.Parse(data[1], CultureInfo.InvariantCulture)
+                , y: double.Parse(data[2], CultureInfo.InvariantCulture)
+                , z: double.Parse(data[3], CultureInfo.InvariantCulture));
             model.SRID = ModelDefaultSRID;
-
-            // Warn if badly supported projection
-            if (model.EntryPointProjectionCode.StartsWith("LT"))
-                _logger.LogWarning($"Model entry projection is Lambert Carto and is not fully supported. Will result in 20m shifts. Consider changing projection to UTM");
-            
         }
 
         private VisualTopoModel ParseHeader(VisualTopoModel model, StreamReader sr)
