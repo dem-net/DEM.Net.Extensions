@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ConversApi>
+   <Ellipsoides>
+      <Ellipsoide Code="AIRY1" Nom="Airy" A="6377563.396" B="6356256.91" />
+      <Ellipsoide Code="AIRY2" Nom="Airy modifiée" A="6377340.189" B="6356034.448" />
+      <Ellipsoide Code="AMSUD69" Nom="Amérique du Sud 1969" A="6378160" B="6356774.719" />
+      <Ellipsoide Code="ASIESE" Nom="Asie du Sud-Est" A="6378155" B="6356773.3205" />
+      <Ellipsoide Code="AUSTRAL" Nom="Australian National" A="6378160" B="6356774.719" />
+      <Ellipsoide Code="BESSEL" Nom="Bessel" A="6377397.155" B="6356078.96284" />
+      <Ellipsoide Code="BESSEL41" Nom="Bessel 1841 (Namibie)" A="6377483.865" B="6356165.382966" />
+      <Ellipsoide Code="CLRK66" Nom="Clarke 1866" A="6378206.4" B="6356583.8" />
+      <Ellipsoide Code="CLRK80" Nom="Clarke 1880" A="6378249.145" B="6356514.86955" />
+      <Ellipsoide Code="CLRK80IGN" Nom="Clarke 1880 IGN" A="6378249.2" B="6356515" />
+      <Ellipsoide Code="EVEREST1" Nom="Everest" A="6377276.3452" B="6356075.4133" />
+      <Ellipsoide Code="EVEREST2" Nom="Everest modifiée" A="6377304.063" B="6356103.039" />
+      <Ellipsoide Code="EVEREST3" Nom="Everest (Sabah et Sarawak)" A="6377298.556" B="6356097.571445" />
+      <Ellipsoide Code="EVEREST4" Nom="Everest (Inde 1956)" A="6377301.243" B="6356100.228368" />
+      <Ellipsoide Code="EVEREST5" Nom="Everest (Malaisie 1969)" A="6377295.664" B="6356094.667915" />
+      <Ellipsoide Code="EVEREST6" Nom="Everest (Malaisie et Singapour 1948)" A="6377304.063" B="6356103.038993" />
+      <Ellipsoide Code="EVEREST7" Nom="Everest (Pakistan)" A="6377309.613" B="6356108.570542" />
+      <Ellipsoide Code="GRS80" Nom="GRS 1980" A="6378137" B="6356752.31414" />
+      <Ellipsoide Code="HELM06" Nom="Helmert 1906" A="6378200" B="6356818.169" />
+      <Ellipsoide Code="HOUGH" Nom="Hough" A="6378270" B="6356794.343479" />
+      <Ellipsoide Code="INDO74" Nom="Indonésie 1974" A="6378160" B="6356774.504086" />
+      <Ellipsoide Code="INTL09" Nom="International (Hayford) 1909" A="6378388" B="6356911.94613" />
+      <Ellipsoide Code="INTL24" Nom="International (Hayford) 1924" A="6378388" B="6356911.946128" />
+      <Ellipsoide Code="INTL67" Nom="International 1967" A="6378157.5" B="6356772.2" />
+      <Ellipsoide Code="KRASS" Nom="Krassovsky" A="6378245" B="6356863.0188" />
+      <Ellipsoide Code="MERC60" Nom="Mercury 1960" A="6378166" B="6356784.283666" />
+      <Ellipsoide Code="MERC68" Nom="Mercury modifiée 1968" A="6378150" B="6356768.337303" />
+      <Ellipsoide Code="PLESS17" Nom="Plessis 1817" A="6376523" B="6355863" />
+      <Ellipsoide Code="SPHERE" Nom="Sphère de 6370997 m de rayon" A="6370997" B="6370997" />
+      <Ellipsoide Code="WGS60" Nom="WGS 1960" A="6378165" B="6356783.287" />
+      <Ellipsoide Code="WGS66" Nom="WGS 1966" A="6378145" B="6356759.769356" />
+      <Ellipsoide Code="WGS72" Nom="WGS 1972" A="6378135" B="6356750.519915" />
+      <Ellipsoide Code="WGS84" Nom="WGS 1984" A="6378137" B="6356752.314245" />
+   </Ellipsoides>
+   <Datums>
+      <Datum Code="ED50" Nom="European Datum 1950 (Moyenne)" Ellipsoide="INTL09" TX="-84" TY="-97" TZ="-117" />
+      <Datum Code="NTF" Nom="Nouvelle Triangulation Française" Ellipsoide="CLRK80IGN" TX="-168" TY="-60" TZ="320" />
+      <Datum Code="RGF93" Nom="Réseau Géodésique Français 1993" Ellipsoide="GRS80" TX="0" TY="0" TZ="0" />
+      <Datum Code="WGS84" Nom="World Geodetic System 1984" Ellipsoide="WGS84" TX="0" TY="0" TZ="0" />
+   </Datums>
+   <Projections>
+      <Projection Code="LT1" Nom="Lambert France zone I" Datum="NTF" Type="LAMBCC2" P1="48.3554682°" P2="50.2345282°" P3="2.2014025°" P4="55g" P5="6e5" P6="2e5" />
+      <Projection Code="LT1C" Nom="Lambert France zone I carto" Datum="NTF" Type="LAMBCC2" P1="48.3554682°" P2="50.2345282°" P3="2.2014025°" P4="55g" P5="6e5" P6="1.2e6" />
+      <Projection Code="LT2" Nom="Lambert France zone II" Datum="NTF" Type="LAMBCC2" P1="45.5356108°" P2="47.4145652°" P3="2.2014025°" P4="52g" P5="6e5" P6="2e5" />
+      <Projection Code="LT2C" Nom="Lambert France zone II carto" Datum="NTF" Type="LAMBCC2" P1="45.5356108°" P2="47.4145652°" P3="2.2014025°" P4="52g" P5="6e5" P6="2.2e6" />
+      <Projection Code="LT2E" Nom="Lambert France zone II étendue" Datum="NTF" Type="LAMBCC2" P1="45.5356108°" P2="47.4145652°" P3="2.2014025°" P4="52g" P5="6e5" P6="2.2e6" />
+      <Projection Code="LT3" Nom="Lambert France zone III" Datum="NTF" Type="LAMBCC2" P1="43.1157449°" P2="44.5945938°" P3="2.2014025°" P4="49g" P5="6e5" P6="2e6" />
+      <Projection Code="LT3C" Nom="Lambert France zone III carto" Datum="NTF" Type="LAMBCC2" P1="43.1157449°" P2="44.5945938°" P3="2.2014025°" P4="49g" P5="6e5" P6="3.2e6" />
+      <Projection Code="LT4" Nom="Lambert France zone IV" Datum="NTF" Type="LAMBCC2" P1="41.3337396°" P2="42.4603588°" P3="2.2014025°" P4="46.85g" P5="234.358" P6="4185861.369" />
+      <Projection Code="LT93" Nom="Lambert France 93" Datum="RGF93" Type="LAMBCC2" P1="44°" P2="49°" P3="3°" P4="46.30°" P5="7e5" P6="6.6e6" />
+      <Projection Code="LT93.CC42" Nom="Lambert France 93 CC42" Datum="RGF93" Type="LAMBCC2" P1="41.25d" P2="42.75d" P3="3d" P4="42d" P5="1.7e6" P6="1.2e6" />
+      <Projection Code="LT93.CC43" Nom="Lambert France 93 CC43" Datum="RGF93" Type="LAMBCC2" P1="42.25d" P2="43.75d" P3="3d" P4="43d" P5="1.7e6" P6="2.2e6" />
+      <Projection Code="LT93.CC44" Nom="Lambert France 93 CC44" Datum="RGF93" Type="LAMBCC2" P1="43.25d" P2="44.75d" P3="3d" P4="44d" P5="1.7e6" P6="3.2e6" />
+      <Projection Code="LT93.CC45" Nom="Lambert France 93 CC45" Datum="RGF93" Type="LAMBCC2" P1="44.25d" P2="45.75d" P3="3d" P4="45d" P5="1.7e6" P6="4.2e6" />
+      <Projection Code="LT93.CC46" Nom="Lambert France 93 CC46" Datum="RGF93" Type="LAMBCC2" P1="45.25d" P2="46.75d" P3="3d" P4="46d" P5="1.7e6" P6="5.2e6" />
+      <Projection Code="LT93.CC47" Nom="Lambert France 93 CC47" Datum="RGF93" Type="LAMBCC2" P1="46.25d" P2="47.75d" P3="3d" P4="47d" P5="1.7e6" P6="6.2e6" />
+      <Projection Code="LT93.CC48" Nom="Lambert France 93 CC48" Datum="RGF93" Type="LAMBCC2" P1="47.25d" P2="48.75d" P3="3d" P4="48d" P5="1.7e6" P6="7.2e6" />
+      <Projection Code="LT93.CC49" Nom="Lambert France 93 CC49" Datum="RGF93" Type="LAMBCC2" P1="48.25d" P2="49.75d" P3="3d" P4="49d" P5="1.7e6" P6="8.2e6" />
+      <Projection Code="LT93.CC50" Nom="Lambert France 93 CC50" Datum="RGF93" Type="LAMBCC2" P1="49.25d" P2="50.75d" P3="3d" P4="50d" P5="1.7e6" P6="9.2e6" />
+      <Projection Code="UTM.ED50" Nom="Universal Transverse Mercator / ED50" Datum="ED50" Type="UTM" P1="0.9996" />
+      <Projection Code="UTM.WGS84" Nom="Universal Transverse Mercator / WGS84" Datum="WGS84" Type="UTM" P1="0.9996" />
+   </Projections>
+</ConversApi>

@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>DEM.Net.Extension.VisualTopo</PackageId>
-    <Version>1.0.0.3</Version>
-    <AssemblyVersion>1.0.0.3</AssemblyVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
     <Authors>Xavier Fischer</Authors>
     <Copyright>Xavier Fischer and Contributors</Copyright>
     <Owners>Xavier Fischer</Owners>
     <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
-    <PackageReleaseNotes>Forced to Lambert93 projection for homogenous results</PackageReleaseNotes>
+    <PackageReleaseNotes>ConversApi3 embedded for Lambert Carto III support</PackageReleaseNotes>
     <PackageTags>Speleology, Geology, Vtopo, VisualTopo</PackageTags>
     <Title>DEM.Net.Extension.VisualTopo</Title>
     <Product>DEM.Net Elevation API</Product>
@@ -27,14 +27,40 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <!-- Build package only in Release -->
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="ConversApi3\ConversApi3.dll" />
+    <None Remove="dotnet pack.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ConversApi3\Convers.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <ContentTargetFolders>content</ContentTargetFolders>
+      <!--
+      <PackagePath>any/netstandard2.0/ConversApi3</PackagePath>
+      -->
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <PackageFlatten>true</PackageFlatten>
+    </Content>
+    <Content Include="ConversApi3\ConversApi3.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <ContentTargetFolders>content</ContentTargetFolders>
+      <!--
+      <PackagePath>any/netstandard2.0/ConversApi3</PackagePath>
+      -->
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <PackageFlatten>true</PackageFlatten>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\DEM.Net\LICENSE.md" Link="LICENSE.md">
       <PackagePath>
@@ -55,6 +81,8 @@
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Storage\" />
+    <Reference Include="ConversApi3">
+      <HintPath>ConversApi3\ConversApi3.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>
