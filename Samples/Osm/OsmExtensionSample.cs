@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using static DEM.Net.glTF.SharpglTF.SharpGltfService;
@@ -26,10 +27,11 @@ namespace SampleApp
         private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly ILogger _logger;
-
+        private readonly OsmService _osmService;
         private float ZScale = 2f;
 
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
+                , OsmService osmService
                 , ImageryService imageryService
                 , ElevationService elevationService
                 , SharpGltfService gltfService
@@ -40,10 +42,14 @@ namespace SampleApp
             this._elevationService = elevationService;
             this._gltfService = gltfService;
             this._logger = logger;
+            this._osmService = osmService;
         }
         public void Run()
         {
-
+            using (FileStream fs = new FileStream(@"D:\Data\NLD\pays-de-la-loire.poly", FileMode.Open))
+            {
+                string wkt = _osmService.ConvertOsmosisPolyToWkt(fs);
+            }
             //RunOsmPbfSample(@"C:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
 
             Buildings3DOnly();
@@ -85,7 +91,7 @@ namespace SampleApp
 
             string WKT_AIX_FULL = "POLYGON((5.402291662243135 43.565714431347274,5.48056925013376 43.565714431347274,5.48056925013376 43.50797300081391,5.402291662243135 43.50797300081391,5.402291662243135 43.565714431347274))";
             string WKT_AIX_WITHTERRAIN = "POLYGON((5.440657648511835 43.55957815383877,5.444434198804804 43.55957815383877,5.444434198804804 43.5579454365131,5.440657648511835 43.5579454365131,5.440657648511835 43.55957815383877))";
-            string WKT_AIX_SMALLOSMBUG= "POLYGON((5.441805234256467 43.55910060792738,5.442684998813352 43.55910060792738,5.442684998813352 43.55877017799191,5.441805234256467 43.55877017799191,5.441805234256467 43.55910060792738))";
+            string WKT_AIX_SMALLOSMBUG = "POLYGON((5.441805234256467 43.55910060792738,5.442684998813352 43.55910060792738,5.442684998813352 43.55877017799191,5.441805234256467 43.55877017799191,5.441805234256467 43.55910060792738))";
             string WKT_MONACO = "POLYGON((7.392147587957001 43.75577569838535,7.4410710803886415 43.75577569838535,7.4410710803886415 43.71757458493263,7.392147587957001 43.71757458493263,7.392147587957001 43.75577569838535))";
 
             string WKT_MONACO_DEBUG = "POLYGON((7.421709439122424 43.73663530909531,7.433961769902453 43.73663530909531,7.433961769902453 43.733007331111345,7.421709439122424 43.733007331111345,7.421709439122424 43.73663530909531))";//"POLYGON((7.426780270757294 43.73870913810349,7.432520198049164 43.73870913810349,7.432520198049164 43.73501926928533,7.426780270757294 43.73501926928533,7.426780270757294 43.73870913810349))";
@@ -110,14 +116,14 @@ namespace SampleApp
                 string fileName = Path.Combine(outputDir, "Texture.jpg");
                 TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
                 var pbrTexture = PBRTexture.Create(texInfo, null);
-                
+
                 model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
                 model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
             }
             else
             {
                 var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
-                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);                
+                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
             }
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), name + ".glb"));
