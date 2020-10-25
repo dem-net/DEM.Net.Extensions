@@ -6,9 +6,9 @@ using System.Numerics;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
-    public class BuildingModel : CommonModel
+    public class BuildingModel : CommonModel, IPolygon<GeoPoint>
     {
-       public List<GeoPoint> ExteriorRing { get; set; }
+        public List<GeoPoint> ExteriorRing { get; set; }
 
         public List<List<GeoPoint>> InteriorRings { get; set; }
 
