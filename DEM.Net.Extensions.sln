@@ -9,17 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "License", "License", "{D6ED
 		LICENSE.md = LICENSE.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Extension.Osm", "DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj", "{719AD013-6A98-4B1F-9335-30463E2BE410}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Core", "..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj", "{2681D922-5F53-417F-B101-69962A705B0D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.glTF", "..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj", "{AB819348-314B-4D14-84AA-254759805522}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DEM.Net", "DEM.Net", "{36DA47BB-F0FA-4437-A511-84A446F9D75D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samples", "Samples\Samples.csproj", "{3E6A3F62-6768-4D09-A404-9359E18B9D8A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SketchFabApi.Net", "..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj", "{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{00F49BEC-9D81-4ED5-BD4F-362AC6E1CA47}"
 	ProjectSection(SolutionItems) = preProject
@@ -28,9 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{00F49B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Extension.Tests", "DEM.Net.Extension.Tests\DEM.Net.Extension.Tests.csproj", "{1D696420-0E93-44C7-B39B-9B8E3783FBC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DEM.Net.Extension.VisualTopo", "DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj", "{599E6C9A-0A71-4378-8787-17847F66F341}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DEM.Net.Extension.Osm", "DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj", "{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{F3E4DDFC-D5E0-47B5-B30E-4D4747161E76}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DEM.Net.Extension.VisualTopo", "DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj", "{9ECBB487-E428-43E0-8A16-57A2FA27FB72}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,44 +28,25 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{719AD013-6A98-4B1F-9335-30463E2BE410}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{719AD013-6A98-4B1F-9335-30463E2BE410}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{719AD013-6A98-4B1F-9335-30463E2BE410}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{719AD013-6A98-4B1F-9335-30463E2BE410}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2681D922-5F53-417F-B101-69962A705B0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2681D922-5F53-417F-B101-69962A705B0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2681D922-5F53-417F-B101-69962A705B0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2681D922-5F53-417F-B101-69962A705B0D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB819348-314B-4D14-84AA-254759805522}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB819348-314B-4D14-84AA-254759805522}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB819348-314B-4D14-84AA-254759805522}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB819348-314B-4D14-84AA-254759805522}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E6A3F62-6768-4D09-A404-9359E18B9D8A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1D696420-0E93-44C7-B39B-9B8E3783FBC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1D696420-0E93-44C7-B39B-9B8E3783FBC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D696420-0E93-44C7-B39B-9B8E3783FBC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1D696420-0E93-44C7-B39B-9B8E3783FBC6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{599E6C9A-0A71-4378-8787-17847F66F341}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{599E6C9A-0A71-4378-8787-17847F66F341}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{599E6C9A-0A71-4378-8787-17847F66F341}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{599E6C9A-0A71-4378-8787-17847F66F341}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{719AD013-6A98-4B1F-9335-30463E2BE410} = {F3E4DDFC-D5E0-47B5-B30E-4D4747161E76}
-		{2681D922-5F53-417F-B101-69962A705B0D} = {36DA47BB-F0FA-4437-A511-84A446F9D75D}
-		{AB819348-314B-4D14-84AA-254759805522} = {36DA47BB-F0FA-4437-A511-84A446F9D75D}
-		{7CE01B80-8EFE-4814-A16D-0D9A5A8B389C} = {F3E4DDFC-D5E0-47B5-B30E-4D4747161E76}
-		{599E6C9A-0A71-4378-8787-17847F66F341} = {F3E4DDFC-D5E0-47B5-B30E-4D4747161E76}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {90A80639-9A5C-49A0-B58A-DA6AAAF035AB}

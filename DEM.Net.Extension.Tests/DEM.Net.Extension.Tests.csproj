@@ -4,8 +4,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DEM.Net.Extension.Osm" Version="1.0.0" />
-    <PackageReference Include="DEM.Net.Extension.VisualTopo" Version="1.0.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
@@ -19,5 +17,9 @@
     <None Update="secrets.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
+    <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
   </ItemGroup>
 </Project>
