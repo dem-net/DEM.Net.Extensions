@@ -5,9 +5,12 @@ using GeoJSON.Net;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace DEM.Net.Extension.Osm
@@ -153,5 +156,49 @@ namespace DEM.Net.Extension.Osm
             return models;
 
         }
+
+        public string ConvertOsmosisPolyToWkt(Stream osmosisPOLY)
+        {
+            try
+            {
+
+
+                List<List<GeoPoint>> polyParts = new List<List<GeoPoint>>();
+                using (StreamReader sr = new StreamReader(osmosisPOLY))
+                {
+                    // skip 2 first lines (polyname and poly part)
+                    sr.ReadLine(); sr.ReadLine();
+                    List<GeoPoint> part = new List<GeoPoint>();
+                    var separators = new[] { ' ' };
+                    var line = sr.ReadLine();
+                    while (!sr.EndOfStream)
+                    {
+                        if (line.Equals("END", StringComparison.OrdinalIgnoreCase))
+                        {
+                            polyParts.Add(part);
+                            part = new List<GeoPoint>();
+                        }
+                        else
+                        {
+                            var coords = line.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => decimal.Parse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                            part.Add(new GeoPoint((double)coords[1], (double)coords[0]));
+                        }
+                        line = sr.ReadLine();
+                    }
+                }
+                
+
+                return "MULTIPOLYGON((" + string.Join("", polyParts.ReverseAndReturn().Select(part => "(" + string.Join(", ", part.ReverseAndReturn().Select(p =>  
+                $"{p.Longitude.ToString("F7",CultureInfo.InvariantCulture)} {p.Latitude.ToString("F7", CultureInfo.InvariantCulture)}")) + ")"))
+                + "))";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error converting POLY to WKT: {ex.Message}");
+            }
+            return null;
+
+        }
+
     }
 }
