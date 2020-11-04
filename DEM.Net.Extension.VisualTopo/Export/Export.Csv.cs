@@ -9,20 +9,20 @@ namespace DEM.Net.Extension.VisualTopo
 {
     public static partial class Export
     {
-        public static MemoryStream ExportToCsv(this VisualTopoModel model)
+        public static MemoryStream ExportToCsv(this VisualTopoModel model, string separator)
         {
             MemoryStream ms = new MemoryStream();
             using (StreamWriter sw = new StreamWriter(ms))
             {
-                sw.WriteLine(string.Join("\t", headers));
+                sw.WriteLine(string.Join(separator, headers));
 
                 foreach (var set in model.Sets)
                 {
-                    sw.WriteLine(string.Join("\t", GetSectionHeader(set)));
+                    sw.WriteLine(string.Join(separator, GetSectionHeader(set)));
 
                     foreach (var data in set.Data)
                     {
-                        sw.WriteLine(string.Join("\t",
+                        sw.WriteLine(string.Join(separator,
                              data.Entree,
                         data.Sortie,
                         data.Longueur,

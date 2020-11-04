@@ -51,7 +51,7 @@ namespace DEM.Net.Extension.VisualTopo
             _meshService = meshService;
             _elevationService = elevationService;
             convers3Reprojection = new Convers3Reprojection();
-            _logger = logger;            
+            _logger = logger;
         }
         public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
         {
@@ -163,9 +163,9 @@ namespace DEM.Net.Extension.VisualTopo
             }
         }
 
-        public MemoryStream ExportToCsv(VisualTopoModel model)
+        public MemoryStream ExportToCsv(VisualTopoModel model, string separator)
         {
-            return model.ExportToCsv();
+            return model.ExportToCsv(separator);
         }
         public MemoryStream ExportToExcel(VisualTopoModel model, bool autoFitColumns = true)
         {
