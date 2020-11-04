@@ -14,7 +14,11 @@ namespace DEM.Net.Extension.VisualTopo
         public Convers3Reprojection()
         {
             converter = new Conversion();
+#if DEBUG
+            converter.ReadXml(Path.Combine("bin","debug","netcoreapp3.1","ConversApi3", "Convers.xml"));;
+#else
             converter.ReadXml(Path.Combine("ConversApi3", "Convers.xml"));
+#endif
         }
 
         public void Reproject(double x, double y)

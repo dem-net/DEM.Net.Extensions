@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using DEM.Net.Core;
+using DocumentFormat.OpenXml.Wordprocessing;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,6 +11,48 @@ namespace DEM.Net.Extension.VisualTopo
 {
     public static partial class Export
     {
+        internal static string[] headers = { "Pt Départ",
+                                            "Pt Arrivée",
+                                            "Longueur",
+                                            "Cap",
+                                            "Pente",
+                                            "Gauche",
+                                            "Droite",
+                                            "Haut",
+                                            "Bas",
+                                            "X",
+                                            "Y",
+                                            "Z",
+                                            "Latitude",
+                                            "Longitude",
+                                            "X (Lambert 93)",
+                                            "Y (Lambert 93)",
+                                            "Distance",
+                                            "Profondeur relative entrée",
+                                            "Altitude terrain",
+                                            "Profondeur réelle",
+                                            "Commentaire" };
+        internal static string[] GetSectionHeader(VisualTopoSet set) => new[] {"Section",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "Pente",
+                                                                            set.Color.ToRgbString(),
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            "",
+                                                                            set.Name };
         public static MemoryStream ExportToExcel(this VisualTopoModel model, bool autoFitColumns = true)
         {
             using (var wb = new XLWorkbook(XLEventTracking.Disabled))
@@ -18,27 +61,10 @@ namespace DEM.Net.Extension.VisualTopo
 
                 int ro = 1;
                 int co = 0;
-                ws.Cell(ro, ++co).Value = "Pt Départ";
-                ws.Cell(ro, ++co).Value = "Pt Arrivée";
-                ws.Cell(ro, ++co).Value = "Longueur";
-                ws.Cell(ro, ++co).Value = "Cap";
-                ws.Cell(ro, ++co).Value = "Pente";
-                ws.Cell(ro, ++co).Value = "Gauche";
-                ws.Cell(ro, ++co).Value = "Droite";
-                ws.Cell(ro, ++co).Value = "Haut";
-                ws.Cell(ro, ++co).Value = "Bas";
-                ws.Cell(ro, ++co).Value = "X";
-                ws.Cell(ro, ++co).Value = "Y";
-                ws.Cell(ro, ++co).Value = "Z";
-                ws.Cell(ro, ++co).Value = "Latitude";
-                ws.Cell(ro, ++co).Value = "Longitude";
-                ws.Cell(ro, ++co).Value = "X (Lambert 93)";
-                ws.Cell(ro, ++co).Value = "Y (Lambert 93)";
-                ws.Cell(ro, ++co).Value = "Distance";
-                ws.Cell(ro, ++co).Value = "Profondeur relative entrée";
-                ws.Cell(ro, ++co).Value = "Altitude terrain";
-                ws.Cell(ro, ++co).Value = "Profondeur réelle";
-                ws.Cell(ro, ++co).Value = "Commentaire";
+                foreach(string header in headers)
+                {
+                    ws.Cell(ro, ++co).Value = header;
+                }
 
                 var row = ws.Row(ro);
                 row.Style.Fill.BackgroundColor = XLColor.GreenYellow;
@@ -48,28 +74,10 @@ namespace DEM.Net.Extension.VisualTopo
                 {
                     ro++;
                     co = 0;
-                    ws.Cell(ro, ++co).Value = "Section";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "Pente";
-                    ws.Cell(ro, ++co).Value = set.Color.ToRgbString();
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = "";
-                    ws.Cell(ro, ++co).Value = set.Name;
-
+                    foreach (string header in GetSectionHeader(set))
+                    {
+                        ws.Cell(ro, ++co).Value = header;
+                    }
                     var setRow = ws.Row(ro);
                     setRow.Style.Fill.BackgroundColor = XLColor.GreenYellow;
                     setRow.Style.Font.Bold = true;
