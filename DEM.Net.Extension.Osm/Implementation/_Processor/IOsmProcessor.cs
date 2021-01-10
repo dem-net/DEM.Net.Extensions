@@ -15,10 +15,8 @@ namespace DEM.Net.Extension.Osm
     /// </summary>
     public interface IOsmProcessor
     {
-        string[] WaysFilter { get; set; }
-        string[] RelationsFilter { get; set; }
-        string[] NodesFilter { get; set; }
-
+        IOsmDataFilter DataFilter { get; }
+    
         void Init(ElevationService elevationService
             , SharpGltfService gltfService
             , MeshService meshService

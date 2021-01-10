@@ -22,14 +22,15 @@ namespace DEM.Net.Extension.Osm.Highways
     {
 
         private const float LaneWidthMeters = 3.5F;
+        private readonly HighwaysDataFilter _highwaysDataFilter;
 
         public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
         {
+            this._highwaysDataFilter = new HighwaysDataFilter();
         }
 
-        public override string[] WaysFilter { get; set; } = new string[] { "highway" };
-        public override string[] RelationsFilter { get; set; } = null;
-        public override string[] NodesFilter { get; set; } = null;
+
+        public override IOsmDataFilter DataFilter => _highwaysDataFilter;
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
         public override string glTFNodeName => "Roads";

@@ -1,17 +1,13 @@
-﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.Model;
-using DEM.Net.Extension.Osm.OverpassAPI;
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
+using DEM.Net.Core;
+using DEM.Net.Extension.Osm.Model;
+using DEM.Net.Extension.Osm.OverpassAPI;
+using GeoJSON.Net.Feature;
+using Microsoft.Extensions.Logging;
 
 namespace DEM.Net.Extension.Osm
 {

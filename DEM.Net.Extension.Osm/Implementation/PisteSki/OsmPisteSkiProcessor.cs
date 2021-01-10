@@ -22,17 +22,17 @@ namespace DEM.Net.Extension.Osm.Buildings
     {
 
         private const float PisteWidthMeters = 30F;
-        public override string[] WaysFilter { get; set; } = new string[] { "piste:type" };
-        public override string[] RelationsFilter { get; set; } = null;
-        public override string[] NodesFilter { get; set; } = null;
+        private readonly PisteSkiDataFilter _pisteSkiDataFilter;
         public override bool ComputeElevations { get; set; } = true;
 
         public OsmPisteSkiProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {
-
+            this._pisteSkiDataFilter = new PisteSkiDataFilter();
         }
         public override OsmModelFactory<PisteModel> ModelFactory => new SkiPisteValidator(base._logger);
 
+
+        public override IOsmDataFilter DataFilter => _pisteSkiDataFilter;
         public override string glTFNodeName => "SkiPiste";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<PisteModel> models)

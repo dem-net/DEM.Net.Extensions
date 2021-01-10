@@ -23,17 +23,17 @@ namespace DEM.Net.Extension.Osm.Buildings
         const double LevelHeightMeters = 3;
         private readonly bool withBuildingsColors;
         private readonly string defaultBuildingsColor;
+        private readonly BuildingsDataFilter _buildingsDataFilter;
 
         public OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : base(transformPipeline)
         {
             this.withBuildingsColors = withBuildingsColors;
             this.defaultBuildingsColor = defaultBuildingsColor;
+            this._buildingsDataFilter = new BuildingsDataFilter();
         }
 
-        public override string[] WaysFilter { get; set; } = new string[] { "building", "building:part" };
-        public override string[] RelationsFilter { get; set; } =
-        new string[] { "building" };
-        public override string[] NodesFilter { get; set; } = null;
+        public override IOsmDataFilter DataFilter => _buildingsDataFilter;
+        
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
         public override string glTFNodeName => "Buildings";

@@ -90,9 +90,9 @@ namespace DEM.Net.Extension.Osm
             foreach (var p in processors)
             {
                 // Download buildings and convert them to GeoJson
-                if (p.WaysFilter != null) foreach (var filter in p.WaysFilter) q.WithWays(filter);
-                if (p.RelationsFilter != null) foreach (var filter in p.RelationsFilter) q.WithRelations(filter);
-                if (p.NodesFilter != null) foreach (var filter in p.NodesFilter) q.WithNodes(filter);
+                if (p.DataFilter.WaysFilter != null) foreach (var filter in p.DataFilter.WaysFilter) q.WithWays(filter);
+                if (p.DataFilter.RelationsFilter != null) foreach (var filter in p.DataFilter.RelationsFilter) q.WithRelations(filter);
+                if (p.DataFilter.NodesFilter != null) foreach (var filter in p.DataFilter.NodesFilter) q.WithNodes(filter);
             }
 
             OverpassCountResult countResult = _osmService.GetOsmDataCount(bbox, q);

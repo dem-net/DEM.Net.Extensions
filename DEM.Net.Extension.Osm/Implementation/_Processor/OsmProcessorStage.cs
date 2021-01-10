@@ -41,9 +41,8 @@ namespace DEM.Net.Extension.Osm
             Transform.TransformPoints = Transform.TransformPoints.PostTransform(p => postTransform(p));
         }
 
-        public abstract string[] WaysFilter { get; set; }
-        public abstract string[] RelationsFilter { get; set; }
-        public abstract string[] NodesFilter { get; set; }
+        public abstract IOsmDataFilter DataFilter { get; }
+
         public abstract bool ComputeElevations { get; set; }
 
         public abstract OsmModelFactory<T> ModelFactory { get; }
@@ -60,9 +59,9 @@ namespace DEM.Net.Extension.Osm
                 // Download buildings and convert them to GeoJson
                 FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox, q =>
                 {
-                    if (WaysFilter != null) foreach (var filter in WaysFilter) q.WithWays(filter);
-                    if (RelationsFilter != null) foreach (var filter in RelationsFilter) q.WithRelations(filter);
-                    if (NodesFilter != null) foreach (var filter in NodesFilter) q.WithNodes(filter);
+                    if (DataFilter?.WaysFilter != null) foreach (var filter in DataFilter.WaysFilter) q.WithWays(filter);
+                    if (DataFilter?.RelationsFilter != null) foreach (var filter in DataFilter.RelationsFilter) q.WithRelations(filter);
+                    if (DataFilter?.NodesFilter != null) foreach (var filter in DataFilter.NodesFilter) q.WithNodes(filter);
 
                     return q;
                 });
