@@ -53,9 +53,9 @@ namespace SampleApp
 
 
             // Disconnected graph
-            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo","small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
+            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
             Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), dataSet: DEMDataSet.NASADEM);
-            
+
 
             Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
 
@@ -107,7 +107,7 @@ namespace SampleApp
 
                 // CSV
                 string csvFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".csv"));
-                File.WriteAllBytes(csvFileName, _visualTopoService.ExportToCsv(model).ToArray());
+                File.WriteAllBytes(csvFileName, _visualTopoService.ExportToCsv(model, "\t").ToArray());
 
                 // Excel
                 string xlsFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".xlsx"));

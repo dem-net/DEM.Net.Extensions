@@ -20,7 +20,7 @@ namespace DEM.Net.Extension.Osm
         void Init(ElevationService elevationService
             , SharpGltfService gltfService
             , MeshService meshService
-            , OsmService osmService
+            , IOsmDataService osmService
             , ILogger logger);
 
         GeoTransformPipeline Transform { get; set; }

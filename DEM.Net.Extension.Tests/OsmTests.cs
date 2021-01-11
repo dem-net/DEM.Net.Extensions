@@ -28,7 +28,7 @@ namespace DEM.Net.Extension.Tests
         const string WKT_PRIPYAT_3 = "POLYGON((30.065251398582948 51.407283441091266,30.066243815918458 51.407283441091266,30.066243815918458 51.40558353075506,30.065251398582948 51.40558353075506,30.065251398582948 51.407283441091266))";
         const string WKT_PRIPYAT_POLICE =
         "POLYGON((30.05531887410026 51.40760207487213,30.05977134106498 51.40760207487213,30.05977134106498 51.406430891737706,30.05531887410026 51.406430891737706,30.05531887410026 51.40760207487213))";
-        
+
         // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
         const string WKT_RELATION_NAPOLI = "POLYGON((14.364430059744153 40.78433307340424, 14.365218629194532 40.78433307340424, 14.365218629194532 40.785023575175295, 14.364430059744153 40.785023575175295, 14.364430059744153 40.78433307340424))";
 
@@ -42,7 +42,7 @@ namespace DEM.Net.Extension.Tests
 
 
         [Theory(DisplayName = "OSM Buildings")]
-        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL,true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
@@ -59,7 +59,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
-            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations: true, DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations: true, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
 

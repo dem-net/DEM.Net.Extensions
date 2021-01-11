@@ -11,16 +11,16 @@ using Microsoft.Extensions.Logging;
 
 namespace DEM.Net.Extension.Osm
 {
-    public class OsmService
+    public class OsmServiceOverpassAPI : IOsmDataService
     {
-        private readonly ILogger<OsmService> _logger;
+        private readonly ILogger<OsmServiceOverpassAPI> _logger;
 
-        public OsmService(ILogger<OsmService> logger)
+        public OsmServiceOverpassAPI(ILogger<OsmServiceOverpassAPI> logger)
         {
             this._logger = logger;
         }
 
-        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, Func<OverpassQuery, OverpassQuery> filter = null)
+        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataFilter filter)
         {
             try
             {
@@ -29,7 +29,9 @@ namespace DEM.Net.Extension.Osm
                     OverpassQuery query = new OverpassQuery(bbox, _logger);
                     if (filter != null)
                     {
-                        query = filter(query);
+                        if (filter.WaysFilter != null) foreach (var tagFilter in filter.WaysFilter) query.WithWays(tagFilter);
+                        if (filter.RelationsFilter != null) foreach (var tagFilter in filter.RelationsFilter) query.WithRelations(tagFilter);
+                        if (filter.NodesFilter != null) foreach (var tagFilter in filter.NodesFilter) query.WithNodes(tagFilter);
                     }
 
                     var task = query.ToGeoJSONAsync();
@@ -48,43 +50,21 @@ namespace DEM.Net.Extension.Osm
             }
 
         }
-        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, string fullQueryBody)
-        {
-            try
-            {
-                using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
-                {
-                    var task = new OverpassQuery(bbox, _logger)
-                        .RunQueryQLAsync(fullQueryBody)
-                        .ToGeoJSONAsync();
-
-                    FeatureCollection ways = task.GetAwaiter().GetResult();
-
-                    _logger.LogInformation($"{ways?.Features?.Count} features downloaded");
-
-                    return ways;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
-                throw;
-            }
-
-        }
-        //public OverpassCountResult GetOsmDataCount(BoundingBox bbox, string fullQueryBody)
+        //public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, string fullQueryBody)
         //{
         //    try
         //    {
         //        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
         //        {
-        //            var task = new OverpassQuery(bbox).AsCount()
-        //                .RunQueryQL(fullQueryBody)
-        //                .ToCount();
+        //            var task = new OverpassQuery(bbox, _logger)
+        //                .RunQueryQLAsync(fullQueryBody)
+        //                .ToGeoJSONAsync();
 
-        //            OverpassCountResult count = task.GetAwaiter().GetResult();
+        //            FeatureCollection ways = task.GetAwaiter().GetResult();
 
-        //            return count;
+        //            _logger.LogInformation($"{ways?.Features?.Count} features downloaded");
+
+        //            return ways;
         //        }
         //    }
         //    catch (Exception ex)
@@ -94,19 +74,28 @@ namespace DEM.Net.Extension.Osm
         //    }
 
         //}
-        public OverpassCountResult GetOsmDataCount(BoundingBox bbox, OverpassQuery query)
+
+        public int GetOsmDataCount(BoundingBox bbox, IOsmDataFilter filter)
         {
             try
             {
                 using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
                 {
+                    OverpassQuery query = new OverpassQuery(bbox, _logger);
+                    if (filter != null)
+                    {
+                        if (filter.WaysFilter != null) foreach (var tagFilter in filter.WaysFilter) query.WithWays(tagFilter);
+                        if (filter.RelationsFilter != null) foreach (var tagFilter in filter.RelationsFilter) query.WithRelations(tagFilter);
+                        if (filter.NodesFilter != null) foreach (var tagFilter in filter.NodesFilter) query.WithNodes(tagFilter);
+                    }
+
                     var task = query.AsCount()
                         .RunQueryAsync()
                         .ToCountAsync();
 
                     OverpassCountResult count = task.GetAwaiter().GetResult();
 
-                    return count;
+                    return count.Tags.Nodes * 2;
                 }
             }
             catch (Exception ex)
@@ -114,42 +103,6 @@ namespace DEM.Net.Extension.Osm
                 _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
                 throw;
             }
-
-        }
-
-        public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
-        {
-
-            OsmModelList<T> models = new OsmModelList<T>(features.Features.Count);
-            using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
-            {
-                int count = 0;
-                foreach (var feature in features.Features)
-                {
-                    count++;
-                    validator.RegisterTags(feature);
-                    T model = validator.CreateModel(feature);
-
-                    if (model == null)
-                    {
-                        _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Id}, type {feature.Geometry.Type} not supported.");
-                    }
-                    else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
-                    {
-                        models.Add(model);
-                    }
-                }
-            }
-
-            //#if DEBUG
-            //            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
-            //#endif
-
-            _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
-
-            models.TotalPoints = validator._totalPoints;
-
-            return models;
 
         }
 
@@ -182,10 +135,10 @@ namespace DEM.Net.Extension.Osm
                         line = sr.ReadLine();
                     }
                 }
-                
 
-                return "MULTIPOLYGON((" + string.Join("", polyParts.ReverseAndReturn().Select(part => "(" + string.Join(", ", part.ReverseAndReturn().Select(p =>  
-                $"{p.Longitude.ToString("F7",CultureInfo.InvariantCulture)} {p.Latitude.ToString("F7", CultureInfo.InvariantCulture)}")) + ")"))
+
+                return "MULTIPOLYGON((" + string.Join("", polyParts.ReverseAndReturn().Select(part => "(" + string.Join(", ", part.ReverseAndReturn().Select(p =>
+                $"{p.Longitude.ToString("F7", CultureInfo.InvariantCulture)} {p.Latitude.ToString("F7", CultureInfo.InvariantCulture)}")) + ")"))
                 + "))";
             }
             catch (Exception ex)

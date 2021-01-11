@@ -1,18 +1,9 @@
 ﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.OverpassAPI;
-using DEM.Net.Extension.Osm.Ski;
-using DEM.Net.glTF.SharpglTF;
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DEM.Net.Extension.Osm.Highways

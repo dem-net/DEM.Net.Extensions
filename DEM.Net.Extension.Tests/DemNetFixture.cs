@@ -34,9 +34,12 @@ namespace DEM.Net.Test
             })
             .AddDemNetCore()
             .AddDemNetglTF()
-            .AddDemNetOsmExtension();
+            .AddDemNetOsmExtension()
 
-            services.Configure<AppSecrets>(builder.GetSection(nameof(AppSecrets)));
+            .AddOptions()
+            .Configure<AppSecrets>(builder.GetSection(nameof(AppSecrets)))
+            .Configure<DEMNetOptions>(builder.GetSection(nameof(DEMNetOptions)))
+            .Configure<OsmElevationOptions>(builder.GetSection(nameof(OsmElevationOptions)));            
 
             ServiceProvider = services.BuildServiceProvider();
 

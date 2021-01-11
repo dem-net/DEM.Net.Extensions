@@ -10,4 +10,5 @@ namespace DEM.Net.Extension.Osm
         string[] RelationsFilter { get; set; }
         string[] NodesFilter { get; set; }
     }
+
 }

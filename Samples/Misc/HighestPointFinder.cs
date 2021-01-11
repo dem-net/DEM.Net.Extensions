@@ -17,12 +17,12 @@ namespace SampleApp
     {
         private readonly ILogger<HighestPointFinder> _logger;
         private readonly ElevationService _elevationService;
-        private readonly OsmService _osmService;
+        private readonly OsmServiceOverpassAPI _osmService;
         private readonly DefaultOsmProcessor _osmProcessor;
 
         public HighestPointFinder(ILogger<HighestPointFinder> logger
                 , ElevationService elevationService
-                , OsmService osmService
+                , OsmServiceOverpassAPI osmService
                 , DefaultOsmProcessor osmProcessor)
         {
             _logger = logger;
@@ -54,9 +54,9 @@ namespace SampleApp
                 OsmHighwayProcessor roadsProcessor = new OsmHighwayProcessor(GeoTransformPipeline.Default);
 
                 // Download buildings and convert them to GeoJson
-                FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox4326, q => q.WithWays("highway"));
+                FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox4326, BasicOsmDataFilter.Create(new string[] { "highway"}));
                 // Create internal building model
-                OsmModelList<HighwayModel> parsed = _osmService.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
+                OsmModelList<HighwayModel> parsed = roadsProcessor.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
 
                 int parallelCount = -1;
                 Parallel.ForEach(parsed.Models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>

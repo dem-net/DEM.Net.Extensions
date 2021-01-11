@@ -6,7 +6,6 @@ using SharpGLTF.Schema2;
 using System.Collections.Generic;
 using DEM.Net.Extension.Osm.Highways;
 using DEM.Net.Extension.Osm.Model;
-using DEM.Net.Extension.Osm.OverpassAPI;
 using System;
 using System.Linq;
 using DEM.Net.Core.Configuration;
@@ -16,25 +15,28 @@ namespace DEM.Net.Extension.Osm
 {
     public class DefaultOsmProcessor
     {
+        private readonly IOsmDataServiceFactory _dataServiceFactory;
         private readonly DEMNetOptions _options;
+        private readonly OsmElevationOptions _osmOptions;
         private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly MeshService _meshService;
-        private readonly OsmService _osmService;
         private readonly ILogger<DefaultOsmProcessor> _logger;
 
         public DefaultOsmProcessor(ElevationService elevationService
             , SharpGltfService gltfService
             , MeshService meshService
-            , OsmService osmService
+            , IOsmDataServiceFactory dataServiceFactory
             , IOptions<DEMNetOptions> options
+            , IOptions<OsmElevationOptions> osmOptions
             , ILogger<DefaultOsmProcessor> logger)
         {
+            this._dataServiceFactory = dataServiceFactory;
             this._options = options.Value;
+            this._osmOptions = osmOptions.Value;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
             this._meshService = meshService;
-            this._osmService = osmService;
             this._logger = logger;
         }
 
@@ -66,13 +68,16 @@ namespace DEM.Net.Extension.Osm
         }
         public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
+
+            IOsmDataService osmDataService = _dataServiceFactory.Create(_osmOptions.DataServiceType);
+
             List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
 
             model = model ?? _gltfService.CreateNewModel();
 
             foreach (var p in processors)
             {
-                p.Init(_elevationService, _gltfService, _meshService, _osmService, _logger);
+                p.Init(_elevationService, _gltfService, _meshService, osmDataService, _logger);
 
                 model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles);
             }
@@ -85,19 +90,17 @@ namespace DEM.Net.Extension.Osm
         public int GetCount(BoundingBox bbox, OsmLayer layers, DEMDataSet dataSet)
         {
             List<IOsmProcessor> processors = Build(layers);
-
-            OverpassQuery q = new OverpassQuery(bbox, _logger);
+            IOsmDataService osmDataService = _dataServiceFactory.Create(_osmOptions.DataServiceType);
+            int count = 0;
             foreach (var p in processors)
             {
-                // Download buildings and convert them to GeoJson
-                if (p.DataFilter.WaysFilter != null) foreach (var filter in p.DataFilter.WaysFilter) q.WithWays(filter);
-                if (p.DataFilter.RelationsFilter != null) foreach (var filter in p.DataFilter.RelationsFilter) q.WithRelations(filter);
-                if (p.DataFilter.NodesFilter != null) foreach (var filter in p.DataFilter.NodesFilter) q.WithNodes(filter);
+
+                count += osmDataService.GetOsmDataCount(bbox, p.DataFilter);
             }
 
-            OverpassCountResult countResult = _osmService.GetOsmDataCount(bbox, q);
+            return count;
 
-            return countResult.Tags.Nodes * 2;
+            
         }
 
     }

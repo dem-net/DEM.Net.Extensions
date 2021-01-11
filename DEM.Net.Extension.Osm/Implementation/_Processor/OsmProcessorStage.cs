@@ -15,19 +15,19 @@ namespace DEM.Net.Extension.Osm
         protected ElevationService _elevationService;
         protected SharpGltfService _gltfService;
         protected MeshService _meshService;
-        protected OsmService _osmService;
+        protected IOsmDataService _osmDataService;
         protected ILogger _logger;
 
         public void Init(ElevationService elevationService
             , SharpGltfService gltfService
             , MeshService meshService
-            , OsmService osmService
+            , IOsmDataService osmDataService
             , ILogger logger)
         {
             this._elevationService = elevationService;
             this._gltfService = gltfService;
             this._meshService = meshService;
-            this._osmService = osmService;
+            this._osmDataService = osmDataService;
             this._logger = logger;
         }
 
@@ -57,17 +57,9 @@ namespace DEM.Net.Extension.Osm
             try
             {
                 // Download buildings and convert them to GeoJson
-                FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox, q =>
-                {
-                    if (DataFilter?.WaysFilter != null) foreach (var filter in DataFilter.WaysFilter) q.WithWays(filter);
-                    if (DataFilter?.RelationsFilter != null) foreach (var filter in DataFilter.RelationsFilter) q.WithRelations(filter);
-                    if (DataFilter?.NodesFilter != null) foreach (var filter in DataFilter.NodesFilter) q.WithNodes(filter);
-
-                    return q;
-                });
-
+                FeatureCollection features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataFilter);
                 // Create internal building model
-                OsmModelList<T> parsed = _osmService.CreateModelsFromGeoJson<T>(features, ModelFactory);
+                OsmModelList<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
 
                 _logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
@@ -94,5 +86,40 @@ namespace DEM.Net.Extension.Osm
 
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<T> models);
 
+        public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
+        {
+
+            OsmModelList<T> models = new OsmModelList<T>(features.Features.Count);
+            using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
+            {
+                int count = 0;
+                foreach (var feature in features.Features)
+                {
+                    count++;
+                    validator.RegisterTags(feature);
+                    T model = validator.CreateModel(feature);
+
+                    if (model == null)
+                    {
+                        _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Id}, type {feature.Geometry.Type} not supported.");
+                    }
+                    else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
+                    {
+                        models.Add(model);
+                    }
+                }
+            }
+
+            //#if DEBUG
+            //            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
+            //#endif
+
+            _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
+
+            models.TotalPoints = validator._totalPoints;
+
+            return models;
+
+        }
     }
 }
