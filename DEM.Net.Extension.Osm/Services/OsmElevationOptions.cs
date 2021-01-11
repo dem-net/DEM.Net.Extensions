@@ -11,6 +11,6 @@ namespace DEM.Net.Extension.Osm
         public DEMDataSet Dataset { get; set; }
         public bool DownloadMissingDEMFiles { get; set; } = true;
 
-        public OsmDataService DataServiceType { get; set; } = OsmDataService.OverpassAPI;
+        public OsmDataServiceType DataServiceType { get; set; } = OsmDataServiceType.OverpassAPI;
     }
 }

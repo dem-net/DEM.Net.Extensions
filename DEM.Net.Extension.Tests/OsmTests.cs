@@ -32,6 +32,7 @@ namespace DEM.Net.Extension.Tests
         // Napoli, multi polygon (https://www.openstreetmap.org/relation/8955771)
         const string WKT_RELATION_NAPOLI = "POLYGON((14.364430059744153 40.78433307340424, 14.365218629194532 40.78433307340424, 14.365218629194532 40.785023575175295, 14.364430059744153 40.785023575175295, 14.364430059744153 40.78433307340424))";
 
+        const string WKT_VADUZ = "POLYGON((9.508242015596382 47.146491518431674,9.530643825288765 47.146491518431674,9.530643825288765 47.13250869886131,9.508242015596382 47.13250869886131,9.508242015596382 47.146491518431674))";
 
         private readonly DefaultOsmProcessor _osmProcessor;
 
@@ -48,6 +49,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
         [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
         public void OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();

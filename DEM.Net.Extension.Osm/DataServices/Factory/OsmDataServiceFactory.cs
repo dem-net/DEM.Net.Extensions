@@ -15,13 +15,13 @@ namespace DEM.Net.Extension.Osm
             this._vectorTilesService = vectorTilesService;
             this._overpassApiService = overpassApiService;
         }
-        public IOsmDataService Create(OsmDataService dataServiceType)
+        public IOsmDataService Create(OsmDataServiceType dataServiceType)
         {
             switch (dataServiceType)
             {
-                case OsmDataService.OverpassAPI:
+                case OsmDataServiceType.OverpassAPI:
                     return _overpassApiService();
-                case OsmDataService.VectorTiles:
+                case OsmDataServiceType.VectorTiles:
                     return _vectorTilesService();
                 default:
                     throw new InvalidOperationException();

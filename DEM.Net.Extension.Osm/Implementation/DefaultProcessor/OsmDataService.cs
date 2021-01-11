@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DEM.Net.Extension.Osm
 {
-    public enum OsmDataService
+    public enum OsmDataServiceType
     {
         OverpassAPI,
         VectorTiles,

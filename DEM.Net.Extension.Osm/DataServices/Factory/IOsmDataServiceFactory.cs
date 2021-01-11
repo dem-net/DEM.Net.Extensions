@@ -4,7 +4,7 @@ namespace DEM.Net.Extension.Osm
 {
     public interface IOsmDataServiceFactory
     {
-        IOsmDataService Create(OsmDataService dataService);
+        IOsmDataService Create(OsmDataServiceType dataService);
     }
 
 }
