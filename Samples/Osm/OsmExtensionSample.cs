@@ -26,11 +26,11 @@ namespace SampleApp
         private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly ILogger _logger;
-        private readonly OsmServiceOverpassAPI _osmService;
+        private readonly OverpassAPIDataService _osmService;
         private float ZScale = 2f;
 
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
-                , OsmServiceOverpassAPI osmService
+                , OverpassAPIDataService osmService
                 , ImageryService imageryService
                 , ElevationService elevationService
                 , SharpGltfService gltfService

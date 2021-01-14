@@ -28,7 +28,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._buildingsDataFilter = new BuildingsDataFilter();
         }
 
-        public override IOsmDataFilter DataFilter => _buildingsDataFilter;
+        public override IOsmDataSettings DataSettings => _buildingsDataFilter;
         
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);

@@ -11,16 +11,16 @@ using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm
 {
-    public class OsmServiceOverpassAPI : IOsmDataService
+    public class OverpassAPIDataService : IOsmDataService
     {
-        private readonly ILogger<OsmServiceOverpassAPI> _logger;
+        private readonly ILogger<OverpassAPIDataService> _logger;
 
-        public OsmServiceOverpassAPI(ILogger<OsmServiceOverpassAPI> logger)
+        public OverpassAPIDataService(ILogger<OverpassAPIDataService> logger)
         {
             this._logger = logger;
         }
 
-        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataFilter filter)
+        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
             try
             {
@@ -51,7 +51,7 @@ namespace DEM.Net.Extension.Osm
 
         }
 
-        public int GetOsmDataCount(BoundingBox bbox, IOsmDataFilter filter)
+        public int GetOsmDataCount(BoundingBox bbox, IOsmDataSettings filter)
         {
             try
             {

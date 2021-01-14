@@ -30,4 +30,5 @@
     <ProjectReference Include="..\DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj" />
     <ProjectReference Include="..\DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj" />
   </ItemGroup>
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 </Project>

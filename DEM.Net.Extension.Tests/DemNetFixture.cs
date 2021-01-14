@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Debug;
 using System.IO;
+using Xunit.Abstractions;
 
 namespace DEM.Net.Test
 {
@@ -22,10 +23,9 @@ namespace DEM.Net.Test
            .Build();
 
             var services = new ServiceCollection();
-            services.AddLogging(config =>
+            services.AddLogging(builder =>
             {
-                config.AddDebug(); // Log to debug (debug window in Visual Studio or any debugger attached)
-                config.AddConsole(); // Log to console (colored !)
+                builder.AddDebug();
             })
             .Configure<LoggerFilterOptions>(options =>
             {

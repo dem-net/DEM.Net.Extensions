@@ -17,12 +17,12 @@ namespace SampleApp
     {
         private readonly ILogger<HighestPointFinder> _logger;
         private readonly ElevationService _elevationService;
-        private readonly OsmServiceOverpassAPI _osmService;
+        private readonly OverpassAPIDataService _osmService;
         private readonly DefaultOsmProcessor _osmProcessor;
 
         public HighestPointFinder(ILogger<HighestPointFinder> logger
                 , ElevationService elevationService
-                , OsmServiceOverpassAPI osmService
+                , OverpassAPIDataService osmService
                 , DefaultOsmProcessor osmProcessor)
         {
             _logger = logger;

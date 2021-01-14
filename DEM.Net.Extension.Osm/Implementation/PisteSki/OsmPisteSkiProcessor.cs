@@ -23,7 +23,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         public override OsmModelFactory<PisteModel> ModelFactory => new SkiPisteValidator(base._logger);
 
 
-        public override IOsmDataFilter DataFilter => _pisteSkiDataFilter;
+        public override IOsmDataSettings DataSettings => _pisteSkiDataFilter;
         public override string glTFNodeName => "SkiPiste";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<PisteModel> models)

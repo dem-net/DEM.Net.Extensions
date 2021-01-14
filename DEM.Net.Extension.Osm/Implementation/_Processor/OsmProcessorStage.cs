@@ -41,7 +41,7 @@ namespace DEM.Net.Extension.Osm
             Transform.TransformPoints = Transform.TransformPoints.PostTransform(p => postTransform(p));
         }
 
-        public abstract IOsmDataFilter DataFilter { get; }
+        public abstract IOsmDataSettings DataSettings { get; }
 
         public abstract bool ComputeElevations { get; set; }
 
@@ -57,7 +57,7 @@ namespace DEM.Net.Extension.Osm
             try
             {
                 // Download buildings and convert them to GeoJson
-                FeatureCollection features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataFilter);
+                FeatureCollection features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings);
                 // Create internal building model
                 OsmModelList<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
 

@@ -21,7 +21,7 @@ namespace DEM.Net.Extension.Osm.Highways
         }
 
 
-        public override IOsmDataFilter DataFilter => _highwaysDataFilter;
+        public override IOsmDataSettings DataSettings => _highwaysDataFilter;
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
         public override string glTFNodeName => "Roads";

@@ -6,11 +6,11 @@ namespace DEM.Net.Extension.Osm
 {
     public class OsmDataServiceFactory : IOsmDataServiceFactory
     {
-        private readonly Func<OsmServiceOverpassAPI> _overpassApiService;
-        private readonly Func<OsmDataServiceFlatGeobuf> _vectorTilesService;
+        private readonly Func<OverpassAPIDataService> _overpassApiService;
+        private readonly Func<TiledFlatGeobufDataService> _vectorTilesService;
 
-        public OsmDataServiceFactory(Func<OsmServiceOverpassAPI> overpassApiService,
-            Func<OsmDataServiceFlatGeobuf> vectorTilesService)
+        public OsmDataServiceFactory(Func<OverpassAPIDataService> overpassApiService,
+            Func<TiledFlatGeobufDataService> vectorTilesService)
         {
             this._vectorTilesService = vectorTilesService;
             this._overpassApiService = overpassApiService;

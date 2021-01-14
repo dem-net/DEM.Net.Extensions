@@ -104,7 +104,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                     model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
                     break;
                 case OgcGeometryType.MultiPolygon:
-                    model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+                    model = ConvertBuildingGeometry(((MultiPolygon)feature.Geometry).Geometries.First() as Polygon, ref base._totalPoints);
                     break;
                 default:
                     _logger.LogDebug($"{feature.Geometry.OgcGeometryType} not supported for {nameof(BuildingModel)} {feature.Attributes.GetOptionalValue("osmid")}.");

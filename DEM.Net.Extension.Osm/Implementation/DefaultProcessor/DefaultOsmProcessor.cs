@@ -95,7 +95,7 @@ namespace DEM.Net.Extension.Osm
             foreach (var p in processors)
             {
 
-                count += osmDataService.GetOsmDataCount(bbox, p.DataFilter);
+                count += osmDataService.GetOsmDataCount(bbox, p.DataSettings);
             }
 
             return count;

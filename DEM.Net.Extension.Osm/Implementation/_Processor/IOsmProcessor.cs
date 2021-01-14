@@ -15,7 +15,7 @@ namespace DEM.Net.Extension.Osm
     /// </summary>
     public interface IOsmProcessor
     {
-        IOsmDataFilter DataFilter { get; }
+        IOsmDataSettings DataSettings { get; }
     
         void Init(ElevationService elevationService
             , SharpGltfService gltfService
