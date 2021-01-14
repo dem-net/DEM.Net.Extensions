@@ -7,6 +7,6 @@ namespace DEM.Net.Extension.Osm
     public enum OsmDataServiceType
     {
         OverpassAPI,
-        VectorTiles,
+        FlatGeobuf,
     }
 }

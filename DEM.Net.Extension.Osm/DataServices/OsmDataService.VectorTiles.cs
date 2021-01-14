@@ -5,16 +5,16 @@ using System.IO;
 using System.Linq;
 using DEM.Net.Core;
 using DEM.Net.Extension.Osm.Model;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm
 {
-    public class OsmDataServiceVectorTiles: IOsmDataService
+    public class OsmDataServiceFlatGeobuf : IOsmDataService
     {
-        private readonly ILogger<OsmDataServiceVectorTiles> _logger;
+        private readonly ILogger<OsmDataServiceFlatGeobuf> _logger;
 
-        public OsmDataServiceVectorTiles(ILogger<OsmDataServiceVectorTiles> logger)
+        public OsmDataServiceFlatGeobuf(ILogger<OsmDataServiceFlatGeobuf> logger)
         {
             this._logger = logger;
         }

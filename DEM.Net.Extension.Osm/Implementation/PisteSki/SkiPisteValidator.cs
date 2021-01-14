@@ -33,8 +33,8 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using DEM.Net.Core;
 using System.Numerics;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 
 namespace DEM.Net.Extension.Osm.Ski
 {
@@ -104,22 +104,21 @@ namespace DEM.Net.Extension.Osm.Ski
             if (feature == null) return null;
 
             PisteModel model = null;
-            switch (feature.Geometry.Type)
+            switch (feature.Geometry.OgcGeometryType)
             {
-                case GeoJSON.Net.GeoJSONObjectType.LineString:
+                case OgcGeometryType.LineString:
                     model = BuildModelFromGeometry((LineString)feature.Geometry, ref _totalPoints);
                     break;
                 default:
-                    _logger.LogDebug($"{feature.Geometry.Type} not supported for {nameof(PisteModel)} {feature.Id}.");
+                    _logger.LogDebug($"{feature.Geometry.OgcGeometryType} not supported for {nameof(PisteModel)} {feature.Attributes["osmid"]}.");
                     break;
             }
 
             if (model != null)
             {
-                model.Id = feature.Id;
-                model.Tags = feature.Properties;
+                model.Id = feature.Attributes["osmid"].ToString();
+                model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
             }
-            
 
             return model;
         }
@@ -137,10 +136,10 @@ namespace DEM.Net.Extension.Osm.Ski
         private List<GeoPoint> ConvertLineString(LineString lineString, ref int geoPointIdCounter)
         {
             // Can't do it with a linq + lambda because of ref int param
-            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.Coordinates.Count);
+            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.NumPoints);
             foreach (var pt in lineString.Coordinates)
             {
-                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Latitude, pt.Longitude));
+                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Y, pt.X));
             }
             return geoPoints;
         }

@@ -6,8 +6,8 @@ using System.Linq;
 using DEM.Net.Core;
 using DEM.Net.Extension.Osm.Model;
 using DEM.Net.Extension.Osm.OverpassAPI;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm
 {
@@ -38,7 +38,7 @@ namespace DEM.Net.Extension.Osm
 
                     FeatureCollection ways = task.GetAwaiter().GetResult();
 
-                    _logger.LogInformation($"{ways?.Features?.Count} features downloaded");
+                    _logger.LogInformation($"{ways?.Count} features downloaded");
 
                     return ways;
                 }
@@ -50,36 +50,12 @@ namespace DEM.Net.Extension.Osm
             }
 
         }
-        //public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, string fullQueryBody)
-        //{
-        //    try
-        //    {
-        //        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
-        //        {
-        //            var task = new OverpassQuery(bbox, _logger)
-        //                .RunQueryQLAsync(fullQueryBody)
-        //                .ToGeoJSONAsync();
-
-        //            FeatureCollection ways = task.GetAwaiter().GetResult();
-
-        //            _logger.LogInformation($"{ways?.Features?.Count} features downloaded");
-
-        //            return ways;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
-        //        throw;
-        //    }
-
-        //}
 
         public int GetOsmDataCount(BoundingBox bbox, IOsmDataFilter filter)
         {
             try
             {
-                using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
+                using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("GetOsmDataAsGeoJson", _logger, LogLevel.Debug))
                 {
                     OverpassQuery query = new OverpassQuery(bbox, _logger);
                     if (filter != null)
@@ -96,6 +72,7 @@ namespace DEM.Net.Extension.Osm
                     OverpassCountResult count = task.GetAwaiter().GetResult();
 
                     return count.Tags.Nodes * 2;
+
                 }
             }
             catch (Exception ex)
@@ -103,7 +80,6 @@ namespace DEM.Net.Extension.Osm
                 _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
                 throw;
             }
-
         }
 
         public string ConvertOsmosisPolyToWkt(Stream osmosisPOLY)
@@ -113,8 +89,8 @@ namespace DEM.Net.Extension.Osm
 
 
                 List<List<GeoPoint>> polyParts = new List<List<GeoPoint>>();
-                using (StreamReader sr = new StreamReader(osmosisPOLY))
-                {
+                   using (StreamReader sr = new StreamReader(osmosisPOLY))
+                { 
                     // skip 2 first lines (polyname and poly part)
                     sr.ReadLine(); sr.ReadLine();
                     List<GeoPoint> part = new List<GeoPoint>();
@@ -139,15 +115,15 @@ namespace DEM.Net.Extension.Osm
 
                 return "MULTIPOLYGON((" + string.Join("", polyParts.ReverseAndReturn().Select(part => "(" + string.Join(", ", part.ReverseAndReturn().Select(p =>
                 $"{p.Longitude.ToString("F7", CultureInfo.InvariantCulture)} {p.Latitude.ToString("F7", CultureInfo.InvariantCulture)}")) + ")"))
-                + "))";
+           + "))";
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error converting POLY to WKT: {ex.Message}");
             }
-            return null;
+   return null;
+
+            }
 
         }
-
     }
-}

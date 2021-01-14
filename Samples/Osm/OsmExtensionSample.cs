@@ -5,7 +5,6 @@ using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.Extension.Osm.Highways;
 using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SharpGLTF.Schema2;
@@ -179,49 +178,7 @@ namespace SampleApp
         //    _meshService.Tesselate(geoPoints, inners);
         //}
 
-        private void RunOsmPbfSample(string pbfFileName)
-        {
-            PbfOsmReader reader = new PbfOsmReader();
-            AttributeRegistry registry = new AttributeRegistry();
-
-            using (TimeSpanBlock timer = new TimeSpanBlock("ReadNodes", _logger))
-            {
-                var header = reader.ReadOsmHeader(pbfFileName);
-            }
-
-            long count = 0;
-            using (TimeSpanBlock timer = new TimeSpanBlock("ReadNodes", _logger))
-            {
-                foreach (var node in reader.ReadNodes(pbfFileName, registry))
-                {
-                    count++;
-                    if (count % 1000000 == 0)
-                        _logger.LogInformation($"{count} nodes read...");
-                }
-            }
-
-            count = 0;
-            using (TimeSpanBlock timer = new TimeSpanBlock("ReadWays", _logger))
-            {
-                foreach (var node in reader.ReadWays(pbfFileName, registry))
-                {
-                    count++;
-                    if (count % 1000000 == 0)
-                        _logger.LogInformation($"{count} ways read...");
-                }
-            }
-
-            count = 0;
-            using (TimeSpanBlock timer = new TimeSpanBlock("ReadRelations", _logger))
-            {
-                foreach (var node in reader.ReadRelations(pbfFileName, registry))
-                {
-                    count++;
-                    if (count % 1000000 == 0)
-                        _logger.LogInformation($"{count} relations read...");
-                }
-            }
-        }
+       
 
         //private void Run3DModelSamples_Buildings()
         //{

@@ -1,7 +1,4 @@
 ﻿using DEM.Net.Core;
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
 using System;
 using System.Linq;
 using System.Collections.Generic;

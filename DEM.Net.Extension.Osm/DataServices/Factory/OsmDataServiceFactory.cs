@@ -7,10 +7,10 @@ namespace DEM.Net.Extension.Osm
     public class OsmDataServiceFactory : IOsmDataServiceFactory
     {
         private readonly Func<OsmServiceOverpassAPI> _overpassApiService;
-        private readonly Func<OsmDataServiceVectorTiles> _vectorTilesService;
+        private readonly Func<OsmDataServiceFlatGeobuf> _vectorTilesService;
 
         public OsmDataServiceFactory(Func<OsmServiceOverpassAPI> overpassApiService,
-            Func<OsmDataServiceVectorTiles> vectorTilesService)
+            Func<OsmDataServiceFlatGeobuf> vectorTilesService)
         {
             this._vectorTilesService = vectorTilesService;
             this._overpassApiService = overpassApiService;
@@ -21,7 +21,7 @@ namespace DEM.Net.Extension.Osm
             {
                 case OsmDataServiceType.OverpassAPI:
                     return _overpassApiService();
-                case OsmDataServiceType.VectorTiles:
+                case OsmDataServiceType.FlatGeobuf:
                     return _vectorTilesService();
                 default:
                     throw new InvalidOperationException();

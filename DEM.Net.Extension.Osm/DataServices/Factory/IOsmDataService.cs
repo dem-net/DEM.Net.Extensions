@@ -1,5 +1,5 @@
 ﻿using DEM.Net.Core;
-using GeoJSON.Net.Feature;
+using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm
 {

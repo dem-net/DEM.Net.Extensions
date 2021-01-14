@@ -1,11 +1,11 @@
 ﻿using DEM.Net.Core;
 using DEM.Net.glTF.SharpglTF;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm
 {
@@ -89,19 +89,19 @@ namespace DEM.Net.Extension.Osm
         public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
         {
 
-            OsmModelList<T> models = new OsmModelList<T>(features.Features.Count);
+            OsmModelList<T> models = new OsmModelList<T>(features.Count);
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
             {
                 int count = 0;
-                foreach (var feature in features.Features)
+                foreach (var feature in features)
                 {
                     count++;
-                    validator.RegisterTags(feature);
-                    T model = validator.CreateModel(feature);
+                    validator.RegisterTags(feature as Feature);
+                    T model = validator.CreateModel(feature as Feature);
 
                     if (model == null)
                     {
-                        _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Id}, type {feature.Geometry.Type} not supported.");
+                        _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Attributes["osmid"]}, type {feature.Geometry.OgcGeometryType} not supported.");
                     }
                     else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
                     {

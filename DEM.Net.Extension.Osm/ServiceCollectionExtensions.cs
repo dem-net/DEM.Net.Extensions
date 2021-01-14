@@ -18,8 +18,8 @@ namespace DEM.Net.Extension.Osm
                 .AddTransient<OsmServiceOverpassAPI>()
                 .AddSingleton<Func<OsmServiceOverpassAPI>>(x => x.GetService<OsmServiceOverpassAPI>)
 
-                .AddTransient<OsmDataServiceVectorTiles>()
-                .AddSingleton<Func<OsmDataServiceVectorTiles>>(x => x.GetService<OsmDataServiceVectorTiles>)
+                .AddTransient<OsmDataServiceFlatGeobuf>()
+                .AddSingleton<Func<OsmDataServiceFlatGeobuf>>(x => x.GetService<OsmDataServiceFlatGeobuf>)
 
 
                 .AddTransient<DefaultOsmProcessor>();

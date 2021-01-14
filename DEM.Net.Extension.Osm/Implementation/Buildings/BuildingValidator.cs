@@ -32,12 +32,11 @@ using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using DEM.Net.Core;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
-using GeoJSON.Net;
 using System.Numerics;
 using System.Drawing;
 using DEM.Net.Extension.Osm.Extensions;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Features;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
@@ -99,22 +98,24 @@ namespace DEM.Net.Extension.Osm.Buildings
             if (feature == null) return null;
 
             BuildingModel model = null;
-            switch (feature.Geometry.Type)
+            switch (feature.Geometry.OgcGeometryType)
             {
-                case GeoJSON.Net.GeoJSONObjectType.Polygon:
+                case OgcGeometryType.Polygon:
+                    model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+                    break;
+                case OgcGeometryType.MultiPolygon:
                     model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
                     break;
                 default:
-                    _logger.LogDebug($"{feature.Geometry.Type} not supported for {nameof(BuildingModel)} {feature.Id}.");
+                    _logger.LogDebug($"{feature.Geometry.OgcGeometryType} not supported for {nameof(BuildingModel)} {feature.Attributes.GetOptionalValue("osmid")}.");
                     break;
             }
 
             if (model != null)
             {
-                model.Id = feature.Id;
-                model.Tags = feature.Properties;
+                model.Id = feature.Attributes["osmid"].ToString();
+                model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
             }
-
 
             return model;
         }
@@ -197,13 +198,13 @@ namespace DEM.Net.Extension.Osm.Buildings
         private BuildingModel ConvertBuildingGeometry(Polygon poly, ref int geoPointIdCounter)
         {
             // Can't do it with a linq + lambda because of ref int param
-            List<GeoPoint> outerRingGeoPoints = ConvertBuildingLineString(poly.Coordinates.First(), ref geoPointIdCounter);
+            List<GeoPoint> outerRingGeoPoints = ConvertBuildingLineString(poly.ExteriorRing, ref geoPointIdCounter);
 
             List<List<GeoPoint>> interiorRings = null;
-            if (poly.Coordinates.Count > 1)
+            if (poly.NumPoints > 1)
             {
                 interiorRings = new List<List<GeoPoint>>();
-                foreach (LineString innerRing in poly.Coordinates.Skip(1))
+                foreach (LineString innerRing in poly.InteriorRings)
                 {
                     interiorRings.Add(ConvertBuildingLineString(innerRing, ref geoPointIdCounter));
                 }
@@ -217,10 +218,10 @@ namespace DEM.Net.Extension.Osm.Buildings
         private List<GeoPoint> ConvertBuildingLineString(LineString lineString, ref int geoPointIdCounter)
         {
             // Can't do it with a linq + lambda because of ref int param
-            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.Coordinates.Count);
+            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.NumPoints);
             foreach (var pt in lineString.Coordinates)
             {
-                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Latitude, pt.Longitude));
+                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Y, pt.X));
             }
             return geoPoints;
         }

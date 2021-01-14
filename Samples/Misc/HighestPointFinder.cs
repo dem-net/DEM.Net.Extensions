@@ -1,8 +1,8 @@
 ﻿using DEM.Net.Core;
 using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Highways;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Features;
 using Sketchfab;
 using System;
 using System.Collections.Generic;
