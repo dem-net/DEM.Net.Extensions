@@ -26,7 +26,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         public override IOsmDataSettings DataSettings => _pisteSkiDataFilter;
         public override string glTFNodeName => "SkiPiste";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<PisteModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<PisteModel> models)
         {
             if (models.Any())
             {
@@ -38,29 +38,36 @@ namespace DEM.Net.Extension.Osm.Buildings
             return gltfModel;
         }
 
-        protected override List<PisteModel> ComputeModelElevationsAndTransform(OsmModelList<PisteModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        protected override IEnumerable<PisteModel> ComputeModelElevationsAndTransform(IEnumerable<PisteModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 if (computeElevations)
                 {
-                    Parallel.ForEach(models, model =>
+                    foreach (var model in models)
                     {
                         model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
                                              .ToList();
-                    });
+
+                        yield return model;
+                    }
+                    //Parallel.ForEach(models, model =>
+                    //{
+                    //    model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                    //                         .ToList();
+                    //});
                 }
                 else
                 {
                     foreach (var model in models)
                     {
                         model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
+                        yield return model;
                     }
                 }
 
             }
 
-            return models.Models;
         }
     }
 }

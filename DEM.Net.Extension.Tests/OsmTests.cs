@@ -47,15 +47,23 @@ namespace DEM.Net.Extension.Tests
 
 
         [Theory(DisplayName = "OSM Buildings")]
-        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
-        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
-        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
-        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
-        public void OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, false, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, false, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, false, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, true, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, true, 2)]
+        public void OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -66,23 +74,30 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
-            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations: true, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
 
         }
 
         [Theory(DisplayName = "OSM Streets")]
-        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
-        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
-        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
-        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
-        [InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
-        public void OSMStreets(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, false, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, false, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, false, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, true, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
+        //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
+        //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, true, 2)]
+        public void OSMStreets(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -93,7 +108,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
-            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, computeElevations: true, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreets_{name}.glb"));
 
@@ -105,7 +120,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
         //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
-        //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
         //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
         //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
         //[InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)] 

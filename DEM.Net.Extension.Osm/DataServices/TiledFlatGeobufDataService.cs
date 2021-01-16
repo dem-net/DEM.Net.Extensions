@@ -25,7 +25,7 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
+        public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
             FeatureCollection fc = new FeatureCollection();
             Envelope envelope = new Envelope(bbox.xMin, bbox.xMax, bbox.yMin, bbox.yMax);
@@ -33,26 +33,18 @@ namespace DEM.Net.Extension.Osm
             Stopwatch sw = Stopwatch.StartNew();
             int numFeatures = 0;
             int numInside = 0;
-            try
+            foreach (IFeature feature in EnumerateOsmDataAsGeoJson(bbox, filter))
             {
-                foreach (IFeature feature in EnumerateOsmDataAsGeoJson(bbox, filter))
+                numFeatures++;
+                if (feature.Geometry.EnvelopeInternal.Intersects(envelope))
                 {
-                    numFeatures++;
-                    if (feature.Geometry.EnvelopeInternal.Intersects(envelope))
-                    {
-                        numInside++;
-                        fc.Add(feature);
-                    }
+                    numInside++;
+                    yield return feature;
                 }
+            }
 
-                _logger.LogInformation($"Read {numFeatures:N0}, {numInside:N0} inside, in {sw.ElapsedMilliseconds:N} ms");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(GetOsmDataAsGeoJson)} error: {ex.Message}");
-                throw;
-            }
-            return fc;
+            _logger.LogInformation($"Read {numFeatures:N0}, {numInside:N0} inside, in {sw.ElapsedMilliseconds:N} ms");
+
         }
 
         private IEnumerable<IFeature> EnumerateOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)

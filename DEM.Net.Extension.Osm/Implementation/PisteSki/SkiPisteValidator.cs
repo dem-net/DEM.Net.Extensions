@@ -99,7 +99,7 @@ namespace DEM.Net.Extension.Osm.Ski
         }
 
 
-        public override PisteModel CreateModel(Feature feature)
+        public override PisteModel CreateModel(IFeature feature)
         {            
             if (feature == null) return null;
 

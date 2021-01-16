@@ -26,7 +26,7 @@ namespace DEM.Net.Extension.Osm.Highways
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
         public override string glTFNodeName => "Roads";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<HighwayModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
             if (models.Any())
             {
@@ -53,33 +53,42 @@ namespace DEM.Net.Extension.Osm.Highways
             }
         }
 
-        protected override List<HighwayModel> ComputeModelElevationsAndTransform(OsmModelList<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        protected override IEnumerable<HighwayModel> ComputeModelElevationsAndTransform(IEnumerable<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 if (computeElevations)
                 {
-                    int parallelCount = -1;
-                    Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
-                       {
+                    foreach (var model in models)
+                    {
+                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                                             .ToList();
 
-                           model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                                                .ToList();
-                       }
-                    );
+                        yield return model;
+                    }
+                    //int parallelCount = -1;
+                    //Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                    //   {
+
+                    //       model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                    //                            .ToList();
+
+                    //       yield return model;
+                    //   }
+                    //);
                 }
                 else
                 {
                     foreach (var model in models)
                     {
                         model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
+                        yield return model;
                     }
                 }
 
             }
 
-            return models.Models;
         }
 
 

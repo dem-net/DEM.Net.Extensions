@@ -46,7 +46,7 @@ namespace DEM.Net.Extension.Osm.Highways
         }
 
 
-        public override HighwayModel CreateModel(Feature feature)
+        public override HighwayModel CreateModel(IFeature feature)
         {
             if (feature == null) return null;
 

@@ -20,7 +20,7 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        public FeatureCollection GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
+        public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
             try
             {
@@ -50,6 +50,7 @@ namespace DEM.Net.Extension.Osm
             }
 
         }
+       
 
         public int GetOsmDataCount(BoundingBox bbox, IOsmDataSettings filter)
         {

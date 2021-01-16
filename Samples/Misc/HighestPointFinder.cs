@@ -54,20 +54,20 @@ namespace SampleApp
                 OsmHighwayProcessor roadsProcessor = new OsmHighwayProcessor(GeoTransformPipeline.Default);
 
                 // Download buildings and convert them to GeoJson
-                FeatureCollection features = _osmService.GetOsmDataAsGeoJson(bbox4326, BasicOsmDataFilter.Create(new string[] { "highway"}));
+                IEnumerable<IFeature> features = _osmService.GetOsmDataAsGeoJson(bbox4326, BasicOsmDataFilter.Create(new string[] { "highway" }));
                 // Create internal building model
-                OsmModelList<HighwayModel> parsed = roadsProcessor.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
+                IEnumerable<HighwayModel> parsed = roadsProcessor.CreateModelsFromGeoJson<HighwayModel>(features, roadsProcessor.ModelFactory);
 
                 int parallelCount = -1;
-                Parallel.ForEach(parsed.Models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                Parallel.ForEach(parsed, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
                 //foreach(var model in parsed.Models)
                 {
 
                     model.LineString = _elevationService.GetLineGeometryElevation(model.LineString, dataset);
                 }
                 );
-                var osmRoads = parsed.Models.ToDictionary(p => p.Id, p => p);
-                var osmRoadLines = parsed.Models.ToDictionary(p => p.Id, p => p.LineString);
+                var osmRoads = parsed.ToDictionary(p => p.Id, p => p);
+                var osmRoadLines = parsed.ToDictionary(p => p.Id, p => p.LineString);
 
                 (Slope Slope, HighwayModel Road) maxSlope = (Slope.Zero, null);
                 (Slope Slope, HighwayModel Road) maxAvgSlope = (Slope.Zero, null);

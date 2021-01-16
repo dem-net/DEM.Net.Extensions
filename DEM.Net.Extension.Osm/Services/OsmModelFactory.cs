@@ -50,9 +50,9 @@ namespace DEM.Net.Extension.Osm
         /// <param name="model"></param>
         /// <returns></returns>
         public abstract bool ParseTags(TModel model);
-        public abstract TModel CreateModel(Feature feature);
+        public abstract TModel CreateModel(IFeature feature);
 
-        public virtual void RegisterTags(Feature feature)
+        public virtual void RegisterTags(IFeature feature)
         {
             TagRegistry.RegisterTags(feature);
         }
@@ -115,7 +115,7 @@ namespace DEM.Net.Extension.Osm
             return sb.ToString();
         }
 
-        internal void RegisterTags(Feature feature)
+        internal void RegisterTags(IFeature feature)
         {
             if (!_geomTypes.ContainsKey(feature.Geometry.OgcGeometryType))
             {

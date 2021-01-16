@@ -57,20 +57,18 @@ namespace DEM.Net.Extension.Osm
             try
             {
                 // Download buildings and convert them to GeoJson
-                FeatureCollection features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings);
+                IEnumerable<IFeature> features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings);
                 // Create internal building model
-                OsmModelList<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
+                IEnumerable<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
 
-                _logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
+                //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
                 // Download elevation data if missing
                 if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
-                parsed.Models = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles);
+                parsed = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles);
 
-                if (parsed.Models.Any())
-                {
-                    gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
-                }
+                gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
+
 
                 return gltfModel;
 
@@ -82,43 +80,39 @@ namespace DEM.Net.Extension.Osm
             }
         }
 
-        protected abstract List<T> ComputeModelElevationsAndTransform(OsmModelList<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
+        protected abstract IEnumerable<T> ComputeModelElevationsAndTransform(IEnumerable<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
 
-        protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<T> models);
+        protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<T> models);
 
-        public OsmModelList<T> CreateModelsFromGeoJson<T>(FeatureCollection features, OsmModelFactory<T> validator) where T : CommonModel
+        public IEnumerable<T> CreateModelsFromGeoJson<T>(IEnumerable<IFeature> features, OsmModelFactory<T> validator) where T : CommonModel
         {
 
-            OsmModelList<T> models = new OsmModelList<T>(features.Count);
+            int numValid = 0;
+            int numInvalid = 0;
+
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock(nameof(CreateModelsFromGeoJson), _logger, LogLevel.Debug))
             {
-                int count = 0;
+
                 foreach (var feature in features)
                 {
-                    count++;
                     validator.RegisterTags(feature as Feature);
                     T model = validator.CreateModel(feature as Feature);
 
                     if (model == null)
                     {
+                        numInvalid++;
                         _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Attributes["osmid"]}, type {feature.Geometry.OgcGeometryType} not supported.");
                     }
                     else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
                     {
-                        models.Add(model);
+                        numValid++;
+                        yield return model;
                     }
                 }
             }
 
-            //#if DEBUG
-            //            File.WriteAllText($"{typeof(T).Name}_osm_tag_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt", validator.GetTagsReport(), Encoding.UTF8);
-            //#endif
+            _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points. {numValid:N0} valid models, {numInvalid:N0} invalid");
 
-            _logger.LogInformation($"{nameof(CreateModelsFromGeoJson)} done for {validator._totalPoints} points.");
-
-            models.TotalPoints = validator._totalPoints;
-
-            return models;
 
         }
     }

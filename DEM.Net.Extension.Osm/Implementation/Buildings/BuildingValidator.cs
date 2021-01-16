@@ -93,7 +93,7 @@ namespace DEM.Net.Extension.Osm.Buildings
         }
 
 
-        public override BuildingModel CreateModel(Feature feature)
+        public override BuildingModel CreateModel(IFeature feature)
         {
             if (feature == null) return null;
 
