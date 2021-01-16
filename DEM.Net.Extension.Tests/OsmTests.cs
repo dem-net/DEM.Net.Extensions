@@ -34,6 +34,9 @@ namespace DEM.Net.Extension.Tests
 
         const string WKT_VADUZ = "POLYGON((9.508242015596382 47.146491518431674,9.530643825288765 47.146491518431674,9.530643825288765 47.13250869886131,9.508242015596382 47.13250869886131,9.508242015596382 47.146491518431674))";
 
+        const string WKT_KIEV = "POLYGON((30.3095979141151 50.599341687974714,30.7600373672401 50.599341687974714,30.7600373672401 50.295018130747046,30.3095979141151 50.295018130747046,30.3095979141151 50.599341687974714))";
+        const string WKT_LVIV = "POLYGON((23.843580176976825 50.05162731023709,24.239087989476825 50.05162731023709,24.458814551976825 49.903258512973096,24.458814551976825 49.6834012352496,24.239087989476825 49.55884730392324,23.865552833226825 49.55528394127019,23.607374122289325 49.70116866730184,23.601880958226825 49.89618191840424,23.843580176976825 50.05162731023709))";
+
         private readonly DefaultOsmProcessor _osmProcessor;
 
         public OsmTests(DemNetFixture fixture)
@@ -50,6 +53,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
         [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
         public void OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
@@ -64,6 +68,60 @@ namespace DEM.Net.Extension.Tests
             var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations: true, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
+
+        }
+
+        [Theory(DisplayName = "OSM Streets")]
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
+        [InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
+        public void OSMStreets(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        {
+            string outputDir = Directory.GetCurrentDirectory();
+
+            // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
+            // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
+
+            var bbox = GeometryService.GetBoundingBox(bboxWKT);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+
+
+            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, computeElevations: true, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreets_{name}.glb"));
+
+        }
+
+        [Theory(DisplayName = "OSM Streets and buildings")]
+        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
+        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
+        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
+        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
+        [InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
+        public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        {
+            string outputDir = Directory.GetCurrentDirectory();
+
+            // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
+            // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
+
+            var bbox = GeometryService.GetBoundingBox(bboxWKT);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+
+
+            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform, computeElevations: false, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 
         }
 
