@@ -57,15 +57,26 @@ namespace DEM.Net.Extension.Osm
 
         private IEnumerable<IFeature> EnumerateOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
-            foreach (var tile in TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE))
+            var tiles = TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE).ToList();
+            int i = 0;
+            foreach (var tile in tiles)
             {
+
+                _logger.LogInformation($"Reading tiles from {filter.FlatGeobufTilesDirectory}... {(i / (float)tiles.Count):P1}");
+
                 var osmTileInfo = new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize);
+                if (!FlatGeobufTileReader.FileExists(osmTileInfo, filter.FlatGeobufTilesDirectory))
+                {
+                    _logger.LogWarning($"Missing tile in {filter.FlatGeobufTilesDirectory} : {osmTileInfo}");
+                    continue;
+                }
                 FlatGeobufTileReader reader = new FlatGeobufTileReader(osmTileInfo, filter.FlatGeobufTilesDirectory);
 
                 foreach (IFeature way in reader.GetEnumerator())
                 {
                     yield return way;
                 }
+                i++;
             }
 
         }
