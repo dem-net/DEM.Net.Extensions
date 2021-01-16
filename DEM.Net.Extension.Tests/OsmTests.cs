@@ -36,6 +36,7 @@ namespace DEM.Net.Extension.Tests
 
         const string WKT_KIEV = "POLYGON((30.3095979141151 50.599341687974714,30.7600373672401 50.599341687974714,30.7600373672401 50.295018130747046,30.3095979141151 50.295018130747046,30.3095979141151 50.599341687974714))";
         const string WKT_LVIV = "POLYGON((23.843580176976825 50.05162731023709,24.239087989476825 50.05162731023709,24.458814551976825 49.903258512973096,24.458814551976825 49.6834012352496,24.239087989476825 49.55884730392324,23.865552833226825 49.55528394127019,23.607374122289325 49.70116866730184,23.601880958226825 49.89618191840424,23.843580176976825 50.05162731023709))";
+        const string WKT_WEST_UKRAINE = "POLYGON((22.182915548219313 51.7771750191374,30.928032735719313 51.7771750191374,30.928032735719313 47.66074941542309,22.182915548219313 47.66074941542309,22.182915548219313 51.7771750191374))";
 
         private readonly DefaultOsmProcessor _osmProcessor;
 
@@ -99,15 +100,16 @@ namespace DEM.Net.Extension.Tests
         }
 
         [Theory(DisplayName = "OSM Streets and buildings")]
-        [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
-        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
-        [InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
-        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
-        [InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
+        //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
+        //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, 2)]
+        //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
+        //[InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)] 
+        [InlineData(nameof(WKT_WEST_UKRAINE), WKT_WEST_UKRAINE, true, 2)] 
         public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
