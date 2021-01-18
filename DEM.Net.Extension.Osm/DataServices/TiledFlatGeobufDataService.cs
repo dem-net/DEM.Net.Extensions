@@ -33,12 +33,14 @@ namespace DEM.Net.Extension.Osm
             Stopwatch sw = Stopwatch.StartNew();
             int numFeatures = 0;
             int numInside = 0;
+            string lastid = "";
             foreach (IFeature feature in EnumerateOsmDataAsGeoJson(bbox, filter))
             {
                 numFeatures++;
                 if (feature.Geometry.EnvelopeInternal.Intersects(envelope))
                 {
                     numInside++;
+                    lastid = feature.Attributes["osmid"].ToString();
                     yield return feature;
                 }
             }
@@ -49,7 +51,16 @@ namespace DEM.Net.Extension.Osm
 
         private IEnumerable<IFeature> EnumerateOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
-            var tiles = TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE).ToList();
+            var tiles = TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE)
+                                .Select(tile => new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize))
+                                .Where(tile => FlatGeobufTileReader.FileExists(tile, filter.FlatGeobufTilesDirectory))
+                                .ToList();
+
+            if (tiles.Count == 0)
+            {
+                throw new Exception($"All required tiles are missing");
+            }
+
             int i = 0;
             foreach (var tile in tiles)
             {
@@ -57,11 +68,6 @@ namespace DEM.Net.Extension.Osm
                 _logger.LogInformation($"Reading tiles from {filter.FlatGeobufTilesDirectory}... {(i / (float)tiles.Count):P1}");
 
                 var osmTileInfo = new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize);
-                if (!FlatGeobufTileReader.FileExists(osmTileInfo, filter.FlatGeobufTilesDirectory))
-                {
-                    _logger.LogWarning($"Missing tile in {filter.FlatGeobufTilesDirectory} : {osmTileInfo}");
-                    continue;
-                }
                 FlatGeobufTileReader reader = new FlatGeobufTileReader(osmTileInfo, filter.FlatGeobufTilesDirectory);
 
                 foreach (IFeature way in reader.GetEnumerator())
