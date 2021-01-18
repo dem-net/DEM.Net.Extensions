@@ -64,7 +64,7 @@ namespace DEM.Net.Extension.Osm
                 //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
                 // Download elevation data if missing
-                if (downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
+                if (computeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
                 parsed = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles);
 
                 gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
