@@ -47,6 +47,8 @@ namespace DEM.Net.Extension.Tests
 
         const string WKT_LATVIA = "POLYGON((20.139797573199644 58.258844643629544,28.906887416949644 58.258844643629544,28.906887416949644 55.386795442762434,20.139797573199644 55.386795442762434,20.139797573199644 58.258844643629544))";
 
+        const string WKT_CORSICA = "POLYGON((8.480069186401286 43.04187678076409,9.625393893432536 43.04187678076409,9.625393893432536 41.31606594811492,8.480069186401286 41.31606594811492,8.480069186401286 43.04187678076409))";
+
         private readonly DefaultOsmProcessor _osmProcessor;
 
         public OsmTests(DemNetFixture fixture)
@@ -86,7 +88,7 @@ namespace DEM.Net.Extension.Tests
 
             var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
-            
+
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
 
         }
@@ -140,8 +142,8 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_MONACO), WKT_MONACO, true, 2)]
         [InlineData(nameof(WKT_LATVIA), WKT_LATVIA, true, 2)]
         [InlineData(nameof(WKT_KOSOVO), WKT_KOSOVO, true, 2)]
-        //[InlineData(nameof(WKT_WEST_UKRAINE), WKT_WEST_UKRAINE, true, 2)]
-        public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        [InlineData(nameof(WKT_CORSICA), WKT_CORSICA, true, 2)]
+        public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -152,7 +154,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
-            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform, computeElevations: false, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform, computeElevations: computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 

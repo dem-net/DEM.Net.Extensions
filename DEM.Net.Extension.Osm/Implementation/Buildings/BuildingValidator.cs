@@ -221,7 +221,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.NumPoints);
             foreach (var pt in lineString.Coordinates)
             {
-                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Y, pt.X));
+                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Y, pt.X, pt.Z));
             }
             return geoPoints;
         }
