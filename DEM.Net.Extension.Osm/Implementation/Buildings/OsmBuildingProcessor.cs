@@ -19,16 +19,15 @@ namespace DEM.Net.Extension.Osm.Buildings
         const double LevelHeightMeters = 3;
         private readonly bool withBuildingsColors;
         private readonly string defaultBuildingsColor;
-        private readonly BuildingsDataFilter _buildingsDataFilter;
 
         public OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : base(transformPipeline)
         {
             this.withBuildingsColors = withBuildingsColors;
             this.defaultBuildingsColor = defaultBuildingsColor;
-            this._buildingsDataFilter = new BuildingsDataFilter();
+            this.DataSettings = new BuildingsDataFilter();
         }
 
-        public override IOsmDataSettings DataSettings => _buildingsDataFilter;
+        public override IOsmDataSettings DataSettings { get; set; }
         
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);

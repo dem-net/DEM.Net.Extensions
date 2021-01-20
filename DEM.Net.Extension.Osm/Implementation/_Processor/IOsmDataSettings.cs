@@ -6,11 +6,12 @@ namespace DEM.Net.Extension.Osm
 {
     public interface IOsmDataSettings
     {
+        string FilterIdentifier { get; }
         string[] WaysFilter { get; set; }
         string[] RelationsFilter { get; set; }
         string[] NodesFilter { get; set; }
 
-        string FlatGeobufTilesDirectory { get;  }
+        string FlatGeobufTilesDirectory { get; set; }
     }
 
 }

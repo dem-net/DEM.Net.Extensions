@@ -13,17 +13,16 @@ namespace DEM.Net.Extension.Osm.Buildings
     {
 
         private const float PisteWidthMeters = 30F;
-        private readonly PisteSkiDataFilter _pisteSkiDataFilter;
         public override bool ComputeElevations { get; set; } = true;
 
         public OsmPisteSkiProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {
-            this._pisteSkiDataFilter = new PisteSkiDataFilter();
+            this.DataSettings = new PisteSkiDataFilter();
         }
         public override OsmModelFactory<PisteModel> ModelFactory => new SkiPisteValidator(base._logger);
 
 
-        public override IOsmDataSettings DataSettings => _pisteSkiDataFilter;
+        public override IOsmDataSettings DataSettings { get; set; }
         public override string glTFNodeName => "SkiPiste";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<PisteModel> models)

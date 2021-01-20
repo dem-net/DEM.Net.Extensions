@@ -5,7 +5,10 @@
         public string[] WaysFilter { get; set; }
         public string[] RelationsFilter { get; set; }
         public string[] NodesFilter { get; set; }
-        public string FlatGeobufTilesDirectory => null;
+
+        public string FilterIdentifier => "basic";
+
+        public string FlatGeobufTilesDirectory { get; set; }
 
         public static IOsmDataSettings Create(string[] waysFilter, string[] relationsFilter = null, string[] nodesFilter = null)
         {

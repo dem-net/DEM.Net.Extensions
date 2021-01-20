@@ -51,9 +51,11 @@ namespace DEM.Net.Extension.Osm
 
         private IEnumerable<IFeature> EnumerateOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
         {
+            string directoryName = Path.Combine(filter.FlatGeobufTilesDirectory, filter.FilterIdentifier);
+
             var tiles = TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE)
                                 .Select(tile => new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize))
-                                .Where(tile => FlatGeobufTileReader.FileExists(tile, filter.FlatGeobufTilesDirectory))
+                                .Where(tile => FlatGeobufTileReader.FileExists(tile, directoryName))
                                 .ToList();
 
             if (tiles.Count == 0)
@@ -65,10 +67,10 @@ namespace DEM.Net.Extension.Osm
             foreach (var tile in tiles)
             {
 
-                _logger.LogInformation($"Reading tiles from {filter.FlatGeobufTilesDirectory}... {(i / (float)tiles.Count):P1}");
+                _logger.LogInformation($"Reading tiles from {directoryName}... {(i / (float)tiles.Count):P1}");
 
                 var osmTileInfo = new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize);
-                FlatGeobufTileReader reader = new FlatGeobufTileReader(osmTileInfo, filter.FlatGeobufTilesDirectory);
+                FlatGeobufTileReader reader = new FlatGeobufTileReader(osmTileInfo, directoryName);
 
                 foreach (IFeature way in reader.GetEnumerator())
                 {

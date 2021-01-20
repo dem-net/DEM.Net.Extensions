@@ -77,6 +77,7 @@ namespace DEM.Net.Extension.Osm
 
             foreach (var p in processors)
             {
+                p.DataSettings.FlatGeobufTilesDirectory = _osmOptions.FlatGeobufTilesDirectory;
                 p.Init(_elevationService, _gltfService, _meshService, osmDataService, _logger);
 
                 model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles);

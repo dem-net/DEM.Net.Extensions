@@ -41,7 +41,7 @@ namespace DEM.Net.Extension.Osm
             Transform.TransformPoints = Transform.TransformPoints.PostTransform(p => postTransform(p));
         }
 
-        public abstract IOsmDataSettings DataSettings { get; }
+        public abstract IOsmDataSettings DataSettings { get; set; }
 
         public abstract bool ComputeElevations { get; set; }
 

@@ -13,18 +13,17 @@ namespace DEM.Net.Extension.Osm.Highways
     {
 
         private const float LaneWidthMeters = 3.5F;
-        private readonly HighwaysDataFilter _highwaysDataFilter;
-
+        
         public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
         {
-            this._highwaysDataFilter = new HighwaysDataFilter();
+            this.DataSettings = new HighwaysDataFilter();
         }
 
 
-        public override IOsmDataSettings DataSettings => _highwaysDataFilter;
+        public override IOsmDataSettings DataSettings { get; set; }
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
-        public override string glTFNodeName => "Roads";
+        public override string glTFNodeName => "Streets";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
