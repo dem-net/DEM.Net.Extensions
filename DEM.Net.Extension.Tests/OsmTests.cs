@@ -18,6 +18,8 @@ namespace DEM.Net.Extension.Tests
         const string WKT_SF_SMALL = "POLYGON((-122.42722692299768 37.81034598808797, -122.38886060524865 37.81034598808797, -122.38886060524865 37.784573673820816, -122.42722692299768 37.784573673820816, -122.42722692299768 37.81034598808797))";
         const string WKT_SF_SUPERSMALL = "POLYGON((-122.41063177228989 37.80707295150412,-122.40904390455307 37.80707295150412,-122.40904390455307 37.806064225434206,-122.41063177228989 37.806064225434206,-122.41063177228989 37.80707295150412))";
 
+        const string WKT_AIX = "POLYGON((5.34415720579406 43.604782382279176,5.512557016585076 43.604782382279176,5.512557016585076 43.48396362090737,5.34415720579406 43.48396362090737,5.34415720579406 43.604782382279176))";
+        const string WKT_AIX_DEBUG = "POLYGON((5.431936525888528 43.5582229526827,5.439317965097512 43.5582229526827,5.439317965097512 43.550945193773394,5.431936525888528 43.550945193773394,5.431936525888528 43.5582229526827))";
         // FULL
         const string WKT_PRIPYAT_FULL = "POLYGON((29.993379474855704 51.438414833369904,30.183580280519767 51.438414833369904,30.183580280519767 51.333857487728544,29.993379474855704 51.333857487728544,29.993379474855704 51.438414833369904))";
         // Cas 1
@@ -25,7 +27,7 @@ namespace DEM.Net.Extension.Tests
         // cas 2
         const string WKT_PRIPYAT_2 = "POLYGON((30.062877280833636 51.40748141189236,30.063456637980853 51.40748141189236,30.063456637980853 51.40716017522757,30.062877280833636 51.40716017522757,30.062877280833636 51.40748141189236))";
         // cas 3
-        const string WKT_PRIPYAT_3 = "POLYGON((30.065251398582948 51.407283441091266,30.066243815918458 51.407283441091266,30.066243815918458 51.40558353075506,30.065251398582948 51.40558353075506,30.065251398582948 51.407283441091266))";
+        const string WKT_PRIPYAT_RELATION = "POLYGON((30.05205144421368 51.40627424301629,30.056739945571714 51.40627424301629,30.056739945571714 51.401629354055544,30.05205144421368 51.401629354055544,30.05205144421368 51.40627424301629))";
         const string WKT_PRIPYAT_POLICE =
         "POLYGON((30.05531887410026 51.40760207487213,30.05977134106498 51.40760207487213,30.05977134106498 51.406430891737706,30.05531887410026 51.406430891737706,30.05531887410026 51.40760207487213))";
 
@@ -49,6 +51,8 @@ namespace DEM.Net.Extension.Tests
 
         const string WKT_CORSICA = "POLYGON((8.480069186401286 43.04187678076409,9.625393893432536 43.04187678076409,9.625393893432536 41.31606594811492,8.480069186401286 41.31606594811492,8.480069186401286 43.04187678076409))";
 
+        const string WKT_UKRAINE_MOUNTAINS = "POLYGON((23.621024638843874 48.915008011278594,23.98014023942981 48.915008011278594,23.98014023942981 48.67119290393242,23.621024638843874 48.67119290393242,23.621024638843874 48.915008011278594))";
+
         private readonly DefaultOsmProcessor _osmProcessor;
 
         public OsmTests(DemNetFixture fixture)
@@ -61,7 +65,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, false, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_RELATION), WKT_PRIPYAT_RELATION, true, false, 2)]
         [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, false, 2)]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, false, 2)]
@@ -70,7 +74,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, true, 2)]
-        //[InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_RELATION), WKT_PRIPYAT_RELATION, true, true, 2)]
         //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
         //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
@@ -97,7 +101,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, false, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, false, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_RELATION), WKT_PRIPYAT_RELATION, true, false, 2)]
         [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, false, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, false, 2)]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, false, 2)]
@@ -106,7 +110,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, true, 2)]
-        //[InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, true, 2)]
+        //[InlineData(nameof(WKT_PRIPYAT_RELATION), WKT_PRIPYAT_RELATION, true, true, 2)]
         //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
         //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
@@ -132,17 +136,20 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, 2)]
-        [InlineData(nameof(WKT_PRIPYAT_3), WKT_PRIPYAT_3, true, 2)]
-        [InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
+        [InlineData(nameof(WKT_PRIPYAT_RELATION), WKT_PRIPYAT_RELATION, true, 2)]
+        //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
-        [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
-        [InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
-        [InlineData(nameof(WKT_LUXEMBOURG), WKT_LUXEMBOURG, true, 2)]
+        //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
+        //[InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
+        //[InlineData(nameof(WKT_LUXEMBOURG), WKT_LUXEMBOURG, true, 2)]
         [InlineData(nameof(WKT_MONACO), WKT_MONACO, true, 2)]
-        [InlineData(nameof(WKT_LATVIA), WKT_LATVIA, true, 2)]
-        [InlineData(nameof(WKT_KOSOVO), WKT_KOSOVO, true, 2)]
-        [InlineData(nameof(WKT_CORSICA), WKT_CORSICA, true, 2)]
+        //[InlineData(nameof(WKT_LATVIA), WKT_LATVIA, true, 2)]
+        //[InlineData(nameof(WKT_KOSOVO), WKT_KOSOVO, true, 2)]
+        //[InlineData(nameof(WKT_CORSICA), WKT_CORSICA, true, 2)]
+        [InlineData(nameof(WKT_UKRAINE_MOUNTAINS), WKT_UKRAINE_MOUNTAINS, true, 2)]
+        [InlineData(nameof(WKT_AIX), WKT_AIX, true, 2)]
+        [InlineData(nameof(WKT_AIX_DEBUG), WKT_AIX_DEBUG, true, 2)]
         public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
         {
             string outputDir = Directory.GetCurrentDirectory();
