@@ -55,7 +55,7 @@ namespace DEM.Net.Extension.Osm
 
             var tiles = TileUtils.GetTilesInBoundingBox(bbox, TILE_ZOOM_LEVEL, TILE_SIZE)
                                 .Select(tile => new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize))
-                                .Where(tile => FlatGeobufTileReader.FileExists(tile, directoryName))
+                                .Where(tile => FlatGeoBufFileSystem.FileExists(tile, directoryName))
                                 .ToList();
 
             if (tiles.Count == 0)
