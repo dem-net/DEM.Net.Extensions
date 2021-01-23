@@ -33,14 +33,12 @@ namespace DEM.Net.Extension.Osm
             Stopwatch sw = Stopwatch.StartNew();
             int numFeatures = 0;
             int numInside = 0;
-            string lastid = "";
             foreach (IFeature feature in EnumerateOsmDataAsGeoJson(bbox, filter))
             {
                 numFeatures++;
                 if (feature.Geometry.EnvelopeInternal.Intersects(envelope))
                 {
                     numInside++;
-                    lastid = feature.Attributes["osmid"].ToString();
                     yield return feature;
                 }
             }

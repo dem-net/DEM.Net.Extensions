@@ -99,9 +99,9 @@ namespace DEM.Net.Extension.Osm.Ski
         }
 
 
-        public override PisteModel CreateModel(IFeature feature)
+        public override IEnumerable<PisteModel> CreateModel(IFeature feature)
         {            
-            if (feature == null) return null;
+            if (feature == null) yield break;
 
             PisteModel model = null;
             switch (feature.Geometry.OgcGeometryType)
@@ -120,7 +120,7 @@ namespace DEM.Net.Extension.Osm.Ski
                 model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
             }
 
-            return model;
+            yield return model;
         }
 
         private PisteModel BuildModelFromGeometry(LineString geom, ref int geoPointIdCounter)

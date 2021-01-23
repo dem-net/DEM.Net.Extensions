@@ -50,7 +50,7 @@ namespace DEM.Net.Extension.Osm
         /// <param name="model"></param>
         /// <returns></returns>
         public abstract bool ParseTags(TModel model);
-        public abstract TModel CreateModel(IFeature feature);
+        public abstract IEnumerable<TModel> CreateModel(IFeature feature);
 
         public virtual void RegisterTags(IFeature feature)
         {

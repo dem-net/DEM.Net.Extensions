@@ -96,17 +96,19 @@ namespace DEM.Net.Extension.Osm
                 foreach (var feature in features)
                 {
                     validator.RegisterTags(feature as Feature);
-                    T model = validator.CreateModel(feature as Feature);
+                    foreach (T model in validator.CreateModel(feature as Feature))
+                    {
 
-                    if (model == null)
-                    {
-                        numInvalid++;
-                        _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Attributes["osmid"]}, type {feature.Geometry.OgcGeometryType} not supported.");
-                    }
-                    else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
-                    {
-                        numValid++;
-                        yield return model;
+                        if (model == null)
+                        {
+                            numInvalid++;
+                            _logger.LogWarning($"{nameof(CreateModelsFromGeoJson)}: {feature.Attributes["osmid"]}, type {feature.Geometry.OgcGeometryType} not supported.");
+                        }
+                        else if (validator.ParseTags(model)) // Model not processed further if tag parsing fails
+                        {
+                            numValid++;
+                            yield return model;
+                        }
                     }
                 }
             }

@@ -93,31 +93,40 @@ namespace DEM.Net.Extension.Osm.Buildings
         }
 
 
-        public override BuildingModel CreateModel(IFeature feature)
+        public override IEnumerable<BuildingModel> CreateModel(IFeature feature)
         {
-            if (feature == null) return null;
+            if (feature == null) yield break;
 
-            BuildingModel model = null;
             switch (feature.Geometry.OgcGeometryType)
             {
                 case OgcGeometryType.Polygon:
-                    model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+
+                    BuildingModel model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+                    if (model != null)
+                    {
+                        model.Id = feature.Attributes["osmid"].ToString();
+                        model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+                    }
+                    yield return model;
                     break;
                 case OgcGeometryType.MultiPolygon:
-                    model = ConvertBuildingGeometry(((MultiPolygon)feature.Geometry).Geometries.First() as Polygon, ref base._totalPoints);
+
+                    foreach (Polygon polygon in ((MultiPolygon)feature.Geometry).Geometries)
+                    {
+                        var modelPoly = ConvertBuildingGeometry(polygon, ref base._totalPoints);
+                        if (modelPoly != null)
+                        {
+                            modelPoly.Id = feature.Attributes["osmid"].ToString();
+                            modelPoly.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+                        }
+                        yield return modelPoly;
+                    }
                     break;
                 default:
                     _logger.LogDebug($"{feature.Geometry.OgcGeometryType} not supported for {nameof(BuildingModel)} {feature.Attributes.GetOptionalValue("osmid")}.");
                     break;
             }
 
-            if (model != null)
-            {
-                model.Id = feature.Attributes["osmid"].ToString();
-                model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
-            }
-
-            return model;
         }
 
         private Vector4 HtmlColorToVec4(string htmlColor)

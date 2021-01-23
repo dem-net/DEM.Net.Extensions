@@ -46,9 +46,9 @@ namespace DEM.Net.Extension.Osm.Highways
         }
 
 
-        public override HighwayModel CreateModel(IFeature feature)
+        public override IEnumerable<HighwayModel> CreateModel(IFeature feature)
         {
-            if (feature == null) return null;
+            if (feature == null) yield break;
 
             HighwayModel model = null;
             switch (feature.Geometry.OgcGeometryType)
@@ -74,7 +74,7 @@ namespace DEM.Net.Extension.Osm.Highways
             }
 
 
-            return model;
+            yield return model;
         }
 
         private HighwayModel BuildModelFromGeometry(LineString geom, ref int geoPointIdCounter)
