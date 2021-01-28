@@ -10,6 +10,8 @@ using System;
 using System.Linq;
 using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Options;
+using DEM.Net.Extension.Osm.Railway;
+using DEM.Net.Extension.Osm.Water;
 
 namespace DEM.Net.Extension.Osm
 {
@@ -45,6 +47,8 @@ namespace DEM.Net.Extension.Osm
             List<IOsmProcessor> processors = new List<IOsmProcessor>();
 
             if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor));
+            if (layers.HasFlag(OsmLayer.Railway)) processors.Add(new OsmRailwayProcessor(transform));
+            if (layers.HasFlag(OsmLayer.Water)) processors.Add(new OsmWaterProcessor(transform));
             if (layers.HasFlag(OsmLayer.Highways))
             {
                 var processor = new OsmHighwayProcessor(transform);

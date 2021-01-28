@@ -8,6 +8,9 @@ using System.IO;
 using System.Text;
 using Xunit;
 using DEM.Net.Extension.Osm;
+using DEM.Net.Core.Imagery;
+using SharpGLTF.Schema2;
+using DEM.Net.glTF.SharpglTF;
 
 namespace DEM.Net.Extension.Tests
 {
@@ -37,6 +40,7 @@ namespace DEM.Net.Extension.Tests
 
         const string WKT_LIECHTENSTEIN = "POLYGON((9.40770363486505 47.275366751293845,9.7015879122088 47.275366751293845,9.7015879122088 47.021325245910816,9.40770363486505 47.021325245910816,9.40770363486505 47.275366751293845))";
         const string WKT_LIECHTENSTEIN_RELATION = "POLYGON((9.476624699624079 47.07032043432385,9.484263630898493 47.07032043432385,9.484263630898493 47.06564348494006,9.476624699624079 47.06564348494006,9.476624699624079 47.07032043432385))";
+        const string WKT_LIECHTENSTEIN_TILE_LIMIT = "POLYGON((9.489639854980533 47.0729467846166,9.494489288879459 47.0729467846166,9.494489288879459 47.07009695786518,9.489639854980533 47.07009695786518,9.489639854980533 47.0729467846166))";
 
         const string WKT_KIEV = "POLYGON((30.3095979141151 50.599341687974714,30.7600373672401 50.599341687974714,30.7600373672401 50.295018130747046,30.3095979141151 50.295018130747046,30.3095979141151 50.599341687974714))";
         const string WKT_LVIV = "POLYGON((23.843580176976825 50.05162731023709,24.239087989476825 50.05162731023709,24.458814551976825 49.903258512973096,24.458814551976825 49.6834012352496,24.239087989476825 49.55884730392324,23.865552833226825 49.55528394127019,23.607374122289325 49.70116866730184,23.601880958226825 49.89618191840424,23.843580176976825 50.05162731023709))";
@@ -56,10 +60,17 @@ namespace DEM.Net.Extension.Tests
         const string WKT_UKRAINE_MOUNTAINS = "POLYGON((23.621024638843874 48.915008011278594,23.98014023942981 48.915008011278594,23.98014023942981 48.67119290393242,23.621024638843874 48.67119290393242,23.621024638843874 48.915008011278594))";
 
         private readonly DefaultOsmProcessor _osmProcessor;
+        private readonly ElevationService _elevationService;
+        private readonly ImageryService _imageryService;
+        private readonly SharpGltfService _gltfService;
 
         public OsmTests(DemNetFixture fixture)
         {
             _osmProcessor = fixture.ServiceProvider.GetService<DefaultOsmProcessor>();
+            _elevationService = fixture.ServiceProvider.GetService<ElevationService>();
+
+            _imageryService = fixture.ServiceProvider.GetService<ImageryService>();
+            _gltfService = fixture.ServiceProvider.GetService<SharpGltfService>();
         }
 
 
@@ -109,6 +120,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, false, 2)]
         [InlineData(nameof(WKT_KIEV), WKT_KIEV, true, false, 2)]
         [InlineData(nameof(WKT_LUXEMBOURG), WKT_LUXEMBOURG, true, false, 2)]
+        [InlineData(nameof(WKT_LIECHTENSTEIN_TILE_LIMIT), WKT_LIECHTENSTEIN_TILE_LIMIT, true, false, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_1), WKT_PRIPYAT_1, true, true, 2)]
         //[InlineData(nameof(WKT_PRIPYAT_2), WKT_PRIPYAT_2, true, true, 2)]
@@ -142,7 +154,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_RELATION_NAPOLI), WKT_RELATION_NAPOLI, true, 2)]
         [InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, 2)]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
-        [InlineData(nameof(WKT_LIECHTENSTEIN_RELATION), WKT_LIECHTENSTEIN_RELATION, true, 2)]        
+        [InlineData(nameof(WKT_LIECHTENSTEIN_RELATION), WKT_LIECHTENSTEIN_RELATION, true, 2)]
         //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, 2)]
         //[InlineData(nameof(WKT_LVIV), WKT_LVIV, true, 2)]
         //[InlineData(nameof(WKT_LUXEMBOURG), WKT_LUXEMBOURG, true, 2)]
@@ -154,7 +166,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_AIX), WKT_AIX, true, 2)]
         [InlineData(nameof(WKT_AIX_DEBUG), WKT_AIX_DEBUG, true, 2)]
         [InlineData(nameof(WKT_CHAMONIX), WKT_CHAMONIX, true, 2)]
-        
+
         public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
         {
             string outputDir = Directory.GetCurrentDirectory();
@@ -170,6 +182,55 @@ namespace DEM.Net.Extension.Tests
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 
+        }
+
+        [Theory(DisplayName = "OSM StreetsBuildingsRailWater")]
+        [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
+
+        public void OSMStreetsBuildingsRailWater(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
+        {
+            string outputDir = Directory.GetCurrentDirectory();
+
+            // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
+            // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
+
+            var bbox = GeometryService.GetBoundingBox(bboxWKT);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+
+
+            var model = _osmProcessor.Run(null,
+                OsmLayer.Water | OsmLayer.Railway | OsmLayer.Highways | OsmLayer.Buildings,
+                bbox, transform, computeElevations: computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
+
+        }
+
+        [Theory(DisplayName = "OSM and Terrain")]
+        [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
+        public void OsmAllWithTerrain(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        {
+            DEMDataSet dataset = DEMDataSet.NASADEM;
+            var bbox = GeometryService.GetBoundingBox(bboxWKT);
+            bool computeElevations = false;
+            string outputDir = Directory.GetCurrentDirectory();
+
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: centerOnOrigin, ZScale, centerOnZOrigin: false);
+            var heightMap = _elevationService.GetHeightMap(ref bbox, dataset);
+            transform.BoundingBox = bbox; // bbox changed by GetHeigtMap
+
+            heightMap = transform.TransformHeightMap(heightMap);
+            TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.EsriWorldImagery, 15);
+
+            string fileName = Path.Combine(outputDir, "Texture.jpg");
+            TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
+            var pbrTexture = PBRTexture.Create(texInfo, null);
+
+            ModelRoot model = _osmProcessor.Run(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+            model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
+
+
+            model.SaveGLB(Path.Combine(outputDir, $"{nameof(OsmAllWithTerrain)}_{name}" + ".glb"));
         }
 
     }
