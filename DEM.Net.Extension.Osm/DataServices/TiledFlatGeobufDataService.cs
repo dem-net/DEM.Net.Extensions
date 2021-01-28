@@ -33,17 +33,23 @@ namespace DEM.Net.Extension.Osm
             Stopwatch sw = Stopwatch.StartNew();
             int numFeatures = 0;
             int numInside = 0;
+            HashSet<long> idsYielded = new HashSet<long>();
             foreach (IFeature feature in EnumerateOsmDataAsGeoJson(bbox, filter))
             {
                 numFeatures++;
                 if (feature.Geometry.EnvelopeInternal.Intersects(envelope))
                 {
+                    long featureId = (long)feature.Attributes["osmid"];
                     numInside++;
-                    yield return feature;
+                    if (!idsYielded.Contains(featureId))
+                    {
+                        idsYielded.Add(featureId);                        
+                        yield return feature;
+                    }
                 }
             }
 
-            _logger.LogInformation($"Read {numFeatures:N0}, {numInside:N0} inside, in {sw.ElapsedMilliseconds:N} ms");
+            _logger.LogInformation($"Read {numFeatures:N0}, {numInside:N0} inside, {idsYielded.Count} unique, in {sw.ElapsedMilliseconds:N} ms");
 
         }
 
