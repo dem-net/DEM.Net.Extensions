@@ -13,7 +13,7 @@ namespace DEM.Net.Extension.Osm.Highways
     {
 
         private const float LaneWidthMeters = 3.5F;
-        
+
         public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
         {
             this.DataSettings = new HighwaysDataFilter();
@@ -27,10 +27,8 @@ namespace DEM.Net.Extension.Osm.Highways
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
-            if (models.Any())
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
-            }
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
+
             return gltfModel;
 
         }

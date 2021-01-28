@@ -24,10 +24,8 @@ namespace DEM.Net.Extension.Osm.Railway
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<RailwayModel> models)
         {
-            if (models.Any())
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable() , WidthMeters)), VectorsExtensions.CreateColor(165,42,42));
-            }
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), WidthMeters)), VectorsExtensions.CreateColor(165, 42, 42));
+
             return gltfModel;
         }
 

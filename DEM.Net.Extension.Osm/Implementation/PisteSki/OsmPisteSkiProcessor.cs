@@ -27,13 +27,12 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<PisteModel> models)
         {
-            if (models.Any())
+
+            foreach (var difficultyGroup in models.GroupBy(m => m.Difficulty))
             {
-                foreach (var difficultyGroup in models.GroupBy(m => m.Difficulty))
-                {
-                    gltfModel = _gltfService.AddLines(gltfModel, $"{glTFNodeName}_{difficultyGroup.Key}", difficultyGroup.Select(m => ((IEnumerable<GeoPoint>)m.LineString, PisteWidthMeters)), difficultyGroup.First().ColorVec4);
-                }
+                gltfModel = _gltfService.AddLines(gltfModel, $"{glTFNodeName}_{difficultyGroup.Key}", difficultyGroup.Select(m => ((IEnumerable<GeoPoint>)m.LineString, PisteWidthMeters)), difficultyGroup.First().ColorVec4);
             }
+
             return gltfModel;
         }
 

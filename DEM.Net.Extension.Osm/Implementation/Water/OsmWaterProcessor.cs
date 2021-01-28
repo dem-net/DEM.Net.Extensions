@@ -26,11 +26,20 @@ namespace DEM.Net.Extension.Osm.Water
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<WaterModel> models)
         {
-            if (models.Any())
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), WaterWidthMeters)), VectorsExtensions.CreateColor(102, 178, 255));
-            }
+
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, getLines(models), VectorsExtensions.CreateColor(102, 178, 255));
+
             return gltfModel;
+        }
+
+        private IEnumerable<(IEnumerable<GeoPoint> points, float trailWidthMeters)> getLines(IEnumerable<WaterModel> models)
+        {
+            foreach (var m in models)
+            {
+                var geom = m.LineString.AsEnumerable();
+                float lineWidth = WaterWidthMeters;
+                yield return (geom, lineWidth);
+            }
         }
 
         protected override IEnumerable<WaterModel> ComputeModelElevationsAndTransform(IEnumerable<WaterModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)

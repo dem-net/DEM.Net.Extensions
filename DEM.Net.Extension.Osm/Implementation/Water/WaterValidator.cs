@@ -35,8 +35,13 @@ namespace DEM.Net.Extension.Osm.Water
                 case OgcGeometryType.LineString:
                     model = BuildModelFromGeometry((LineString)feature.Geometry, ref _totalPoints);
                     break;
+                case OgcGeometryType.MultiPolygon:
+                    _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(WaterModel)} {feature.Attributes["osmid"]}. Doing exterior ring only now");
+                       
+                    model = BuildModelFromGeometry((((MultiPolygon)feature.Geometry).Geometries[0] as Polygon).ExteriorRing, ref _totalPoints);
+                    break;
                 default:
-                    _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(WaterModel)} {feature.Attributes["osmid"]}.");
+                    _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(WaterModel)} {feature.Attributes["osmid"]}");
                     break;
             }
 
