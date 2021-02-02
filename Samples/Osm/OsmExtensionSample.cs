@@ -29,6 +29,17 @@ namespace SampleApp
         private readonly OverpassAPIDataService _osmService;
         private float ZScale = 2f;
 
+        // FULL
+        const string WKT_PRIPYAT_FULL = "POLYGON((29.993379474855704 51.438414833369904,30.183580280519767 51.438414833369904,30.183580280519767 51.333857487728544,29.993379474855704 51.333857487728544,29.993379474855704 51.438414833369904))";
+
+        const string WKT_LIECHTENSTEIN = "POLYGON((9.40770363486505 47.275366751293845,9.7015879122088 47.275366751293845,9.7015879122088 47.021325245910816,9.40770363486505 47.021325245910816,9.40770363486505 47.275366751293845))";
+        const string WKT_LIECHTENSTEIN_RELATION = "POLYGON((9.476624699624079 47.07032043432385,9.484263630898493 47.07032043432385,9.484263630898493 47.06564348494006,9.476624699624079 47.06564348494006,9.476624699624079 47.07032043432385))";
+        const string WKT_LIECHTENSTEIN_TILE_LIMIT = "POLYGON((9.489639854980533 47.0729467846166,9.494489288879459 47.0729467846166,9.494489288879459 47.07009695786518,9.489639854980533 47.07009695786518,9.489639854980533 47.0729467846166))";
+
+        const string WKT_KIEV = "POLYGON((30.3095979141151 50.599341687974714,30.7600373672401 50.599341687974714,30.7600373672401 50.295018130747046,30.3095979141151 50.295018130747046,30.3095979141151 50.599341687974714))";
+        const string WKT_LVIV = "POLYGON((23.843580176976825 50.05162731023709,24.239087989476825 50.05162731023709,24.458814551976825 49.903258512973096,24.458814551976825 49.6834012352496,24.239087989476825 49.55884730392324,23.865552833226825 49.55528394127019,23.607374122289325 49.70116866730184,23.601880958226825 49.89618191840424,23.843580176976825 50.05162731023709))";
+        const string WKT_WEST_UKRAINE = "POLYGON((22.182915548219313 51.7771750191374,30.928032735719313 51.7771750191374,30.928032735719313 47.66074941542309,22.182915548219313 47.66074941542309,22.182915548219313 51.7771750191374))";
+
         public OsmExtensionSample(DefaultOsmProcessor osmProcessor
                 , OverpassAPIDataService osmService
                 , ImageryService imageryService
@@ -45,11 +56,13 @@ namespace SampleApp
         }
         public void Run()
         {
-            using (FileStream fs = new FileStream(@"D:\Data\NLD\pays-de-la-loire.poly", FileMode.Open))
-            {
-                string wkt = _osmService.ConvertOsmosisPolyToWkt(fs);
-            }
+            //using (FileStream fs = new FileStream(@"D:\Data\NLD\pays-de-la-loire.poly", FileMode.Open))
+            //{
+            //    string wkt = _osmService.ConvertOsmosisPolyToWkt(fs);
+            //}
             //RunOsmPbfSample(@"C:\Temp\provence-alpes-cote-d-azur-latest.osm.pbf");
+
+            FlatGeoBufTilesTest();
 
             Buildings3DOnly();
 
@@ -61,7 +74,23 @@ namespace SampleApp
 
         }
 
+        private void FlatGeoBufTilesTest()
+        {
+            string outputDir = Directory.GetCurrentDirectory();
 
+            // SF Big: POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))
+            // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
+
+            var bbox = GeometryService.GetBoundingBox(WKT_LIECHTENSTEIN);
+            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+
+
+            var model = _osmProcessor.Run(null,
+                OsmLayer.Water | OsmLayer.Railway | OsmLayer.Highways | OsmLayer.Buildings,
+                bbox, transform, computeElevations: false, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+
+            model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_WKT.glb"));
+        }
 
         private void Buildings3DOnly()
         {
@@ -178,7 +207,7 @@ namespace SampleApp
         //    _meshService.Tesselate(geoPoints, inners);
         //}
 
-       
+
 
         //private void Run3DModelSamples_Buildings()
         //{

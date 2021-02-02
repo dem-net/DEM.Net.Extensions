@@ -37,8 +37,18 @@ namespace DEM.Net.Extension.Osm.Water
             foreach (var m in models)
             {
                 var geom = m.LineString.AsEnumerable();
-                float lineWidth = WaterWidthMeters;
+                float lineWidth = getWaterWidthMeters(m);
                 yield return (geom, lineWidth);
+            }
+        }
+
+        private float getWaterWidthMeters(WaterModel m)
+        {
+            switch (m.NaturalType)
+            {
+                default:
+                    _logger.LogWarning($"Water natural type not matched: Natural : {m.NaturalType}, waterway : {m.WaterwayType}");
+                    return WaterWidthMeters;
             }
         }
 

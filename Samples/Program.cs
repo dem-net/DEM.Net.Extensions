@@ -120,6 +120,7 @@ namespace SampleApp
            //})
            .Configure<AppSecrets>(appConfig.GetSection(nameof(AppSecrets)))
            .Configure<DEMNetOptions>(appConfig.GetSection(nameof(DEMNetOptions)))
+           .Configure<OsmElevationOptions>(appConfig.GetSection(nameof(OsmElevationOptions)))
            .AddDemNetCore()
            .AddDemNetglTF()
            .AddDemNetOsmExtension()
