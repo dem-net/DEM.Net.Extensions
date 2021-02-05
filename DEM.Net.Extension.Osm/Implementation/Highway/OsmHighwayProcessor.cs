@@ -1,18 +1,9 @@
 ﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.OverpassAPI;
-using DEM.Net.Extension.Osm.Ski;
-using DEM.Net.glTF.SharpglTF;
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DEM.Net.Extension.Osm.Highways
@@ -25,21 +16,19 @@ namespace DEM.Net.Extension.Osm.Highways
 
         public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
         {
+            this.DataSettings = new HighwaysDataFilter();
         }
 
-        public override string[] WaysFilter { get; set; } = new string[] { "highway" };
-        public override string[] RelationsFilter { get; set; } = null;
-        public override string[] NodesFilter { get; set; } = null;
+
+        public override IOsmDataSettings DataSettings { get; set; }
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
-        public override string glTFNodeName => "Roads";
+        public override string glTFNodeName => "Streets";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<HighwayModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
-            if (models.Any())
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
-            }
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
+
             return gltfModel;
 
         }
@@ -61,33 +50,42 @@ namespace DEM.Net.Extension.Osm.Highways
             }
         }
 
-        protected override List<HighwayModel> ComputeModelElevationsAndTransform(OsmModelList<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        protected override IEnumerable<HighwayModel> ComputeModelElevationsAndTransform(IEnumerable<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 if (computeElevations)
                 {
-                    int parallelCount = -1;
-                    Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
-                       {
+                    foreach (var model in models)
+                    {
+                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                                             .ToList();
 
-                           model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                                                .ToList();
-                       }
-                    );
+                        yield return model;
+                    }
+                    //int parallelCount = -1;
+                    //Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
+                    //   {
+
+                    //       model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                    //                            .ToList();
+
+                    //       yield return model;
+                    //   }
+                    //);
                 }
                 else
                 {
                     foreach (var model in models)
                     {
                         model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
+                        yield return model;
                     }
                 }
 
             }
 
-            return models.Models;
         }
 
 

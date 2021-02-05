@@ -1,14 +1,10 @@
 ﻿using DEM.Net.Core;
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
 using SharpGLTF.Schema2;
 using System.Numerics;
@@ -28,20 +24,24 @@ namespace DEM.Net.Extension.Osm.Buildings
         {
             this.withBuildingsColors = withBuildingsColors;
             this.defaultBuildingsColor = defaultBuildingsColor;
+            this.DataSettings = new BuildingsDataFilter();
         }
 
-        public override string[] WaysFilter { get; set; } = new string[] { "building", "building:part" };
-        public override string[] RelationsFilter { get; set; } =
-        new string[] { "building" };
-        public override string[] NodesFilter { get; set; } = null;
+        public override IOsmDataSettings DataSettings { get; set; }
+        
         public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
         public override string glTFNodeName => "Buildings";
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, OsmModelList<BuildingModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<BuildingModel> models)
         {
-            TriangulationNormals triangulation = this.Triangulate(models.Models);
+            TriangulationNormals triangulation = this.Triangulate(models);
 
+            if (triangulation.Positions.Count() == 0)
+            {
+                _logger.LogWarning($"{this.GetType().Name} triangulation has 0 positions. No data written to model");
+                return gltfModel;
+            }
 
             gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
 
@@ -49,29 +49,26 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         }
 
-        protected override List<BuildingModel> ComputeModelElevationsAndTransform(OsmModelList<BuildingModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        protected override IEnumerable<BuildingModel> ComputeModelElevationsAndTransform(IEnumerable<BuildingModel> modelsEnum, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
-            if (models.Count == 0) return models.Models;
-
             Dictionary<int, GeoPoint> reprojectedPointsById = null;
 
-            // georeference
-            var bbox = new BoundingBox();
-            foreach (var p in models.Models)
-            {
-                foreach (var pt in p.ExteriorRing)
-                    bbox.UnionWith(pt.Longitude, pt.Latitude, 0);
-            }
-            var bbox3857 = bbox.ReprojectTo(4326, 3857);
+            //// georeference
+            //var bbox = new BoundingBox();
+            //foreach (var p in models.Models)
+            //{
+            //    foreach (var pt in p.ExteriorRing)
+            //        bbox.UnionWith(pt.Longitude, pt.Latitude, 0);
+            //}
+            //var bbox3857 = bbox.ReprojectTo(4326, 3857);
 
-
+            List<BuildingModel> models = modelsEnum.ToList();
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 // Select all points (outer ring) + (inner rings)
                 // They all have an Id, so we can lookup in which building they should be mapped after
-                var allBuildingPoints = models.Models
+                var allBuildingPoints = models
                     .SelectMany(b => b.Points);
-
 
                 // Compute elevations if requested
                 IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints
@@ -92,7 +89,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Remap points", _logger, LogLevel.Debug))
             {
                 int checksum = 0;
-                foreach (var buiding in models.Models)
+                foreach (var buiding in models)
                 {
                     foreach (var point in buiding.Points)
                     {
@@ -102,18 +99,19 @@ namespace DEM.Net.Extension.Osm.Buildings
                         point.Elevation = newPoint.Elevation;
                         checksum++;
                     }
+
+                    yield return buiding;
                 }
                 Debug.Assert(checksum == reprojectedPointsById.Count);
                 reprojectedPointsById.Clear();
                 reprojectedPointsById = null;
             }
 
-            return models.Models;
         }
 
         #region Triangulation
 
-        public TriangulationNormals Triangulate(List<BuildingModel> buildingModels)
+        public TriangulationNormals Triangulate(IEnumerable<BuildingModel> buildingModels)
         {
 
             List<Vector3> positions = new List<Vector3>();
@@ -127,9 +125,11 @@ namespace DEM.Net.Extension.Osm.Buildings
                 // Retrieve building size
                 int numWithHeight = 0;
                 int numWithColor = 0;
+                int numTotal = 0;
 
                 foreach (var building in buildingModels)
                 {
+                    numTotal++;
                     numWithHeight += building.HasHeightInformation ? 1 : 0;
                     numWithColor += (building.Color.HasValue || building.RoofColor.HasValue) ? 1 : 0;
 
@@ -146,8 +146,8 @@ namespace DEM.Net.Extension.Osm.Buildings
                     normals.AddRange(buildingNormals);
                 }
 
-                _logger.LogInformation($"Building heights: {numWithHeight}/{buildingModels.Count} ({numWithHeight / (float)buildingModels.Count:P}) with height information.");
-                _logger.LogInformation($"Building colors: {numWithColor}/{buildingModels.Count} ({numWithColor / (float)buildingModels.Count:P}) with color information.");
+                _logger.LogInformation($"Building heights: {numWithHeight:N0}/{numTotal:N0} ({numWithHeight / (float)numTotal:P}) with height information.");
+                _logger.LogInformation($"Building colors: {numWithColor:N0}/{numTotal:N0} ({numWithColor / (float)numTotal:P}) with color information.");
             }
 
 

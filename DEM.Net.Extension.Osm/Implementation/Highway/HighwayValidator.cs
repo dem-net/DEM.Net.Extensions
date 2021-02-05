@@ -1,8 +1,8 @@
 ﻿using DEM.Net.Core;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -46,37 +46,35 @@ namespace DEM.Net.Extension.Osm.Highways
         }
 
 
-        public override HighwayModel CreateModel(Feature feature)
+        public override IEnumerable<HighwayModel> CreateModel(IFeature feature)
         {
-            if (feature == null) return null;
+            if (feature == null) yield break;
 
             HighwayModel model = null;
-            switch (feature.Geometry.Type)
+            switch (feature.Geometry.OgcGeometryType)
             {
-                case GeoJSON.Net.GeoJSONObjectType.LineString:
+                case OgcGeometryType.LineString:
                     model = BuildModelFromGeometry((LineString)feature.Geometry, ref _totalPoints);
                     break;
-                case GeoJSON.Net.GeoJSONObjectType.Polygon:
+                case OgcGeometryType.Polygon:
                     var poly = (Polygon)feature.Geometry;
 
-                    model = BuildModelFromGeometry(poly.Coordinates.First(), ref _totalPoints);
-
-                    if (poly.Coordinates.Count > 1) _logger.LogWarning($"Polygon has {poly.Coordinates.Count} rings. Single ring processing supported so far. {nameof(HighwayModel)} {feature.Id}.");
+                    model = BuildModelFromGeometry(poly.ExteriorRing, ref _totalPoints);
 
                     break;
                 default:
-                    _logger.LogWarning($"{feature.Geometry.Type} not supported for {nameof(HighwayModel)} {feature.Id}.");
+                    _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(HighwayModel)} {feature.Attributes["osmid"]}.");
                     break;
             }
 
             if (model != null)
             {
-                model.Id = feature.Id;
-                model.Tags = feature.Properties;
+                model.Id = feature.Attributes["osmid"].ToString();
+                model.Tags =(feature.Attributes as AttributesTable).ToDictionary(k=> k.Key, k=>k.Value);
             }
 
 
-            return model;
+            yield return model;
         }
 
         private HighwayModel BuildModelFromGeometry(LineString geom, ref int geoPointIdCounter)
@@ -92,10 +90,10 @@ namespace DEM.Net.Extension.Osm.Highways
         private List<GeoPoint> ConvertLineString(LineString lineString, ref int geoPointIdCounter)
         {
             // Can't do it with a linq + lambda because of ref int param
-            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.Coordinates.Count);
+            List<GeoPoint> geoPoints = new List<GeoPoint>(lineString.NumPoints);
             foreach (var pt in lineString.Coordinates)
             {
-                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Latitude, pt.Longitude));
+                geoPoints.Add(new GeoPoint(++geoPointIdCounter, pt.Y, pt.X, pt.Z));
             }
             return geoPoints;
         }

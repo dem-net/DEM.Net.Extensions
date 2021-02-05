@@ -10,5 +10,9 @@ namespace DEM.Net.Extension.Osm
         public bool ComputeElevations { get; set; } = false;
         public DEMDataSet Dataset { get; set; }
         public bool DownloadMissingDEMFiles { get; set; } = true;
+
+        public OsmDataServiceType DataServiceType { get; set; } = OsmDataServiceType.OverpassAPI;
+
+        public string FlatGeobufTilesDirectory { get; set; }
     }
 }

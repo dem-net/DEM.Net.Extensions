@@ -18,9 +18,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{00F49B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Extension.Tests", "DEM.Net.Extension.Tests\DEM.Net.Extension.Tests.csproj", "{1D696420-0E93-44C7-B39B-9B8E3783FBC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DEM.Net.Extension.Osm", "DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj", "{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Extension.Osm", "DEM.Net.Extension.Osm\DEM.Net.Extension.Osm.csproj", "{10B0BEC8-46B9-4758-8E28-AFB4D828EF67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DEM.Net.Extension.VisualTopo", "DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj", "{9ECBB487-E428-43E0-8A16-57A2FA27FB72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Extension.VisualTopo", "DEM.Net.Extension.VisualTopo\DEM.Net.Extension.VisualTopo.csproj", "{9ECBB487-E428-43E0-8A16-57A2FA27FB72}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.Core", "..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj", "{E166BC8A-CC83-44CF-A9AE-6B1752A36509}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DEM.Net.glTF", "..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj", "{38A32F0C-87E1-4BB8-BC64-C1E52DC00EC0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SketchFabApi.Net", "..\SketchFabApi.Net\SketchFabApi.Net\SketchFabApi.Net.csproj", "{87D6C2C0-C951-4EED-AC09-D362AD846699}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenStreetMapDotNet.Tiles", "..\OpenStreetMapDotNet\OpenStreetMapDotNet.Tiles\OpenStreetMapDotNet.Tiles.csproj", "{3AE6A487-AD3C-4E44-84E9-0A15CB942B9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +52,22 @@ Global
 		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9ECBB487-E428-43E0-8A16-57A2FA27FB72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E166BC8A-CC83-44CF-A9AE-6B1752A36509}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E166BC8A-CC83-44CF-A9AE-6B1752A36509}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E166BC8A-CC83-44CF-A9AE-6B1752A36509}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E166BC8A-CC83-44CF-A9AE-6B1752A36509}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38A32F0C-87E1-4BB8-BC64-C1E52DC00EC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38A32F0C-87E1-4BB8-BC64-C1E52DC00EC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38A32F0C-87E1-4BB8-BC64-C1E52DC00EC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38A32F0C-87E1-4BB8-BC64-C1E52DC00EC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87D6C2C0-C951-4EED-AC09-D362AD846699}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87D6C2C0-C951-4EED-AC09-D362AD846699}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87D6C2C0-C951-4EED-AC09-D362AD846699}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87D6C2C0-C951-4EED-AC09-D362AD846699}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AE6A487-AD3C-4E44-84E9-0A15CB942B9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AE6A487-AD3C-4E44-84E9-0A15CB942B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AE6A487-AD3C-4E44-84E9-0A15CB942B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AE6A487-AD3C-4E44-84E9-0A15CB942B9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

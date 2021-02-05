@@ -1,42 +1,35 @@
-﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.Ski;
+﻿using System.Collections.Generic;
+using System.Linq;
+using DEM.Net.Core;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace DEM.Net.Extension.Osm.Buildings
+namespace DEM.Net.Extension.Osm.Railway
 {
-    public class OsmPisteSkiProcessor : OsmProcessorStage<PisteModel>
+    internal class OsmRailwayProcessor : OsmProcessorStage<RailwayModel>
     {
 
-        private const float PisteWidthMeters = 30F;
-        public override bool ComputeElevations { get; set; } = true;
+        private const float WidthMeters = 2.5F;
+        public override bool ComputeElevations { get; set; } = false;
 
-        public OsmPisteSkiProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
+        public OsmRailwayProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {
-            this.DataSettings = new PisteSkiDataFilter();
+            this.DataSettings = new RailwayDataFilter();
         }
-        public override OsmModelFactory<PisteModel> ModelFactory => new SkiPisteValidator(base._logger);
+        public override OsmModelFactory<RailwayModel> ModelFactory => new RailwayValidator(base._logger);
 
 
         public override IOsmDataSettings DataSettings { get; set; }
-        public override string glTFNodeName => "SkiPiste";
+        public override string glTFNodeName => nameof(RailwayModel);
 
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<PisteModel> models)
+        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<RailwayModel> models)
         {
-
-            foreach (var difficultyGroup in models.GroupBy(m => m.Difficulty))
-            {
-                gltfModel = _gltfService.AddLines(gltfModel, $"{glTFNodeName}_{difficultyGroup.Key}", difficultyGroup.Select(m => ((IEnumerable<GeoPoint>)m.LineString, PisteWidthMeters)), difficultyGroup.First().ColorVec4);
-            }
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), WidthMeters)), VectorsExtensions.CreateColor(165, 42, 42));
 
             return gltfModel;
         }
 
-        protected override IEnumerable<PisteModel> ComputeModelElevationsAndTransform(IEnumerable<PisteModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        protected override IEnumerable<RailwayModel> ComputeModelElevationsAndTransform(IEnumerable<RailwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {

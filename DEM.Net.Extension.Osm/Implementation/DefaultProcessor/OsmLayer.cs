@@ -11,6 +11,8 @@ namespace DEM.Net.Extension.Osm
         Buildings = 1,
         Highways = 2,
         PisteSki = 4,
+        Railway = 8,
+        Water = 16,
 
         All = Buildings | Highways | PisteSki,
         

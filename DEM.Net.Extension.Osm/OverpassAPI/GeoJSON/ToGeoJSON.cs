@@ -24,10 +24,9 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 using DEM.Net.Extension.Osm;
-using GeoJSON.Net.Feature;
-using GeoJSON.Net.Geometry;
-using GeoJSON.Net;
 using System.Diagnostics;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 //using DEM.Net.Extension.Osm;
 
 #endregion
@@ -172,7 +171,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                                                            .Select(n => n.ToGeoJSON())
                                                            .Where(n => n != null)
                                                            .ToList();
-                var featureCollection = new FeatureCollection(featuresFromNodes.Concat(featuresFromWays).Concat(featuresFromRelations).ToList());
+                var featureCollection = new FeatureCollection();
+                foreach(var f in featuresFromNodes.Concat(featuresFromWays).Concat(featuresFromRelations))
+                {
+                    featureCollection.Add(f);
+                }
+                
 
                 // Release code
                 //var featuresFromNodes = Nodes.Values.Where(n => n.Tags.Count > 0).Select(n => n.ToGeoJSON());
@@ -313,15 +317,13 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             try
             {
                 var id = string.Concat("node/", Node.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>
-                {
-                    { "@id", id }
-                };
+                AttributesTable props = new AttributesTable();
+                props.Add("osmid", id);
                 foreach (var tag in Node.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
                 }
-                var feature = new Feature(new Point(new Position(Node.Latitude, Node.Longitude)), props, id);
+                var feature = new Feature(new Point(new Coordinate(Node.Longitude, Node.Latitude)), props);
                 return feature;
             }
             catch (Exception ex)
@@ -373,26 +375,24 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 var isClosed = FirstNode.Latitude == LastNode.Latitude && FirstNode.Longitude == LastNode.Longitude;
 
                 var id = string.Concat("way/", Way.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>
-                {
-                    { "@id", id }
-                };
+                AttributesTable props = new AttributesTable();
+                props.Add("osmid", id);
                 foreach (var tag in Way.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
                 }
-                IGeometryObject geometry;
-                var ring = new LineString(Way.Nodes.Select(n => new Position(n.Latitude, n.Longitude)));
+                Geometry geometry;
+                var ring = new LineString(Way.Nodes.Select(n => new Coordinate(n.Longitude, n.Latitude)).ToArray());
                 if (isClosed)
                 {
-                    geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                    geometry = new Polygon(new LinearRing(ring.Coordinates));
                 }
                 else
                 {
 
                     geometry = ring;
                 }
-                var feature = new Feature(geometry, props, id);
+                var feature = new Feature(geometry, props);
 
                 return feature;
             }
@@ -439,7 +439,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             {
 
 
-                var RemainingGeoFeatures = Relation.Members.Where(m => m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Position(Node.Latitude, Node.Longitude)))).ToList();
+                var RemainingGeoFeatures = Relation.Members.Where(m => m.Way != null).Select(m => new GeoFeature(m.Way.Nodes.Select(Node => new Coordinate(Node.Longitude, Node.Latitude)))).ToList();
                 var ResultList = new List<GeoFeature>();
 
                 bool Found = false;
@@ -459,7 +459,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                     if ((!Relation.Tags.ContainsKey("type") || Relation.Tags["type"].ToString() != "route") &&
                         CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
                     {
-                        CurrentGeoFeature.Type = GeoJSONObjectType.Polygon;
+                        CurrentGeoFeature.Type = OgcGeometryType.Polygon;
                         ResultList.Add(CurrentGeoFeature);
                     }
 
@@ -522,8 +522,8 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                         bool isRoute = Relation.Tags.Any() && Relation.Tags["type"].ToString() == "route";
                         CurrentGeoFeature.Type = (!isRoute &&
                                                    CurrentGeoFeature.GeoCoordinates.First() == CurrentGeoFeature.GeoCoordinates.Last())
-                                                      ? GeoJSONObjectType.Polygon
-                                                      : GeoJSONObjectType.LineString;
+                                                      ? OgcGeometryType.Polygon
+                                                      : OgcGeometryType.LineString;
 
                         ResultList.Add(CurrentGeoFeature);
 
@@ -532,16 +532,16 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 }
 
 
-                IGeometryObject geometry = null;
+                Geometry geometry = null;
                 if (ResultList.Count == 0)
                     return null;
 
                 if (ResultList.Count == 1)
                 {
-                    var ring = new LineString(CurrentGeoFeature.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude)));
-                    if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                    var ring = new LineString(CurrentGeoFeature.GeoCoordinates.ToArray());
+                    if (ResultList.First().Type == OgcGeometryType.Polygon)
                     {
-                        geometry = new Polygon(Enumerable.Range(1, 1).Select(_ => ring));
+                        geometry = new Polygon(new LinearRing(ring.Coordinates));
                     }
                     else
                     {
@@ -550,29 +550,27 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                 }
                 else
                 {
-                    var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.Select(c => new Position(c.Latitude, c.Longitude))));
+                    var multiRing = ResultList.Select(g => new LineString(g.GeoCoordinates.ToArray()));
 
-                    if (ResultList.First().Type == GeoJSONObjectType.Polygon)
+                    if (ResultList.First().Type == OgcGeometryType.Polygon)
                     {
-                        multiRing = multiRing.Where(r => r.Coordinates.Count >= 4).ToList();
-                        geometry = new Polygon(multiRing);
+                        multiRing = multiRing.Where(r => r.NumPoints >= 4).ToList();
+                        geometry = new Polygon(new LinearRing(multiRing.First().Coordinates), multiRing.Skip(1).Select(r => new LinearRing(r.Coordinates)).ToArray());
                     }
                     else
                     {
-                        geometry = new MultiLineString(multiRing);
+                        geometry = new MultiLineString(multiRing.ToArray());
                     }
                 }
 
                 var id = string.Concat("relation/", Relation.Id);
-                Dictionary<string, object> props = new Dictionary<string, object>
-                {
-                    { "@id", id }
-                };
+                AttributesTable props = new AttributesTable();
+                props.Add("osmid", id);
                 foreach (var tag in Relation.Tags)
                 {
                     props.Add(tag.Key, tag.Value);
                 }
-                var feature = new Feature(geometry, props, id);
+                var feature = new Feature(geometry, props);
 
                 return feature;
             }

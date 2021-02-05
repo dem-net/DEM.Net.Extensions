@@ -23,9 +23,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using GeoJSON.Net;
-using GeoJSON.Net.Feature;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,9 +50,9 @@ namespace DEM.Net.Extension.Osm
         /// <param name="model"></param>
         /// <returns></returns>
         public abstract bool ParseTags(TModel model);
-        public abstract TModel CreateModel(Feature feature);
+        public abstract IEnumerable<TModel> CreateModel(IFeature feature);
 
-        public virtual void RegisterTags(Feature feature)
+        public virtual void RegisterTags(IFeature feature)
         {
             TagRegistry.RegisterTags(feature);
         }
@@ -82,13 +82,13 @@ namespace DEM.Net.Extension.Osm
                 }
             }
         }
-      
+
     }
     public class TagRegistry
     {
         const string Separator = "\t";
         Dictionary<string, int> _tagsOccurences = new Dictionary<string, int>();
-        Dictionary<GeoJSONObjectType, int> _geomTypes = new Dictionary<GeoJSONObjectType, int>();
+        Dictionary<OgcGeometryType, int> _geomTypes = new Dictionary<OgcGeometryType, int>();
         Dictionary<string, Dictionary<object, int>> _tagsValuesOccurences = new Dictionary<string, Dictionary<object, int>>();
 
         internal string GetReport()
@@ -105,7 +105,7 @@ namespace DEM.Net.Extension.Osm
             }
             foreach (var occur in _tagsValuesOccurences.OrderBy(k => k.Key))
             {
-                if (occur.Key == "@id") continue;
+                if (occur.Key == "osmid") continue;
 
                 foreach (var valOccur in occur.Value.OrderBy(k => k.Key))
                 {
@@ -115,15 +115,15 @@ namespace DEM.Net.Extension.Osm
             return sb.ToString();
         }
 
-        internal void RegisterTags(Feature feature)
+        internal void RegisterTags(IFeature feature)
         {
-            if (!_geomTypes.ContainsKey(feature.Geometry.Type))
+            if (!_geomTypes.ContainsKey(feature.Geometry.OgcGeometryType))
             {
-                _geomTypes.Add(feature.Geometry.Type, 0);
+                _geomTypes.Add(feature.Geometry.OgcGeometryType, 0);
             }
-            _geomTypes[feature.Geometry.Type]++;
+            _geomTypes[feature.Geometry.OgcGeometryType]++;
 
-            foreach (var prop in feature.Properties)
+            foreach (var prop in feature.Attributes as AttributesTable)
             {
                 if (!_tagsOccurences.ContainsKey(prop.Key))
                 {

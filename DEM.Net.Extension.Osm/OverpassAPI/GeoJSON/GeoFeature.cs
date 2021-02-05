@@ -23,8 +23,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
-using GeoJSON.Net.Geometry;
-using GeoJSON.Net;
+using NetTopologySuite.Geometries;
 
 
 #endregion
@@ -43,12 +42,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <summary>
         /// A list of geo coordinates.
         /// </summary>
-        public readonly List<Position> GeoCoordinates;
+        public readonly List<Coordinate> GeoCoordinates;
 
         /// <summary>
         /// A geo latitude.
         /// </summary>
-        public GeoJSONObjectType Type;
+        public OgcGeometryType Type;
 
         #endregion
 
@@ -59,10 +58,10 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="_GeoCoordinates">A list of geo coordinates.</param>
         /// <param name="_Type">The type of the feature.</param>
-        public GeoFeature(IEnumerable<Position>  _GeoCoordinates,
-                          GeoJSONObjectType _Type = GeoJSONObjectType.Point)
+        public GeoFeature(IEnumerable<Coordinate>  _GeoCoordinates,
+                          OgcGeometryType _Type = OgcGeometryType.Point)
         {
-            GeoCoordinates  = new List<Position>(_GeoCoordinates);
+            GeoCoordinates  = new List<Coordinate>(_GeoCoordinates);
             Type            = _Type;
         }
 
