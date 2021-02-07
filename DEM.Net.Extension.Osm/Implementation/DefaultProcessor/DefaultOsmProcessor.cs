@@ -19,11 +19,12 @@ namespace DEM.Net.Extension.Osm
     {
         private readonly IOsmDataServiceFactory _dataServiceFactory;
         private readonly DEMNetOptions _options;
-        private readonly OsmElevationOptions _osmOptions;
         private readonly ElevationService _elevationService;
         private readonly SharpGltfService _gltfService;
         private readonly MeshService _meshService;
         private readonly ILogger<DefaultOsmProcessor> _logger;
+
+        public OsmElevationOptions Settings { get; set; } 
 
         public DefaultOsmProcessor(ElevationService elevationService
             , SharpGltfService gltfService
@@ -35,7 +36,7 @@ namespace DEM.Net.Extension.Osm
         {
             this._dataServiceFactory = dataServiceFactory;
             this._options = options.Value;
-            this._osmOptions = osmOptions.Value;
+            this.Settings = osmOptions.Value;
             this._elevationService = elevationService;
             this._gltfService = gltfService;
             this._meshService = meshService;
@@ -73,7 +74,7 @@ namespace DEM.Net.Extension.Osm
         public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
 
-            IOsmDataService osmDataService = _dataServiceFactory.Create(_osmOptions.DataServiceType);
+            IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
 
             List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
 
@@ -81,7 +82,7 @@ namespace DEM.Net.Extension.Osm
 
             foreach (var p in processors)
             {
-                p.DataSettings.FlatGeobufTilesDirectory = _osmOptions.FlatGeobufTilesDirectory;
+                p.DataSettings.FlatGeobufTilesDirectory = Settings.FlatGeobufTilesDirectory;
                 p.Init(_elevationService, _gltfService, _meshService, osmDataService, _logger);
 
                 model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles);
@@ -95,7 +96,7 @@ namespace DEM.Net.Extension.Osm
         public int GetCount(BoundingBox bbox, OsmLayer layers, DEMDataSet dataSet)
         {
             List<IOsmProcessor> processors = Build(layers);
-            IOsmDataService osmDataService = _dataServiceFactory.Create(_osmOptions.DataServiceType);
+            IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
             int count = 0;
             foreach (var p in processors)
             {
