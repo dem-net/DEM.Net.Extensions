@@ -24,7 +24,7 @@ namespace DEM.Net.Extension.Osm
         private readonly MeshService _meshService;
         private readonly ILogger<DefaultOsmProcessor> _logger;
 
-        public OsmElevationOptions Settings { get; set; } 
+        public OsmElevationOptions Settings { get; set; }
 
         public DefaultOsmProcessor(ElevationService elevationService
             , SharpGltfService gltfService
@@ -43,7 +43,7 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null)
+        private List<IOsmProcessor> Build(OsmLayer layers, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
             List<IOsmProcessor> processors = new List<IOsmProcessor>();
 
@@ -53,19 +53,15 @@ namespace DEM.Net.Extension.Osm
             if (layers.HasFlag(OsmLayer.Highways))
             {
                 var processor = new OsmHighwayProcessor(transform);
-                if (computeElevations)
-                {
-                    processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
-                }
+                //if (computeElevations)
+                processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
                 processors.Add(processor);
             }
             if (layers.HasFlag(OsmLayer.PisteSki))
             {
                 var processor = new OsmPisteSkiProcessor(transform);
-                if (computeElevations)
-                {
+                //if (computeElevations)
                     processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
-                }
                 processors.Add(processor);
             }
 
@@ -76,7 +72,7 @@ namespace DEM.Net.Extension.Osm
 
             IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
 
-            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
+            List<IOsmProcessor> processors = Build(layers, transform, withBuildingsColors, defaultBuildingsColor);
 
             model = model ?? _gltfService.CreateNewModel();
 
@@ -106,7 +102,7 @@ namespace DEM.Net.Extension.Osm
 
             return count;
 
-            
+
         }
 
     }
