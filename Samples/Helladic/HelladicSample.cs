@@ -366,7 +366,7 @@ namespace SampleApp
                         model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture);
                     }
                     model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
-                    model.TryUseExtrasAsList(true).AddRange(response.Attributions);
+                    //model.TryUseExtrasAsList(true).AddRange(response.Attributions);
                     model.SaveGLB(Path.Combine(settings.OutputDirectory, string.Concat(imageryFailed ? "imageryFailed_" : "", settings.ModelFileNameGenerator(settings, request))));
 
                     // cleanup
