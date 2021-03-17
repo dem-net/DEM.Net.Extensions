@@ -1,59 +1,64 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <PackageId>DEM.Net.Extension.Osm</PackageId>
-    <Version>1.1.0.0</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <Authors>Xavier Fischer</Authors>
-    <Copyright>Xavier Fischer and Contributors</Copyright>
-    <Owners>Xavier Fischer</Owners>
-    <PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
-    <PackageReleaseNotes>Intial release</PackageReleaseNotes>
-    <PackageTags>OSM, OpenStreetMap</PackageTags>
-    <Title>DEM.Net.Extension.Osm</Title>
-    <Product>DEM.Net Elevation API</Product>
-    <Description>OpenStreetMap extension for DEM.Net</Description>
-    <Summary>OpenStreetMap extension for DEM.Net</Summary>
-    <RepositoryUrl>https://github.com/dem-net/DEM.Net.Extensions</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>
-    </PackageLicenseExpression>
-    <PackageIconUrl>https://raw.githubusercontent.com/dem-net/Resources/master/images/DEMnet_512.png</PackageIconUrl>
-    <PackageIcon>DEMnet_64.png</PackageIcon>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseFile></PackageLicenseFile>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-  </PropertyGroup>
-  <!-- Build package only in Release -->
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-  <!-- Build package only in Release -->
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Extensions\IEnumerableExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.7.56" />
-    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
-    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
-    <ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
-  </ItemGroup>
+	<PropertyGroup>
+		<PackageId>DEM.Net.Extension.Osm</PackageId>
+		<Version>1.1.0.0</Version>
+		<AssemblyVersion>1.1.0.0</AssemblyVersion>
+		<Authors>Xavier Fischer</Authors>
+		<Copyright>Xavier Fischer and Contributors</Copyright>
+		<Owners>Xavier Fischer</Owners>
+		<PackageProjectUrl>https://github.com/dem-net/DEM.Net.Extensions</PackageProjectUrl>
+		<PackageReleaseNotes>Intial release</PackageReleaseNotes>
+		<PackageTags>OSM, OpenStreetMap</PackageTags>
+		<Title>DEM.Net.Extension.Osm</Title>
+		<Product>DEM.Net Elevation API</Product>
+		<Description>OpenStreetMap extension for DEM.Net</Description>
+		<Summary>OpenStreetMap extension for DEM.Net</Summary>
+		<RepositoryUrl>https://github.com/dem-net/DEM.Net.Extensions</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>
+		</PackageLicenseExpression>
+		<PackageIconUrl>https://raw.githubusercontent.com/dem-net/Resources/master/images/DEMnet_512.png</PackageIconUrl>
+		<PackageIcon>DEMnet_64.png</PackageIcon>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+	</PropertyGroup>
+	<!-- Build package only in Release -->
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release'">
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+	<!-- Build package only in Release -->
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="Extensions\IEnumerableExtensions.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\DEM.Net\LICENSE.md" Link="LICENSE.md">
+			<PackagePath>
+			</PackagePath>
+			<Pack>True</Pack>
+		</None>
+		<None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.7.56" />
+		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
+		<PackageReference Include="System.Drawing.Common" Version="5.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
+		<ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
+	</ItemGroup>
 </Project>
