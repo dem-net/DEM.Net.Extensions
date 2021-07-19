@@ -13,7 +13,7 @@ using NetTopologySuite.Geometries;
 
 namespace DEM.Net.Extension.Osm
 {
-#if NET5
+#if NET5_0
     using OpenStreetMapDotNet.VectorTiles;
     public class TiledFlatGeobufDataService : IOsmDataService
     {

@@ -19,7 +19,7 @@ namespace DEM.Net.Extension.Osm
                 .AddSingleton<Func<OverpassAPIDataService>>(x => x.GetService<OverpassAPIDataService>)
 
 
-#if NET5
+#if NET5_0
                 .AddTransient<TiledFlatGeobufDataService>()
                 .AddSingleton<Func<TiledFlatGeobufDataService>>(x => x.GetService<TiledFlatGeobufDataService>)
 #endif

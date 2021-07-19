@@ -59,7 +59,13 @@ namespace DEM.Net.Extension.Osm.Highways
                 {
                     foreach (var model in models)
                     {
-                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                        IEnumerable<GeoPoint> lineString = model.LineString;
+                        if (dataSet.SRID != 4326)
+                        {
+                            lineString  = lineString.ReprojectTo(4326, dataSet.SRID);
+                        }
+
+                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(lineString, dataSet))
                                              .ToList();
 
                         yield return model;

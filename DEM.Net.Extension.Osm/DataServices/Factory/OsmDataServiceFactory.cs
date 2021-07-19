@@ -6,7 +6,7 @@ namespace DEM.Net.Extension.Osm
 {
     public class OsmDataServiceFactory : IOsmDataServiceFactory
     {
-#if NET5
+#if NET5_0
         private readonly Func<OverpassAPIDataService> _overpassApiService;
         private readonly Func<TiledFlatGeobufDataService> _vectorTilesService;
 
