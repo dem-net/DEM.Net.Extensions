@@ -80,6 +80,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 geoPoints = Transform?.TransformPoints(geoPoints);
 
                 reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
+
                 //.ZScale(zScale)
                 //.ReprojectGeodeticToCartesian(pointCount)
                 //.CenterOnOrigin(bbox3857)
@@ -93,11 +94,15 @@ namespace DEM.Net.Extension.Osm.Buildings
                 {
                     foreach (var point in buiding.Points)
                     {
+                        //if (reprojectedPointsById.TryGetValue(point.Id.Value, out var newPoint))
                         var newPoint = reprojectedPointsById[point.Id.Value];
-                        point.Latitude = newPoint.Latitude;
-                        point.Longitude = newPoint.Longitude;
-                        point.Elevation = newPoint.Elevation;
-                        checksum++;
+                        {
+                            point.Latitude = newPoint.Latitude;
+                            point.Longitude = newPoint.Longitude;
+                            point.Elevation = newPoint.Elevation;
+                            checksum++;
+                        }
+                        
                     }
 
                     yield return buiding;

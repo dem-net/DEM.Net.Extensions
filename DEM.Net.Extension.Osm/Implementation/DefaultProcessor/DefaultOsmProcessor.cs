@@ -74,11 +74,13 @@ namespace DEM.Net.Extension.Osm
         public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
         {
 
-            IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
-
-            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
-
             model = model ?? _gltfService.CreateNewModel();
+
+            if (layers == OsmLayer.None)
+                return model;
+
+            IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
+            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
 
             foreach (var p in processors)
             {

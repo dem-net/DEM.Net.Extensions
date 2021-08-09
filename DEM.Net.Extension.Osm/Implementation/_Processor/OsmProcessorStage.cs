@@ -54,6 +54,32 @@ namespace DEM.Net.Extension.Osm
 
         public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
+#if TOLIST
+            try
+            {
+                // Download buildings and convert them to GeoJson
+                var features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings).ToList();
+                // Create internal building model
+                var parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory).ToList();
+
+                //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
+                // Compute elevations (faster elevation when point count is known in advance)
+                // Download elevation data if missing
+                if (computeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
+                parsed = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles).ToList();
+
+                gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
+
+
+                return gltfModel;
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
+                throw;
+            }
+#else
             try
             {
                 // Download buildings and convert them to GeoJson
@@ -78,6 +104,7 @@ namespace DEM.Net.Extension.Osm
                 _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
                 throw;
             }
+#endif
         }
 
         protected abstract IEnumerable<T> ComputeModelElevationsAndTransform(IEnumerable<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);

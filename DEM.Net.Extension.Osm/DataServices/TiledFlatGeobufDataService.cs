@@ -10,10 +10,11 @@ using DEM.Net.Extension.Osm.Model;
 using Microsoft.Extensions.Logging;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
-using OpenStreetMapDotNet.VectorTiles;
 
 namespace DEM.Net.Extension.Osm
 {
+#if NET5_0
+    using OpenStreetMapDotNet.VectorTiles;
     public class TiledFlatGeobufDataService : IOsmDataService
     {
         private readonly ILogger<TiledFlatGeobufDataService> _logger;
@@ -93,4 +94,6 @@ namespace DEM.Net.Extension.Osm
 
 
     }
+
+#endif
 }
