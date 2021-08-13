@@ -26,17 +26,14 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.IO;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
 using DEM.Net.Core;
 using System.Numerics;
-using System.Drawing;
-using DEM.Net.Extension.Osm.Extensions;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Features;
+using DEM.Net.Extension.Osm.Extensions;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
@@ -55,7 +52,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             this._useOsmColors = useOsmColors;
             if (!string.IsNullOrWhiteSpace(defaultHtmlColor))
             {
-                this._defaultColor = HtmlColorToVec4(defaultHtmlColor);
+                this._defaultColor = HtmlColorTranslator.ToVector4(defaultHtmlColor);
             }
 
         }
@@ -71,8 +68,8 @@ namespace DEM.Net.Extension.Osm.Buildings
             ParseLengthTag(model, "height", v => model.Height = v);
             if (_useOsmColors)
             {
-                ParseTag<string, Vector4>(model, "building:colour", htmlColor => HtmlColorToVec4(htmlColor), v => model.Color = v);
-                ParseTag<string, Vector4>(model, "roof:colour", htmlColor => HtmlColorToVec4(htmlColor), v => model.RoofColor = v);
+                ParseTag<string, Vector4>(model, "building:colour", htmlColor => HtmlColorTranslator.ToVector4(htmlColor), v => model.Color = v);
+                ParseTag<string, Vector4>(model, "roof:colour", htmlColor => HtmlColorTranslator.ToVector4(htmlColor), v => model.RoofColor = v);
             }
             else
             {
@@ -128,24 +125,6 @@ namespace DEM.Net.Extension.Osm.Buildings
             }
 
         }
-
-        private Vector4 HtmlColorToVec4(string htmlColor)
-        {
-            float componentRemap(byte c) => c / 255f;
-
-            var color = Color.FromArgb(230, 230, 230);
-            try
-            {
-                color = HtmlColorTranslator.FromHtml(htmlColor);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning($"Cannot parse color {htmlColor}");
-            }
-            return new Vector4(componentRemap(color.R), componentRemap(color.G), componentRemap(color.B), componentRemap(color.A));
-        }
-
-
 
         // Parse with unit conversion to meters
         private void ParseLengthTag(BuildingModel model, string tagName, Action<double> updateAction)

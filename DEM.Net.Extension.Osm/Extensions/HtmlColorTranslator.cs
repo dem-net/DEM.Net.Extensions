@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 
 namespace DEM.Net.Extension.Osm.Extensions
 {
@@ -209,6 +210,21 @@ namespace DEM.Net.Extension.Osm.Extensions
                 if (!htmlColor.StartsWith("#")) htmlColor = string.Concat("#", htmlColor);
                 return ColorTranslator.FromHtml(htmlColor);
             }
+        }
+
+        public static Vector4 ToVector4(string htmlColor)
+        {
+            float componentRemap(byte c) => c / 255f;
+
+            var color = Color.FromArgb(230, 230, 230);
+            try
+            {
+                color = HtmlColorTranslator.FromHtml(htmlColor);
+            }
+            catch (Exception ex)
+            {
+            }
+            return new Vector4(componentRemap(color.R), componentRemap(color.G), componentRemap(color.B), componentRemap(color.A));
         }
     }
 }

@@ -27,7 +27,7 @@ namespace DEM.Net.Extension.Osm.Highways
                 return LineString;
             }
         }
-        public Vector4 ColorVec4 { get; internal set; } = new Vector4(1, 1, 1, 1);
+        public Vector4 Color { get; internal set; }
 
         public HighwayModel(List<GeoPoint> lineString)
         {

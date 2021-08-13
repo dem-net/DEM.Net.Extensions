@@ -43,7 +43,7 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null)
+        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
         {
             List<IOsmProcessor> processors = new List<IOsmProcessor>();
 
@@ -52,7 +52,7 @@ namespace DEM.Net.Extension.Osm
             if (layers.HasFlag(OsmLayer.Water)) processors.Add(new OsmWaterProcessor(transform));
             if (layers.HasFlag(OsmLayer.Highways))
             {
-                var processor = new OsmHighwayProcessor(transform);
+                var processor = new OsmHighwayProcessor(transform, highwaysColor);
                 if (computeElevations)
                 {
                     processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
@@ -71,7 +71,7 @@ namespace DEM.Net.Extension.Osm
 
             return processors;
         }
-        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null)
+        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
         {
 
             model = model ?? _gltfService.CreateNewModel();
@@ -80,7 +80,7 @@ namespace DEM.Net.Extension.Osm
                 return model;
 
             IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
-            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor);
+            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor, highwaysColor);
 
             foreach (var p in processors)
             {

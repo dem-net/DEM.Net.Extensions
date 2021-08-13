@@ -1,20 +1,25 @@
 ﻿using DEM.Net.Core;
+using DEM.Net.Extension.Osm.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Numerics;
 
 namespace DEM.Net.Extension.Osm.Highways
 {
     internal class HighwayValidator : OsmModelFactory<HighwayModel>
     {
-        public HighwayValidator(ILogger logger) : base(logger ?? NullLogger<HighwayValidator>.Instance)
+        private readonly Vector4 _defaultColor = Vector4.One;
+        public HighwayValidator(ILogger logger, string highwaysColor = null) : base(logger ?? NullLogger<HighwayValidator>.Instance)
         {
-            this._logger = logger ?? NullLogger<HighwayValidator>.Instance;
+            this._logger = logger ?? NullLogger<HighwayValidator>.Instance; 
+            if (!string.IsNullOrWhiteSpace(highwaysColor))
+            {
+                this._defaultColor = HtmlColorTranslator.ToVector4(highwaysColor);
+            }
         }
 
         private readonly ILogger _logger;
@@ -28,6 +33,8 @@ namespace DEM.Net.Extension.Osm.Highways
             base.ParseTag<string, bool>(model, "area", s => s == "yes", v => model.Area = v);
             base.ParseTag<string, bool>(model, "tunnel", s => s == "yes", v => model.Tunnel = v);
             base.ParseTag<string, bool>(model, "bridge", s => s == "yes", v => model.Bridge = v);
+
+            model.Color = _defaultColor;
 
             if (model.Area)
             {
@@ -44,7 +51,6 @@ namespace DEM.Net.Extension.Osm.Highways
             }
             return true;
         }
-
 
         public override IEnumerable<HighwayModel> CreateModel(IFeature feature)
         {

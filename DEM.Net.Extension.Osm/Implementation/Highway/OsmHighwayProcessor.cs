@@ -13,21 +13,23 @@ namespace DEM.Net.Extension.Osm.Highways
     {
 
         private const float LaneWidthMeters = 3.5F;
+        private readonly string highwaysColor;
 
-        public OsmHighwayProcessor(GeoTransformPipeline transform) : base(transform)
+        public OsmHighwayProcessor(GeoTransformPipeline transform, string highwaysColor) : base(transform)
         {
             this.DataSettings = new HighwaysDataFilter();
+            this.highwaysColor = highwaysColor;
         }
 
 
         public override IOsmDataSettings DataSettings { get; set; }
         public override bool ComputeElevations { get; set; } = true;
-        public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger);
+        public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger, highwaysColor);
         public override string glTFNodeName => "Streets";
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().ColorVec4);
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().Color);
 
             return gltfModel;
 
