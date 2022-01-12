@@ -19,7 +19,7 @@
 		</PackageLicenseExpression>
 		<PackageIconUrl>https://raw.githubusercontent.com/dem-net/Resources/master/images/DEMnet_512.png</PackageIconUrl>
 		<PackageIcon>DEMnet_64.png</PackageIcon>
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFramework>net5.0</TargetFramework>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -60,5 +60,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />
 		<ProjectReference Include="..\..\DEM.Net\DEM.Net.glTF\DEM.Net.glTF.csproj" />
+		<ProjectReference Include="..\..\OpenStreetMapDotNet\OpenStreetMapDotNet.Tiles\OpenStreetMapDotNet.Tiles.csproj" />
 	</ItemGroup>
 </Project>
