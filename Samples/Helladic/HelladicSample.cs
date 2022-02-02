@@ -315,7 +315,7 @@ namespace SampleApp
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
                     HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
-                    var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
+                    var transform = new ModelGenerationTransform(bbox,settings.Dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
                     response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
@@ -363,7 +363,7 @@ namespace SampleApp
                     }
                     else
                     {
-                        model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture);
+                        model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture, 0.5f);
                     }
                     model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
                     //model.TryUseExtrasAsList(true).AddRange(response.Attributions);

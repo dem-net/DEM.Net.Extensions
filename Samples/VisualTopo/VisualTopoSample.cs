@@ -309,7 +309,7 @@ namespace SampleApp
                 // Triangulate height map
                 _logger.LogInformation($"Triangulating height map and generating 3D mesh...");
 
-                gltfModel = _gltfService.AddTerrainMesh(gltfModel, heightMap, pbrTexture);
+                gltfModel = _gltfService.AddTerrainMesh(gltfModel, heightMap, pbrTexture, 0.5F);
                 gltfModel.SaveGLB(string.Concat(Path.GetFileNameWithoutExtension(vtopoFile) + $"Z{zFactor}.glb"));
                 timeLog.LogTime("3D model");
             }

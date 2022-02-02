@@ -82,7 +82,7 @@ namespace SampleApp
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(WKT_LIECHTENSTEIN);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+            var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
 
 
             var model = _osmProcessor.Run(null,
@@ -137,7 +137,7 @@ namespace SampleApp
             if (withTerrain)
             {
                 var heightMap = _elevationService.GetHeightMap(ref bbox, dataset);
-                var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+                var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
                 heightMap = transform.TransformHeightMap(heightMap);
                 TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.MapBoxSatellite, 15);
 
@@ -146,11 +146,11 @@ namespace SampleApp
                 var pbrTexture = PBRTexture.Create(texInfo, null);
 
                 model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
-                model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
+                model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture, 0.5f);
             }
             else
             {
-                var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+                var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true); ;
                 model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
             }
 

@@ -51,7 +51,7 @@ namespace SampleApp
                 var highest = heightMap.Coordinates.First(pt => pt.Elevation.Value == heightMap.Maximum);
                 _logger.LogInformation($"Highest point: {highest} at {highest.DistanceTo(location4326)} meters");
 
-                OsmHighwayProcessor roadsProcessor = new OsmHighwayProcessor(GeoTransformPipeline.Default);
+                OsmHighwayProcessor roadsProcessor = new OsmHighwayProcessor(GeoTransformPipeline.Default, "white");
 
                 // Download buildings and convert them to GeoJson
                 IEnumerable<IFeature> features = _osmService.GetOsmDataAsGeoJson(bbox4326, BasicOsmDataFilter.Create(new string[] { "highway" }));

@@ -100,7 +100,7 @@ namespace DEM.Net.Extension.Tests
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+            var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
             var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
@@ -137,7 +137,7 @@ namespace DEM.Net.Extension.Tests
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+            var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
             var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
@@ -175,7 +175,7 @@ namespace DEM.Net.Extension.Tests
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+            var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
             var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform, computeElevations: computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
@@ -195,7 +195,7 @@ namespace DEM.Net.Extension.Tests
             // SF Small: POLYGON((-122.41967382241174 37.81034598808797,-122.39761533547326 37.81034598808797,-122.39761533547326 37.79162804294824,-122.41967382241174 37.79162804294824,-122.41967382241174 37.81034598808797))
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+            var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
 
             var model = _osmProcessor.Run(null,
@@ -215,7 +215,7 @@ namespace DEM.Net.Extension.Tests
             bool computeElevations = false;
             string outputDir = Directory.GetCurrentDirectory();
 
-            var transform = new ModelGenerationTransform(bbox, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: centerOnOrigin, ZScale, centerOnZOrigin: false);
+            var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: centerOnOrigin, ZScale, centerOnZOrigin: false);
             var heightMap = _elevationService.GetHeightMap(ref bbox, dataset);
             transform.BoundingBox = bbox; // bbox changed by GetHeigtMap
 
@@ -227,7 +227,7 @@ namespace DEM.Net.Extension.Tests
             var pbrTexture = PBRTexture.Create(texInfo, null);
 
             ModelRoot model = _osmProcessor.Run(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
-            model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture);
+            model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture, 0.5f);
 
 
             model.SaveGLB(Path.Combine(outputDir, $"{nameof(OsmAllWithTerrain)}_{name}" + ".glb"));
