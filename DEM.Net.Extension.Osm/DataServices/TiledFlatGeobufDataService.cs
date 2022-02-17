@@ -72,7 +72,7 @@ namespace DEM.Net.Extension.Osm
             foreach (var tile in tiles)
             {
 
-                _logger.LogInformation($"Reading tiles from {directoryName}... {(i / (float)tiles.Count):P1}");
+                _logger.LogInformation($"Reading {i+1}/{tiles.Count} tiles from {directoryName}... {(i / (float)tiles.Count):P1}");
 
                 var osmTileInfo = new OpenStreetMapDotNet.MapTileInfo(tile.X, tile.Y, tile.Zoom, tile.TileSize);
                 FlatGeobufTileReader reader = new FlatGeobufTileReader(osmTileInfo, directoryName);
