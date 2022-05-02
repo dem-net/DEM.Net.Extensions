@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -29,7 +30,10 @@ namespace DEM.Net.Extension.Osm.Highways
 
         protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
         {
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().Color);
+            if (models.Any())
+            {
+                gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().Color);
+            }
 
             return gltfModel;
 
@@ -59,6 +63,9 @@ namespace DEM.Net.Extension.Osm.Highways
             {
                 if (computeElevations)
                 {
+                    int i = 0;
+                    long pointCount = 0;
+                    Stopwatch sw = Stopwatch.StartNew();
                     foreach (var model in models)
                     {
                         IEnumerable<GeoPoint> lineString = model.LineString;
@@ -69,7 +76,9 @@ namespace DEM.Net.Extension.Osm.Highways
 
                         model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(lineString, dataSet))
                                              .ToList();
+                        pointCount += model.LineString.Count;
 
+                        if (++i % 100 == 0) _logger.LogInformation($"Computed {i:N0} highways elevation ({pointCount:N0} points {pointCount/sw.Elapsed.TotalSeconds:N0} pts/s)...");
                         yield return model;
                     }
                     //int parallelCount = -1;
