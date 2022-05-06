@@ -12,6 +12,13 @@ namespace DEM.Net.Extension.Osm
         string[] NodesFilter { get; set; }
 
         string FlatGeobufTilesDirectory { get; set; }
+        bool ComputeElevations { get; set; }
+
+        void Apply(OsmElevationOptions settings)
+        {
+            FlatGeobufTilesDirectory = settings.FlatGeobufTilesDirectory;
+            ComputeElevations = settings.ComputeElevations;
+        }
     }
 
 }

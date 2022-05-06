@@ -13,7 +13,6 @@ namespace DEM.Net.Extension.Osm.Buildings
     {
 
         private const float PisteWidthMeters = 30F;
-        public override bool ComputeElevations { get; set; } = true;
 
         public OsmPisteSkiProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {

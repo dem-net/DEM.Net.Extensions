@@ -25,7 +25,7 @@ namespace DEM.Net.Extension.Osm
 
         GeoTransformPipeline Transform { get; set; }
 
-        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
+        ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles);
 
 
     }

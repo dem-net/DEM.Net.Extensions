@@ -8,5 +8,6 @@
         public string[] NodesFilter { get; set; } = null;
 
         public string FlatGeobufTilesDirectory { get; set; }
+        public bool ComputeElevations { get; set; }
     }
 }

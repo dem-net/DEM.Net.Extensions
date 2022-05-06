@@ -43,8 +43,6 @@ namespace DEM.Net.Extension.Osm
 
         public abstract IOsmDataSettings DataSettings { get; set; }
 
-        public abstract bool ComputeElevations { get; set; }
-
         public abstract OsmModelFactory<T> ModelFactory { get; }
 
         public abstract string glTFNodeName { get; }
@@ -52,7 +50,7 @@ namespace DEM.Net.Extension.Osm
         public virtual GeoTransformPipeline Transform { get; set; }
 
 
-        public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+        public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles)
         {
 #if TOLIST
             try
@@ -90,8 +88,8 @@ namespace DEM.Net.Extension.Osm
                 //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
                 // Compute elevations (faster elevation when point count is known in advance)
                 // Download elevation data if missing
-                if (computeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
-                parsed = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles);
+                if (DataSettings.ComputeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
+                parsed = this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet, downloadMissingFiles);
 
                 gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
 

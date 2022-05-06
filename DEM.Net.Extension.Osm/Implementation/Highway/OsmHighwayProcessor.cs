@@ -24,7 +24,6 @@ namespace DEM.Net.Extension.Osm.Highways
 
 
         public override IOsmDataSettings DataSettings { get; set; }
-        public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger, highwaysColor);
         public override string glTFNodeName => "Streets";
 

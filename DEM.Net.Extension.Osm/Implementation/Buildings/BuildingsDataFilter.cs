@@ -12,5 +12,6 @@ namespace DEM.Net.Extension.Osm
         new string[] { "building" };
         public string[] NodesFilter { get; set; } = null;
         public string FlatGeobufTilesDirectory { get; set; }
+        public bool ComputeElevations { get; set; }
     }
 }

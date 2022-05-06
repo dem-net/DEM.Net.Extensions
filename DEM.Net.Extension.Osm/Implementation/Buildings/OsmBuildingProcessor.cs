@@ -29,7 +29,6 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         public override IOsmDataSettings DataSettings { get; set; }
         
-        public override bool ComputeElevations { get; set; } = true;
         public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
         public override string glTFNodeName => "Buildings";
 

@@ -10,7 +10,6 @@ namespace DEM.Net.Extension.Osm.Railway
     {
 
         private const float WidthMeters = 2.5F;
-        public override bool ComputeElevations { get; set; } = false;
 
         public OsmRailwayProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {

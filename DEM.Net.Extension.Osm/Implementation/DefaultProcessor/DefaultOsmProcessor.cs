@@ -43,7 +43,7 @@ namespace DEM.Net.Extension.Osm
             this._logger = logger;
         }
 
-        private List<IOsmProcessor> Build(OsmLayer layers, bool computeElevations = false, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
+        private List<IOsmProcessor> Build(OsmLayer layers, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
         {
             List<IOsmProcessor> processors = new List<IOsmProcessor>();
 
@@ -53,7 +53,7 @@ namespace DEM.Net.Extension.Osm
             if (layers.HasFlag(OsmLayer.Highways))
             {
                 var processor = new OsmHighwayProcessor(transform, highwaysColor);
-                if (computeElevations)
+                if (processor.DataSettings.ComputeElevations)
                 {
                     processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
                 }
@@ -62,16 +62,18 @@ namespace DEM.Net.Extension.Osm
             if (layers.HasFlag(OsmLayer.PisteSki))
             {
                 var processor = new OsmPisteSkiProcessor(transform);
-                if (computeElevations)
+                if (processor.DataSettings.ComputeElevations)
                 {
                     processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
                 }
                 processors.Add(processor);
             }
 
+            processors.ForEach(p => p.DataSettings.Apply(Settings));
+
             return processors;
         }
-        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, bool computeElevations, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
+        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
         {
 
             model = model ?? _gltfService.CreateNewModel();
@@ -80,14 +82,13 @@ namespace DEM.Net.Extension.Osm
                 return model;
 
             IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
-            List<IOsmProcessor> processors = Build(layers, computeElevations, transform, withBuildingsColors, defaultBuildingsColor, highwaysColor);
+            List<IOsmProcessor> processors = Build(layers, transform, withBuildingsColors, defaultBuildingsColor, highwaysColor);
 
             foreach (var p in processors)
             {
-                p.DataSettings.FlatGeobufTilesDirectory = Settings.FlatGeobufTilesDirectory;
                 p.Init(_elevationService, _gltfService, _meshService, osmDataService, _logger);
 
-                model = p.Run(model, bbox, computeElevations, dataSet, downloadMissingFiles);
+                model = p.Run(model, bbox, dataSet, downloadMissingFiles);
             }
 
             return model;

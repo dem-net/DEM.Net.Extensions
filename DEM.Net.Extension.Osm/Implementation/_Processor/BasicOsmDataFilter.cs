@@ -9,6 +9,7 @@
         public string FilterIdentifier => "basic";
 
         public string FlatGeobufTilesDirectory { get; set; }
+        public bool ComputeElevations { get; set; }
 
         public static IOsmDataSettings Create(string[] waysFilter, string[] relationsFilter = null, string[] nodesFilter = null)
         {

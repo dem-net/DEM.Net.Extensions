@@ -12,7 +12,6 @@ namespace DEM.Net.Extension.Osm.Water
     {
 
         private const float WaterWidthMeters = 30F;
-        public override bool ComputeElevations { get; set; } = true;
 
         public OsmWaterProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
         {

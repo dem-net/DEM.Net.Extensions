@@ -1,5 +1,6 @@
 ﻿using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.Extension.Osm.Highways;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,6 @@ namespace DEM.Net.Extension.Osm
     {
         public static IServiceCollection AddDemNetOsmExtension(this IServiceCollection services)
         {
-            
             services
                 .AddTransient<IOsmDataServiceFactory, OsmDataServiceFactory>()
 
