@@ -353,7 +353,8 @@ namespace SampleApp
                     // Buildings
                     if (settings.OsmBuildings)
                     {
-                        model = _sampleOsmProcessor.Run(model, OsmLayer.Buildings, bbox, transform, computeElevations: true, settings.Dataset, settings.DownloadMissingFiles);
+                        _sampleOsmProcessor.Settings.ComputeElevations=true;
+                        model = _sampleOsmProcessor.Run(model, OsmLayer.Buildings, bbox, transform, settings.Dataset, settings.DownloadMissingFiles);
                     }
 
 

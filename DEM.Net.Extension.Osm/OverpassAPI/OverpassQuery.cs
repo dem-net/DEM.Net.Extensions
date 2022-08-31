@@ -585,7 +585,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                                     return await ResponseContent.
                                                      ReadAsStringAsync().
                                                      ContinueWith(QueryTask => new OverpassResult(this,
-                                                                                                  JObject.Parse(QueryTask.Result)));
+                                                                                                  JObject.Parse(QueryTask.Result)), TaskScheduler.Default);
 
 
                                 }

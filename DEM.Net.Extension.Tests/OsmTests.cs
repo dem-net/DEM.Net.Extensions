@@ -102,8 +102,8 @@ namespace DEM.Net.Extension.Tests
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
-
-            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            _osmProcessor.Settings.ComputeElevations = computeElevations;
+            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
@@ -138,9 +138,9 @@ namespace DEM.Net.Extension.Tests
 
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
+            _osmProcessor.Settings.ComputeElevations = computeElevations;
 
-
-            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreets_{name}.glb"));
 
@@ -177,8 +177,8 @@ namespace DEM.Net.Extension.Tests
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
-
-            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform, computeElevations: computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+            _osmProcessor.Settings.ComputeElevations = computeElevations;
+            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform,  dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 
@@ -197,10 +197,10 @@ namespace DEM.Net.Extension.Tests
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
-
+            _osmProcessor.Settings.ComputeElevations = computeElevations;
             var model = _osmProcessor.Run(null,
                 OsmLayer.Water | OsmLayer.Railway | OsmLayer.Highways | OsmLayer.Buildings,
-                bbox, transform, computeElevations: computeElevations, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+                bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 
@@ -226,7 +226,8 @@ namespace DEM.Net.Extension.Tests
             TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
             var pbrTexture = PBRTexture.Create(texInfo, null);
 
-            ModelRoot model = _osmProcessor.Run(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+            _osmProcessor.Settings.ComputeElevations = computeElevations;
+            ModelRoot model = _osmProcessor.Run(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, dataset, downloadMissingFiles: true);
             model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture, 0.5f);
 
 

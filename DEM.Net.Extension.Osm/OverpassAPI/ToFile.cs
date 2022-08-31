@@ -67,7 +67,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             return ResultTask.ContinueWith(task => {
                                                File.WriteAllText(Filename, ResultTask.Result.ToJSON().ToString());
                                                return ResultTask.Result;
-                                           });
+                                           }, TaskScheduler.Default);
 
         }
 
@@ -138,7 +138,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             return JSONTask.ContinueWith(task => {
                                             File.WriteAllText(Filename, JSONTask.Result.ToString());
                                             return JSONTask.Result;
-                                        });
+                                        }, TaskScheduler.Default);
 
         }
         public static Task<FeatureCollection> ToFileAsync(this Task<FeatureCollection> JSONTask, String Filename)
@@ -147,7 +147,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             return JSONTask.ContinueWith(task => {
                 File.WriteAllText(Filename, JsonConvert.SerializeObject(JSONTask.Result));
                 return JSONTask.Result;
-            });
+            }, TaskScheduler.Default);
 
         }
 

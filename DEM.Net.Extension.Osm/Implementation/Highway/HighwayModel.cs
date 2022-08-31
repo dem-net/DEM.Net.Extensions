@@ -12,7 +12,6 @@ namespace DEM.Net.Extension.Osm.Highways
 
         public string Name { get; internal set; }
         public int? Lanes { get; internal set; }
-        public string Type { get; internal set; }
         public bool Area { get; internal set; } = false;
         public bool Tunnel { get; internal set; } = false;
         public bool Bridge { get; internal set; } = false;

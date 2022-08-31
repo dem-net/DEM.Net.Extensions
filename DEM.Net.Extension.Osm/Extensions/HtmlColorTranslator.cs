@@ -221,7 +221,7 @@ namespace DEM.Net.Extension.Osm.Extensions
             {
                 color = HtmlColorTranslator.FromHtml(htmlColor);
             }
-            catch (Exception ex)
+            catch 
             {
             }
             return new Vector4(componentRemap(color.R), componentRemap(color.G), componentRemap(color.B), componentRemap(color.A));

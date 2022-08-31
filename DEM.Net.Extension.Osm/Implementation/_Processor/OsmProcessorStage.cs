@@ -109,7 +109,7 @@ namespace DEM.Net.Extension.Osm
 
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<T> models);
 
-        public IEnumerable<T> CreateModelsFromGeoJson<T>(IEnumerable<IFeature> features, OsmModelFactory<T> validator) where T : CommonModel
+        public IEnumerable<Tmodel> CreateModelsFromGeoJson<Tmodel>(IEnumerable<IFeature> features, OsmModelFactory<Tmodel> validator) where Tmodel : CommonModel
         {
 
             int numValid = 0;
@@ -121,7 +121,7 @@ namespace DEM.Net.Extension.Osm
                 foreach (var feature in features)
                 {
                     validator.RegisterTags(feature as Feature);
-                    foreach (T model in validator.CreateModel(feature as Feature))
+                    foreach (Tmodel model in validator.CreateModel(feature as Feature))
                     {
 
                         if (model == null)

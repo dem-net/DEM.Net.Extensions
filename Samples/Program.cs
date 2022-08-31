@@ -103,10 +103,10 @@ namespace SampleApp
 
                 config.AddConfiguration(appConfig.GetSection("Logging"));
                 config.AddDebug();
-                config.AddConsole(o =>
+                config.AddSimpleConsole(o =>
                         {
                             o.IncludeScopes = false;
-                            o.DisableColors = false;
+                            o.ColorBehavior= LoggerColorBehavior.Default;
                         }); // Log to console (colored !)
             })
            //.Configure<LoggerFilterOptions>(options =>

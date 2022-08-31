@@ -186,7 +186,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                 return featureCollection;
 
-            });
+            }, TaskScheduler.Default);
 
         }
 
@@ -236,7 +236,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         public static Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
                                                   Func<FeatureCollection, String> FilenameBuilder)
         {
-            return ResultTask.ToGeoJSONAsync().ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result);
+            return ResultTask.ToGeoJSONAsync().ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result, TaskScheduler.Default);
         }
 
         #endregion
@@ -266,7 +266,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         public static Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
                                                   Func<JObject, String> FilenameBuilder)
         {
-            return JSONTask.ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result);
+            return JSONTask.ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result, TaskScheduler.Default);
         }
 
         #endregion
@@ -282,7 +282,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         public static Task<IEnumerable<JObject>> ToGeoJSONFileAsync(this Task<IEnumerable<JObject>> GeoJSONTask,
                                                                Func<JObject, String> FilenameBuilder)
         {
-            return GeoJSONTask.ContinueWith(GeoJSONTasks => GeoJSONTasks.Result.Select(GeoJSON => GeoJSON.ToFile(FilenameBuilder)));
+            return GeoJSONTask.ContinueWith(GeoJSONTasks => GeoJSONTasks.Result.Select(GeoJSON => GeoJSON.ToFile(FilenameBuilder)), TaskScheduler.Default);
         }
 
         #endregion
@@ -396,7 +396,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                 return feature;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Trace.TraceWarning("OSM to GeoJSON error for feature");
                 return null;
@@ -574,7 +574,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                 return feature;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Trace.TraceWarning("OSM to GeoJSON error for relation");
                 return null;

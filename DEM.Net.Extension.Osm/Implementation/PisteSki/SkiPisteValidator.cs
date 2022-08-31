@@ -82,7 +82,7 @@ namespace DEM.Net.Extension.Osm.Ski
             }
         }
 
-        private void ParseTag<T>(PisteModel model, string tagName, Action<T> updateAction)
+        private new void ParseTag<T>(PisteModel model, string tagName, Action<T> updateAction)
         {
             if (model.Tags.TryGetValue(tagName, out object val))
             {

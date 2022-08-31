@@ -19,7 +19,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         {
             return ResultTask.ContinueWith(task => {
                 return ResultTask.Result.Elements.First().ToObject<OverpassCountResult>();
-            });
+            }, TaskScheduler.Default);
         }
     }
 }

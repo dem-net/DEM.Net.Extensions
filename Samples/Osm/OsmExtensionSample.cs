@@ -85,9 +85,10 @@ namespace SampleApp
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
 
 
+            _osmProcessor.Settings.ComputeElevations=false;
             var model = _osmProcessor.Run(null,
                 OsmLayer.Water | OsmLayer.Railway | OsmLayer.Highways | OsmLayer.Buildings,
-                bbox, transform, computeElevations: false, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+                bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_WKT.glb"));
         }
@@ -145,13 +146,17 @@ namespace SampleApp
                 TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
                 var pbrTexture = PBRTexture.Create(texInfo, null);
 
-                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+                _osmProcessor.Settings.DownloadMissingDEMFiles = true;
+                _osmProcessor.Settings.ComputeElevations = computeElevations;
+                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, dataset);
                 model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture, 0.5f);
             }
             else
             {
-                var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true); ;
-                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, computeElevations, dataset, downloadMissingFiles: true);
+                var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, ZScale, centerOnZOrigin: true);
+                _osmProcessor.Settings.ComputeElevations = computeElevations;
+                _osmProcessor.Settings.DownloadMissingDEMFiles = true;
+                model = _osmProcessor.Run(model, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, dataset);
             }
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), name + ".glb"));

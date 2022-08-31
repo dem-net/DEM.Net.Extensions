@@ -62,11 +62,11 @@ namespace DEM.Net.Extension.Osm
             return TagRegistry.GetReport();
         }
 
-        protected void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
+        protected virtual void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
         {
             ParseTag<T, T>(model, tagName, t => t, updateAction);
         }
-        protected void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
+        protected virtual void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
         {
             if (model.Tags.TryGetValue(tagName, out object val))
             {
