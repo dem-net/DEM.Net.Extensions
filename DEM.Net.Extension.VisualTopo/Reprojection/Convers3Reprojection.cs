@@ -17,7 +17,7 @@ namespace DEM.Net.Extension.VisualTopo
 #if DEBUG
             try
             {
-                converter.ReadXml(Path.Combine("bin", "debug", "netcoreapp3.1", "ConversApi3", "Convers.xml")); ;
+                converter.ReadXml(Path.Combine("bin", "debug", "net6.0", "ConversApi3", "Convers.xml")); ;
             }
             catch (Exception)
             {

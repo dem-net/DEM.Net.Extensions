@@ -21,19 +21,17 @@ namespace DEM.Net.Extension.VisualTopo
     internal class ColorFromDepthCalculation : IColorCalculator
     {
         private readonly float _maxDepth;
-        private readonly ColorSpaceConverter _colorConverter;
 
         public ColorFromDepthCalculation(VisualTopoModel model)
         {
             _maxDepth = model.Graph.AllNodes.Min(n => n.Model.VectorLocal.Z);
-            _colorConverter = new ColorSpaceConverter();
         }
 
         public Vector4 GetColor(VisualTopoData currentNode, Vector3 position)
         {
             float lerpAmout = _maxDepth == 0 ? 0 : Math.Abs(position.Z / _maxDepth);
             Hsv hsvColor = new Hsv(MathHelper.Lerp(0f, 360f, lerpAmout), 1, 1);
-            var rgb = _colorConverter.ToRgb(hsvColor);
+            var rgb = ColorSpaceConverter.ToRgb(hsvColor);
 
             return new Vector4(rgb.R, rgb.G, rgb.B, 255);
             //return Vector4.Lerp(VectorsExtensions.CreateColor(0, 255, 255), VectorsExtensions.CreateColor(0, 255, 0), lerpAmout);
