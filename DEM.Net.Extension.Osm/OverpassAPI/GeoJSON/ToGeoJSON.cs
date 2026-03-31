@@ -72,6 +72,8 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
             return ResultTask.ContinueWith(task =>
             {
+                if (ResultTask.Result.Elements == null)
+                    return new FeatureCollection();
 
                 // The order of the nodes, ways and relations seem not to be sorted by default!
                 var jNodes = ResultTask.Result.Elements.Where(e => e["type"].ToString() == "node");
@@ -172,11 +174,11 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                                                            .Where(n => n != null)
                                                            .ToList();
                 var featureCollection = new FeatureCollection();
-                foreach(var f in featuresFromNodes.Concat(featuresFromWays).Concat(featuresFromRelations))
+                foreach (var f in featuresFromNodes.Concat(featuresFromWays).Concat(featuresFromRelations))
                 {
                     featureCollection.Add(f);
                 }
-                
+
 
                 // Release code
                 //var featuresFromNodes = Nodes.Values.Where(n => n.Tags.Count > 0).Select(n => n.ToGeoJSON());

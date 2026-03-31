@@ -17,20 +17,20 @@
 
 #region Usings
 
+using DEM.Net.Core;
+using g3;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-
-using Newtonsoft.Json.Linq;
 using System.Threading;
-using DEM.Net.Core;
-using System.Globalization;
-using System.Diagnostics;
-using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 #endregion
 
@@ -545,18 +545,18 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <returns>A Overpass query result.</returns>
         public Task<OverpassResult> RunQueryAsync(UInt32 Timeout = 0)
         {
-            return this.RunQueryAsync(this.ToString(), Timeout);
+            return Task.FromResult(this.RunQueryAsync(this.ToString(), Timeout).GetAwaiter().GetResult());
 
         }
         public Task<OverpassResult> RunQueryQLAsync(string request, UInt32 Timeout = 0)
         {
-            return this.RunQueryAsync(this.ToStringWithQLInjection(request), Timeout);
+            return Task.FromResult(this.RunQueryAsync(this.ToStringWithQLInjection(request), Timeout).GetAwaiter().GetResult());
         }
 
 
         public async Task<OverpassResult> RunQueryAsync(string queryBody, UInt32 Timeout = 0)
         {
-
+            var result = new OverpassResult();
             if (Timeout > 0)
                 _QueryTimeout = Timeout;
             try
@@ -567,7 +567,6 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                 using (var HTTPClient = new HttpClient())
                 {
-
                     try
                     {
                         var headers = HTTPClient.DefaultRequestHeaders;
@@ -575,52 +574,33 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                         Debug.WriteLine("Overpass query:" + Environment.NewLine + queryBody);
                         using (var ResponseMessage = await HTTPClient.PostAsync(OverpassAPI_URI, new StringContent(queryBody)))
                         {
-
                             if (ResponseMessage.StatusCode == HttpStatusCode.OK)
                             {
-
                                 using (var ResponseContent = ResponseMessage.Content)
                                 {
-
-                                    return await ResponseContent.
-                                                     ReadAsStringAsync().
-                                                     ContinueWith(QueryTask => new OverpassResult(this,
-                                                                                                  JObject.Parse(QueryTask.Result)), TaskScheduler.Default);
-
-
+                                    var content = await ResponseContent.ReadAsStringAsync();
+                                    result = new OverpassResult(this, JObject.Parse(content));
                                 }
 
                             }
-
                             else if (ResponseMessage.StatusCode == HttpStatusCode.BadRequest)
                             {
                                 var message = await ResponseMessage.Content.ReadAsStringAsync();
                                 throw new Exception("Bad request: " + message);
                             }
-
-
                             else if (((Int32)ResponseMessage.StatusCode) == 429)
-                                throw new Exception("Too Many Requests!");
-
-                            else
-                            {
-                            }
+                                throw new Exception("Too Many Requests!");                            
 
                         }
-
                     }
-
                     catch (OperationCanceledException)
                     { }
-
                     catch (Exception e)
                     {
                         throw new Exception("The OverpassQuery led to an error: " + e.Message, e);
                     }
-
                 }
-
-                throw new Exception("General HTTP client error!");
+                return result;
             }
             finally
             {

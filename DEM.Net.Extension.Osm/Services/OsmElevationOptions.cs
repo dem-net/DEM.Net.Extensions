@@ -7,7 +7,7 @@ namespace DEM.Net.Extension.Osm
 {
     public class OsmElevationOptions
     {
-        public bool ComputeElevations { get; set; } = false;
+        public bool ComputeElevations { get; set; } = true;
         public DEMDataSet Dataset { get; set; }
         public bool DownloadMissingDEMFiles { get; set; } = true;
 

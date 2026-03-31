@@ -17,8 +17,13 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
         public static Task<OverpassCountResult> ToCountAsync(this Task<OverpassResult> ResultTask)
         {
-            return ResultTask.ContinueWith(task => {
-                return ResultTask.Result.Elements.First().ToObject<OverpassCountResult>();
+            return ResultTask.ContinueWith(task =>
+            {
+                var result = ResultTask.Result;
+                if (result.Elements!=null)
+                    return result.Elements.First().ToObject<OverpassCountResult>();
+                else
+                    return new OverpassCountResult();
             }, TaskScheduler.Default);
         }
     }
