@@ -1,4 +1,5 @@
-﻿using DEM.Net.Core;
+﻿using TextureInfo = DEM.Net.Core.Imagery.TextureInfo;
+using DEM.Net.Core;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.Osm.Buildings;

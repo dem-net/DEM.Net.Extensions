@@ -223,7 +223,7 @@ namespace DEM.Net.Extension.Tests
             TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.EsriWorldImagery, 15);
 
             string fileName = Path.Combine(outputDir, "Texture.jpg");
-            TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
+            DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
             var pbrTexture = PBRTexture.Create(texInfo, null);
 
             _osmProcessor.Settings.ComputeElevations = computeElevations;

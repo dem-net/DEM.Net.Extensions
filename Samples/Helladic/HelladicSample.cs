@@ -333,7 +333,7 @@ namespace SampleApp
                         tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
 
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
-                        TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
+                        DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
                         transform.BoundingBox = bbox;
                         hMap = transform.TransformHeightMap(hMap);

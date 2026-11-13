@@ -22,6 +22,7 @@ using g3;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -300,17 +301,19 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
 
                     // Note: This query currently does not support to narrow down the results to be of "osm_type = relation".
                     //       Therefore we query up to 100 results and hope that at least one will be of this relation type.
-                    using (var ResponseMessage = HTTPClient.GetAsync(NominatimAPI_URI + "/" + AreaName + "?format=json&addressdetails=1&limit=100"))
+                    // Synchronous API (fluent builder): use the synchronous HttpClient.Send instead of blocking on a task
+                    using (var Request = new HttpRequestMessage(HttpMethod.Get, NominatimAPI_URI + "/" + AreaName + "?format=json&addressdetails=1&limit=100"))
+                    using (var ResponseMessage = HTTPClient.Send(Request))
                     {
-                        ResponseMessage.Wait();
-
-                        if (ResponseMessage.Result.StatusCode == HttpStatusCode.OK)
+                        if (ResponseMessage.StatusCode == HttpStatusCode.OK)
                         {
 
-                            using (var ResponseContent = ResponseMessage.Result.Content)
+                            using (var ResponseContent = ResponseMessage.Content)
                             {
 
-                                var result = ResponseContent.ReadAsStringAsync();
+                                string result;
+                                using (var reader = new StreamReader(ResponseContent.ReadAsStream()))
+                                    result = reader.ReadToEnd();
 
                                 // [
                                 //    {
@@ -339,7 +342,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
                                 //        }
                                 //    }
                                 // ]
-                                var JSON = JArray.Parse(result.Result).
+                                var JSON = JArray.Parse(result).
                                                Children<JObject>().
                                                Where(JSONObject => JSONObject["osm_type"].ToString() == "relation").
                                                FirstOrDefault();
@@ -545,12 +548,11 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// <returns>A Overpass query result.</returns>
         public Task<OverpassResult> RunQueryAsync(UInt32 Timeout = 0)
         {
-            return Task.FromResult(this.RunQueryAsync(this.ToString(), Timeout).GetAwaiter().GetResult());
-
+            return this.RunQueryAsync(this.ToString(), Timeout);
         }
         public Task<OverpassResult> RunQueryQLAsync(string request, UInt32 Timeout = 0)
         {
-            return Task.FromResult(this.RunQueryAsync(this.ToStringWithQLInjection(request), Timeout).GetAwaiter().GetResult());
+            return this.RunQueryAsync(this.ToStringWithQLInjection(request), Timeout);
         }
 
 
