@@ -36,7 +36,11 @@ namespace DEM.Net.Extension.Osm
 
                     var task = query.ToGeoJSONAsync();
 
+                    // IOsmDataService and the OSM processing pipeline are synchronous: this is the intended sync-over-async boundary.
+                    // Safe here: ASP.NET Core and console hosts have no SynchronizationContext, so no deadlock can occur.
+#pragma warning disable VSTHRD002
                     FeatureCollection ways = task.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
 
                     _logger.LogInformation($"{ways?.Count} features downloaded");
 
@@ -70,7 +74,11 @@ namespace DEM.Net.Extension.Osm
                         .RunQueryAsync()
                         .ToCountAsync();
 
+                    // IOsmDataService and the OSM processing pipeline are synchronous: this is the intended sync-over-async boundary.
+                    // Safe here: ASP.NET Core and console hosts have no SynchronizationContext, so no deadlock can occur.
+#pragma warning disable VSTHRD002
                     OverpassCountResult count = task.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
 
                     return count.Tags.Nodes * 2;
 

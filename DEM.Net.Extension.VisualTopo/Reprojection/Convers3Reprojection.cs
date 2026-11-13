@@ -14,18 +14,12 @@ namespace DEM.Net.Extension.VisualTopo
         public Convers3Reprojection()
         {
             converter = new Conversion();
-#if DEBUG
-            try
-            {
-                converter.ReadXml(Path.Combine("bin", "debug", "net6.0", "ConversApi3", "Convers.xml")); ;
-            }
-            catch (Exception)
-            {
-                
-            }            
-#else
-            converter.ReadXml(Path.Combine("ConversApi3", "Convers.xml"));
-#endif
+            // ConversApi3 folder is copied next to the assemblies (see csproj Content items)
+            // (flattened at the root when consumed from the NuGet package)
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "ConversApi3", "Convers.xml");
+            if (!File.Exists(xmlPath))
+                xmlPath = Path.Combine(AppContext.BaseDirectory, "Convers.xml");
+            converter.ReadXml(xmlPath);
         }
 
         public void Reproject(double x, double y)

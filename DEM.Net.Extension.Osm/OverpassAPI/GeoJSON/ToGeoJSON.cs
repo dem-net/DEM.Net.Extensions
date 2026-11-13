@@ -223,7 +223,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         public static Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
                                                   String Filename)
         {
+#pragma warning disable VSTHRD003 // Fluent extension: composing the caller-provided task is the purpose of this method
             return ResultTask.ToGeoJSONAsync().ToFileAsync(Filename);
+#pragma warning restore VSTHRD003
         }
 
         #endregion
@@ -235,10 +237,12 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="ResultTask">A Overpass query result task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
+        public static async Task<FeatureCollection> ToGeoJSONFileAsync(this Task<OverpassResult> ResultTask,
                                                   Func<FeatureCollection, String> FilenameBuilder)
         {
-            return ResultTask.ToGeoJSONAsync().ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result, TaskScheduler.Default);
+            var geoJsonTask = ResultTask.ToGeoJSONAsync();
+            var featureCollection = await geoJsonTask.ConfigureAwait(false);
+            return await geoJsonTask.ToFileAsync(FilenameBuilder(featureCollection)).ConfigureAwait(false);
         }
 
         #endregion
@@ -253,7 +257,9 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         public static Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
                                                   String Filename)
         {
+#pragma warning disable VSTHRD003 // Fluent extension: composing the caller-provided task is the purpose of this method
             return JSONTask.ToFileAsync(Filename);
+#pragma warning restore VSTHRD003
         }
 
         #endregion
@@ -265,10 +271,13 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
         /// </summary>
         /// <param name="JSONTask">A GeoJSON task.</param>
         /// <param name="FilenameBuilder">A file name.</param>
-        public static Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
+        public static async Task<JObject> ToGeoJSONFileAsync(this Task<JObject> JSONTask,
                                                   Func<JObject, String> FilenameBuilder)
         {
-            return JSONTask.ContinueWith(t1 => t1.ToFileAsync(FilenameBuilder(t1.Result)).Result, TaskScheduler.Default);
+#pragma warning disable VSTHRD003 // Fluent extension: composing the caller-provided task is the purpose of this method
+            var json = await JSONTask.ConfigureAwait(false);
+            return await JSONTask.ToFileAsync(FilenameBuilder(json)).ConfigureAwait(false);
+#pragma warning restore VSTHRD003
         }
 
         #endregion
@@ -330,7 +339,7 @@ namespace DEM.Net.Extension.Osm.OverpassAPI
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning("OSM to GeoJSON error for node");
+                Trace.TraceWarning($"OSM to GeoJSON error for node: {ex.Message}");
                 return null;
             }
 

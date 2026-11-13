@@ -55,7 +55,7 @@ namespace DEM.Net.Extension.VisualTopo
                                                                             set.Name };
         public static MemoryStream ExportToExcel(this VisualTopoModel model, bool autoFitColumns = true)
         {
-            using (var wb = new XLWorkbook(XLEventTracking.Disabled))
+            using (var wb = new XLWorkbook())
             {
                 var ws = wb.Worksheets.Add($"Cavité entrée Z={model.EntryPoint.Elevation:N1} m");
 
@@ -86,8 +86,8 @@ namespace DEM.Net.Extension.VisualTopo
                     {
                         ro++;
                         co = 0;
-                        ws.Cell(ro, ++co).Value = string.Concat("'", data.Entree);
-                        ws.Cell(ro, ++co).Value = string.Concat("'", data.Sortie);
+                        ws.Cell(ro, ++co).Value = data.Entree; // strings are always stored as text (no more leading apostrophe needed)
+                        ws.Cell(ro, ++co).Value = data.Sortie;
                         ws.Cell(ro, ++co).Value = data.Longueur; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         ws.Cell(ro, ++co).Value = data.Cap; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
                         ws.Cell(ro, ++co).Value = data.Pente; ws.Cell(ro, co).Style.NumberFormat.NumberFormatId = 2;
