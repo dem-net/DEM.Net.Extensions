@@ -8,5 +8,7 @@ namespace DEM.Net.Extension.Osm
     {
         OverpassAPI,
         FlatGeobuf,
+        /// <summary>Local Protomaps basemap PMTiles archive (see <see cref="OsmElevationOptions.PMTilesFilePath"/>).</summary>
+        PMTiles,
     }
 }

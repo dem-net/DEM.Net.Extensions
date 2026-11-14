@@ -18,6 +18,10 @@ namespace DEM.Net.Extension.Osm
                 .AddTransient<OverpassAPIDataService>()
                 .AddSingleton<Func<OverpassAPIDataService>>(x => x.GetService<OverpassAPIDataService>)
 
+                .AddSingleton<PMTilesReaderProvider>()
+                .AddTransient<PMTilesDataService>()
+                .AddSingleton<Func<PMTilesDataService>>(x => x.GetService<PMTilesDataService>)
+
                 .AddTransient<DefaultOsmProcessor>();
             //services.AddTransient<IOsmDataService, OsmDataServiceVectorTiles>()
             //        .AddTransient<DefaultOsmProcessor>();
