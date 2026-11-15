@@ -1,4 +1,5 @@
-﻿using DEM.Net.Core;
+﻿using System.Threading.Tasks;
+using DEM.Net.Core;
 using DEM.Net.Core.Configuration;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Extension.Osm;
@@ -57,13 +58,13 @@ namespace SampleApp
             }
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
-            BatchGenerationAndUpload(@"Helladic\3D_all.txt", "3D_Initial_2ndbatch");
+            await BatchGenerationAndUploadAsync(@"Helladic\3D_all.txt", "3D_Initial_2ndbatch");
         }
 
 
-        public void BatchGenerationAndUpload(string fileName, string outputDirName)
+        public async Task BatchGenerationAndUploadAsync(string fileName, string outputDirName)
         {
             Location3DModelSettings settings = new Location3DModelSettings()
             {
@@ -103,7 +104,7 @@ namespace SampleApp
 
             using (StreamWriter sw = new StreamWriter(outFilePath, append: append, Encoding.UTF8))
             {
-                sw.WriteLine(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
+                await sw.WriteLineAsync(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
 
                 foreach (var request in requests.Values)
                 {
@@ -118,7 +119,7 @@ namespace SampleApp
                             {
                                 //===========================
                                 // Generation
-                                response = Generate3DLocationModel(request, settings);
+                                response = await Generate3DLocationModelAsync(request, settings);
                                 sumTilesDownloaded += response.NumTiles ?? 0;
                                 response.Id = request.Id;
                                 responses[response.Id] = response;
@@ -140,7 +141,7 @@ namespace SampleApp
                                 //===========================
                                 // Upload
                                 uploadRequest = GetUploadRequest(settings, request);
-                                var sfResponse = _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken).GetAwaiter().GetResult();
+                                var sfResponse = await _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken);
                                 response.UploadedFileId = sfResponse.ModelId;
                                 response.UploadStatus = sfResponse.StatusCode == HttpStatusCode.Created ? UploadStatus.OK : UploadStatus.Error;
                                 _logger.LogInformation($"Sketchfab upload ok : {response.UploadedFileId}");
@@ -158,14 +159,14 @@ namespace SampleApp
                             }
                         }
 
-                        sw.WriteLine(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
+                        await sw.WriteLineAsync(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
                            , request.Description // link
                            , sumTilesDownloaded // tilecount_running_total
                            , response.UploadStatus.ToString() // sketchfab_status
                            , response.UploadedFileId // sketchfab_id
                             ));
 
-                        sw.Flush();
+                        await sw.FlushAsync();
                         if (responses.Count > 0)
                             _logger.LogInformation($"Reponse: {responses.Last().Value.Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Value.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far, {sumTilesDownloaded} tiles)");
                     }
@@ -300,7 +301,7 @@ namespace SampleApp
             return string.Join(Environment.NewLine, desc.Select(d => string.Concat("* ", d)));
         }
 
-        private Location3DModelResponse Generate3DLocationModel(Location3DModelRequest request, Location3DModelSettings settings)
+        private async Task<Location3DModelResponse> Generate3DLocationModelAsync(Location3DModelRequest request, Location3DModelSettings settings)
         {
             Location3DModelResponse response = new Location3DModelResponse();
 
@@ -311,7 +312,7 @@ namespace SampleApp
                 {
                     BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
 
-                    HeightMap hMap = _elevationService.GetHeightMap(ref bbox, settings.Dataset);
+                    HeightMap hMap = await _elevationService.GetHeightMapAsync(bbox, settings.Dataset);
                     var transform = new ModelGenerationTransform(bbox,settings.Dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
 
                     response.Attributions.AddRange(settings.Attributions); // will be added to the model
@@ -327,7 +328,7 @@ namespace SampleApp
                         TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
                         Debug.Assert(tiles.Count < 400);
 
-                        tiles = _imageryService.DownloadTiles(tiles, settings.ImageryProvider);
+                        tiles = await _imageryService.DownloadTilesAsync(tiles, settings.ImageryProvider);
 
                         string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
                         DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
@@ -351,7 +352,7 @@ namespace SampleApp
                     if (settings.OsmBuildings)
                     {
                         _sampleOsmProcessor.Settings.ComputeElevations=true;
-                        model = _sampleOsmProcessor.Run(model, OsmLayer.Buildings, bbox, transform, settings.Dataset, settings.DownloadMissingFiles);
+                        model = await _sampleOsmProcessor.RunAsync(model, OsmLayer.Buildings, bbox, transform, settings.Dataset, settings.DownloadMissingFiles);
                     }
 
 

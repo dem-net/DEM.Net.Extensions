@@ -1,4 +1,5 @@
-﻿using DEM.Net.Core;
+﻿using System.Threading.Tasks;
+using DEM.Net.Core;
 using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.Test;
 using System;
@@ -94,7 +95,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
         //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
         //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, true, 2)]
-        public void OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
+        public async Task OSMBuildingsOverlapMeshes(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -105,7 +106,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
             _osmProcessor.Settings.ComputeElevations = computeElevations;
-            var model = _osmProcessor.Run(null, OsmLayer.Buildings, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = await _osmProcessor.RunAsync(null, OsmLayer.Buildings, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMBuildings_{name}.glb"));
@@ -131,7 +132,7 @@ namespace DEM.Net.Extension.Tests
         //[InlineData(nameof(WKT_PRIPYAT_POLICE), WKT_PRIPYAT_POLICE, true, true, 2)]
         //[InlineData(nameof(WKT_VADUZ), WKT_VADUZ, true, true, 2)]
         //[InlineData(nameof(WKT_KIEV), WKT_KIEV, true, true, 2)]
-        public void OSMStreets(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
+        public async Task OSMStreets(string name, string bboxWKT, bool centerOnOrigin, bool computeElevations, float ZScale)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -142,7 +143,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
             _osmProcessor.Settings.ComputeElevations = computeElevations;
 
-            var model = _osmProcessor.Run(null, OsmLayer.Highways, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
+            var model = await _osmProcessor.RunAsync(null, OsmLayer.Highways, bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: true, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreets_{name}.glb"));
 
@@ -169,7 +170,7 @@ namespace DEM.Net.Extension.Tests
         [InlineData(nameof(WKT_AIX_DEBUG), WKT_AIX_DEBUG, true, 2)]
         [InlineData(nameof(WKT_CHAMONIX), WKT_CHAMONIX, true, 2)]
 
-        public void OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
+        public async Task OSMStreetsBuildings(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -180,7 +181,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
             _osmProcessor.Settings.ComputeElevations = computeElevations;
-            var model = _osmProcessor.Run(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform,  dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
+            var model = await _osmProcessor.RunAsync(null, OsmLayer.Highways | OsmLayer.Buildings, bbox, transform,  dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
             model.SaveGLB(Path.Combine(Directory.GetCurrentDirectory(), $"OSMStreetsBuildings_{name}.glb"));
 
@@ -189,7 +190,7 @@ namespace DEM.Net.Extension.Tests
         [Theory(DisplayName = "OSM StreetsBuildingsRailWater")]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
 
-        public void OSMStreetsBuildingsRailWater(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
+        public async Task OSMStreetsBuildingsRailWater(string name, string bboxWKT, bool centerOnOrigin, float ZScale, bool computeElevations = false)
         {
             string outputDir = Directory.GetCurrentDirectory();
 
@@ -200,7 +201,7 @@ namespace DEM.Net.Extension.Tests
             var transform = new ModelGenerationTransform(bbox, DEMDataSet.NASADEM.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin, ZScale, centerOnZOrigin: true);
 
             _osmProcessor.Settings.ComputeElevations = computeElevations;
-            var model = _osmProcessor.Run(null,
+            var model = await _osmProcessor.RunAsync(null,
                 OsmLayer.Water | OsmLayer.Railway | OsmLayer.Highways | OsmLayer.Buildings,
                 bbox, transform, dataSet: DEMDataSet.NASADEM, downloadMissingFiles: false, withBuildingsColors: true);
 
@@ -210,7 +211,7 @@ namespace DEM.Net.Extension.Tests
 
         [Theory(DisplayName = "OSM and Terrain")]
         [InlineData(nameof(WKT_LIECHTENSTEIN), WKT_LIECHTENSTEIN, true, 2)]
-        public void OsmAllWithTerrain(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
+        public async Task OsmAllWithTerrain(string name, string bboxWKT, bool centerOnOrigin, float ZScale)
         {
             DEMDataSet dataset = DEMDataSet.NASADEM;
             var bbox = GeometryService.GetBoundingBox(bboxWKT);
@@ -218,18 +219,18 @@ namespace DEM.Net.Extension.Tests
             string outputDir = Directory.GetCurrentDirectory();
 
             var transform = new ModelGenerationTransform(bbox, dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: centerOnOrigin, ZScale, centerOnZOrigin: false);
-            var heightMap = _elevationService.GetHeightMap(ref bbox, dataset);
+            var heightMap = await _elevationService.GetHeightMapAsync(bbox, dataset);
             transform.BoundingBox = bbox; // bbox changed by GetHeigtMap
 
             heightMap = transform.TransformHeightMap(heightMap);
-            TileRange tiles = _imageryService.DownloadTiles(bbox, ImageryProvider.EsriWorldImagery, 15);
+            TileRange tiles = await _imageryService.DownloadTilesAsync(bbox, ImageryProvider.EsriWorldImagery, 15);
 
             string fileName = Path.Combine(outputDir, "Texture.jpg");
             DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
             var pbrTexture = PBRTexture.Create(texInfo, null);
 
             _osmProcessor.Settings.ComputeElevations = computeElevations;
-            ModelRoot model = _osmProcessor.Run(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, dataset, downloadMissingFiles: true);
+            ModelRoot model = await _osmProcessor.RunAsync(null, OsmLayer.Buildings | OsmLayer.Highways, bbox, transform, dataset, downloadMissingFiles: true);
             model = _gltfService.AddTerrainMesh(model, heightMap, pbrTexture, 0.5f);
 
 
