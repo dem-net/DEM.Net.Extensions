@@ -56,7 +56,7 @@ namespace DEM.Net.Extension.Osm
             try
             {
                 // Download buildings and convert them to GeoJson
-                var features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings).ToList();
+                var features = OsmFeatureClipper.ClipToBoundingBox(_osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings), bbox).ToList();
                 // Create internal building model
                 var parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory).ToList();
 
@@ -82,6 +82,8 @@ namespace DEM.Net.Extension.Osm
             {
                 // Download buildings and convert them to GeoJson
                 IEnumerable<IFeature> features = _osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings);
+                // End features at the terrain edge
+                features = OsmFeatureClipper.ClipToBoundingBox(features, bbox);
                 // Create internal building model
                 IEnumerable<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
 
