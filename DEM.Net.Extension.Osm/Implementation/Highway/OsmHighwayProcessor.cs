@@ -14,6 +14,11 @@ namespace DEM.Net.Extension.Osm.Highways
     {
 
         private const float LaneWidthMeters = 3.5F;
+        /// <summary>
+        /// Roads are lifted above the terrain (meters, scaled by the vertical exaggeration like the terrain): at the
+        /// exact DEM elevation they flicker through it (z-fighting), and the reduced terrain mesh departs from the DEM.
+        /// </summary>
+        public const double HeightAboveTerrainMeters = 0.5;
         private readonly string highwaysColor;
 
         public OsmHighwayProcessor(GeoTransformPipeline transform, string highwaysColor) : base(transform)
@@ -67,7 +72,10 @@ namespace DEM.Net.Extension.Osm.Highways
                     Stopwatch sw = Stopwatch.StartNew();
                     foreach (var model in models)
                     {
-                        model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
+                        var points = _elevationService.GetLineGeometryElevation(model.LineString, dataSet);
+                        foreach (var p in points ?? Enumerable.Empty<GeoPoint>())
+                            p.Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters;
+                        model.LineString = Transform.TransformPoints(ToDataSetSrid(points, dataSet))
                                              .ToList();
                         pointCount += model.LineString.Count;
 

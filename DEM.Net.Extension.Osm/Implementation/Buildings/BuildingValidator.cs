@@ -44,7 +44,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         private readonly ILogger _logger;
         private readonly bool _useOsmColors;
-        private readonly Vector4 _defaultColor = new Vector4(.9f, .9f, .9f, 1f); // Color.FromArgb(230, 230, 230);
+        private readonly Vector4 _defaultColor = Vector4.One; // white
 
         public BuildingValidator(ILogger logger, bool useOsmColors, string defaultHtmlColor = null) : base(logger)
         {
