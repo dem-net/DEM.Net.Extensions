@@ -109,7 +109,6 @@ namespace DEM.Net.Extension.Osm.PMTiles
                 },
             },
 
-            // "skipistes": not part of the Protomaps basemap schema => no mapping (see PMTilesFallbackToOverpass)
         };
 
         public static ProtomapsLayerMapping Find(string filterIdentifier)
@@ -124,7 +123,7 @@ namespace DEM.Net.Extension.Osm.PMTiles
             return Convert.ToString(v, CultureInfo.InvariantCulture);
         }
 
-        // OSM tags are strings; keep that contract so ParseTag/ParseLengthTag behave as with Overpass
+        // OSM tags are strings; keep that contract so ParseTag/ParseLengthTag behave as with OSM data
         private static void Copy(IReadOnlyDictionary<string, object> p, IDictionary<string, object> tags, string from, string to)
         {
             var s = Str(p, from) ?? (from.StartsWith("pmap:") ? null : Str(p, "pmap:" + from));

@@ -1,5 +1,4 @@
 ﻿using DEM.Net.Core;
-using DEM.Net.Extension.Osm.OverpassAPI;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;

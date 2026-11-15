@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using SharpGLTF.Schema2;
 using System.Collections.Generic;
 using DEM.Net.Extension.Osm.Highways;
-using DEM.Net.Extension.Osm.Model;
 using System;
 using System.Linq;
 using DEM.Net.Core.Configuration;
@@ -53,15 +52,6 @@ namespace DEM.Net.Extension.Osm
             if (layers.HasFlag(OsmLayer.Highways))
             {
                 var processor = new OsmHighwayProcessor(transform, highwaysColor);
-                if (processor.DataSettings.ComputeElevations)
-                {
-                    processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
-                }
-                processors.Add(processor);
-            }
-            if (layers.HasFlag(OsmLayer.PisteSki))
-            {
-                var processor = new OsmPisteSkiProcessor(transform);
                 if (processor.DataSettings.ComputeElevations)
                 {
                     processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
@@ -124,7 +114,7 @@ namespace DEM.Net.Extension.Osm
                 return counts;
 
             IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
-            foreach (OsmLayer layer in new[] { OsmLayer.Buildings, OsmLayer.Highways, OsmLayer.PisteSki, OsmLayer.Railway, OsmLayer.Water })
+            foreach (OsmLayer layer in new[] { OsmLayer.Buildings, OsmLayer.Highways, OsmLayer.Railway, OsmLayer.Water })
             {
                 if (!layers.HasFlag(layer)) continue;
                 var processor = Build(layer).Single();

@@ -105,14 +105,14 @@ namespace DEM.Net.Extension.Tests
         }
 
         [Fact]
-        public void DataService_UnmappedLayerWithoutFallbackReturnsEmpty()
+        public void DataService_UnmappedLayerReturnsEmpty()
         {
             string path = WriteTestArchive(useLeafDirectory: false);
             try
             {
-                var service = CreateService(path, fallback: false);
-                Assert.Empty(service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("skipistes")));
-                Assert.Equal(0, service.GetOsmDataCount(TestBbox(), new TestFilter("skipistes")));
+                var service = CreateService(path);
+                Assert.Empty(service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("unknown-layer")));
+                Assert.Equal(0, service.GetOsmDataCount(TestBbox(), new TestFilter("unknown-layer")));
             }
             finally { File.Delete(path); }
         }
@@ -123,7 +123,7 @@ namespace DEM.Net.Extension.Tests
             string path = WriteTestArchive(useLeafDirectory: false);
             try
             {
-                var service = CreateService(path, fallback: false);
+                var service = CreateService(path);
 
                 // buildings: 2 rectangles in tile A + the seam building's part in tile B (4 vertices each, ClosePath not counted)
                 Assert.Equal(12, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
@@ -135,7 +135,7 @@ namespace DEM.Net.Extension.Tests
                 double metersPerPx = 40075016.686 * Math.Cos((bbox.yMin + bbox.yMax) / 2 * Math.PI / 180) / (4096d * (1 << Z));
                 Assert.Equal(2796 * metersPerPx, roads.LengthMeters.Value, 6);
                 Assert.Equal(2, service.GetOsmDataStats(TestBbox(), new TestFilter("railway")).Vertices);
-                Assert.Equal(new OsmDataStats(0, 0), service.GetOsmDataStats(TestBbox(), new TestFilter("skipistes")));
+                Assert.Equal(new OsmDataStats(0, 0), service.GetOsmDataStats(TestBbox(), new TestFilter("unknown-layer")));
                 // historical scale kept for GetOsmDataCount
                 Assert.Equal(24, service.GetOsmDataCount(TestBbox(), new TestFilter("buildings")));
 
@@ -156,7 +156,7 @@ namespace DEM.Net.Extension.Tests
             string path = WriteTestArchive(useLeafDirectory: false);
             try
             {
-                var service = CreateService(path, fallback: false, maxTiles: 1);
+                var service = CreateService(path, maxTiles: 1);
                 var ex = Assert.Throws<OsmQueryTooLargeException>(() => service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")));
                 Assert.Equal(2, ex.TileCount);
                 Assert.Throws<OsmQueryTooLargeException>(() => service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")));
@@ -166,18 +166,16 @@ namespace DEM.Net.Extension.Tests
 
         #region Helpers
 
-        private static PMTilesDataService CreateService(string path, bool fallback = true, int maxTiles = 2500)
+        private static PMTilesDataService CreateService(string path, int maxTiles = 2500)
         {
             var options = Options.Create(new OsmElevationOptions
             {
                 DataServiceType = OsmDataServiceType.PMTiles,
                 PMTilesFilePath = path,
-                PMTilesFallbackToOverpass = fallback,
                 PMTilesMaxTilesPerQuery = maxTiles,
             });
             var provider = new PMTilesReaderProvider(options, NullLogger<PMTilesReaderProvider>.Instance);
-            return new PMTilesDataService(NullLogger<PMTilesDataService>.Instance, provider, options,
-                () => throw new InvalidOperationException("Overpass must not be called in tests"));
+            return new PMTilesDataService(NullLogger<PMTilesDataService>.Instance, provider, options);
         }
 
         private static double TileLon(double x) => x / (1 << Z) * 360d - 180d;
@@ -190,10 +188,6 @@ namespace DEM.Net.Extension.Tests
         {
             public TestFilter(string id) => FilterIdentifier = id;
             public string FilterIdentifier { get; }
-            public string[] WaysFilter { get; set; }
-            public string[] RelationsFilter { get; set; }
-            public string[] NodesFilter { get; set; }
-            public string FlatGeobufTilesDirectory { get; set; }
             public bool ComputeElevations { get; set; }
         }
 

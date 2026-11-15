@@ -14,8 +14,9 @@ Not well documented but deserved to go public. Please fill an issue if you need 
 ```
 ## OSM
 
-DEM Net buildings / ski slopes importer.
-Downloads via OverpassAPI and produces triangulation of buildings
+3D buildings, roads, railways and water for DEM.Net models, read from a local
+[Protomaps basemap](https://maps.protomaps.com/builds/) PMTiles archive (`OsmElevationOptions.PMTilesFilePath`),
+draped on the terrain.
 
 ## SampleApp
 

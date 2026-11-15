@@ -12,7 +12,7 @@ namespace DEM.Net.Extension.Osm
 {
     /// <summary>
     /// Cuts OSM features to the model's bounding box, so that buildings and roads end at the terrain edge. Data services
-    /// return whole ways (Overpass) or whole tiles (PMTiles) that can reach far beyond it.
+    /// return whole tiles (PMTiles) that can reach far beyond it.
     /// </summary>
     public static class OsmFeatureClipper
     {
