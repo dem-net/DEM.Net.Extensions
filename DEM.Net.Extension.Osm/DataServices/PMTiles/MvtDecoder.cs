@@ -206,6 +206,47 @@ namespace DEM.Net.Extension.Osm.PMTiles
         }
 
         /// <summary>
+        /// Counts the feature vertices (MoveTo + LineTo; the ClosePath repeat is not counted), sums the length of its
+        /// LineTo segments and computes its envelope, all in world coordinates, without building a geometry.
+        /// Used for fast size estimates.
+        /// </summary>
+        public static int CountVertices(MvtFeature feature, int tileX, int tileY, uint extent, out Envelope worldEnvelope, out double worldLength)
+        {
+            double scale = WorldUnitsPerTile / extent;
+            double ox = tileX * WorldUnitsPerTile, oy = tileY * WorldUnitsPerTile;
+            long cx = 0, cy = 0, minX = long.MaxValue, minY = long.MaxValue, maxX = long.MinValue, maxY = long.MinValue;
+            int vertices = 0;
+            double length = 0;
+            var g = feature.Geometry;
+            int i = 0;
+            while (i < g.Count)
+            {
+                uint cmd = g[i++];
+                int id = (int)(cmd & 0x7);
+                int count = (int)(cmd >> 3);
+                if (id == 7) continue; // ClosePath has no parameters
+                if (id != 1 && id != 2) break; // malformed: count what was read
+                for (int k = 0; k < count && i + 1 < g.Count; k++)
+                {
+                    int dx = ZigZag32(g[i++]), dy = ZigZag32(g[i++]);
+                    cx += dx;
+                    cy += dy;
+                    if (id == 2) length += Math.Sqrt((double)dx * dx + (double)dy * dy);
+                    vertices++;
+                    if (cx < minX) minX = cx;
+                    if (cx > maxX) maxX = cx;
+                    if (cy < minY) minY = cy;
+                    if (cy > maxY) maxY = cy;
+                }
+            }
+            worldEnvelope = vertices == 0
+                ? new Envelope()
+                : new Envelope(ox + minX * scale, ox + maxX * scale, oy + minY * scale, oy + maxY * scale);
+            worldLength = length * scale;
+            return vertices;
+        }
+
+        /// <summary>
         /// MVT spec: exterior rings have positive surveyor area in tile coordinates (y down), interior rings negative.
         /// </summary>
         private static Geometry BuildPolygons(List<List<Coordinate>> rings, GeometryFactory factory)

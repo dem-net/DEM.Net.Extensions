@@ -64,6 +64,7 @@ namespace DEM.Net.Extension.Osm
     {
         private const double W = MvtDecoder.WorldUnitsPerTile;
         private const double BorderEpsilon = 1e-6;
+        private const double EarthCircumferenceMeters = 40075016.686;
 
         // World coordinates (4096 units per tile at the query zoom, y down). Snapping to 1 unit ≈ 0.3 m at z15.
         private static readonly GeometryFactory WorldFactory = new GeometryFactory();
@@ -113,10 +114,76 @@ namespace DEM.Net.Extension.Osm
                 return _options.PMTilesFallbackToOverpass ? _overpassFallback().GetOsmDataCount(bbox, filter) : 0;
 
             // Same scale as OverpassAPIDataService (node count * 2) so generation estimates stay comparable
-            return Query(bbox, mapping).Sum(f => f.Geometry.NumPoints) * 2;
+            return CountVertices(bbox, mapping).Vertices * 2;
         }
 
-        internal List<IFeature> Query(BoundingBox bbox, ProtomapsLayerMapping mapping)
+        public OsmDataStats GetOsmDataStats(BoundingBox bbox, IOsmDataSettings filter)
+        {
+            var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
+            if (mapping == null)
+                return _options.PMTilesFallbackToOverpass ? ((IOsmDataService)_overpassFallback()).GetOsmDataStats(bbox, filter) : new OsmDataStats(0, 0);
+
+            using (new TimeSpanBlock(nameof(GetOsmDataStats), _logger, LogLevel.Debug))
+                return CountVertices(bbox, mapping);
+        }
+
+        /// <summary>
+        /// Fast estimate: decodes the tiles but builds no geometry (no clipping or seam merging). Counts the vertices and
+        /// line length of accepted features whose envelope intersects the bbox. Features crossing tile edges are counted
+        /// once per tile (with the tile buffer), a small overestimate.
+        /// </summary>
+        internal OsmDataStats CountVertices(BoundingBox bbox, ProtomapsLayerMapping mapping)
+        {
+            if (bbox.SRID != Reprojection.SRID_GEODETIC)
+                bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
+
+            var range = GetTileRange(bbox);
+            var wantedLayers = new HashSet<string>(mapping.SourceLayers, StringComparer.Ordinal);
+            var bboxEnv = range.BboxWorldEnvelope;
+            long vertices = 0;
+            double worldLength = 0;
+            var sync = new object();
+
+            Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d), (idx, _, local) =>
+            {
+                int tx = range.MinTx + idx % range.Cols, ty = range.MinTy + idx / range.Cols;
+                byte[] data = range.Reader.GetTile(range.Zoom, tx, ty);
+                if (data == null || data.Length == 0) return local;
+
+                foreach (var layer in MvtDecoder.Decode(data, wantedLayers))
+                    foreach (var mvtFeature in layer.Features)
+                    {
+                        if (!mapping.Accept(layer.Name, layer.GetProperties(mvtFeature), mvtFeature.Type)) continue;
+                        int n = MvtDecoder.CountVertices(mvtFeature, tx, ty, layer.Extent, out var env, out double length);
+                        if (n > 0 && bboxEnv.Intersects(env))
+                            local = (local.Vertices + n, local.Length + length);
+                    }
+                return local;
+            }, local =>
+            {
+                lock (sync)
+                {
+                    vertices += local.Vertices;
+                    worldLength += local.Length;
+                }
+            });
+
+            // Web Mercator scale at the bbox center latitude
+            double centerLatRad = (bbox.yMin + bbox.yMax) / 2d * Math.PI / 180d;
+            double metersPerWorldUnit = EarthCircumferenceMeters * Math.Cos(centerLatRad) / (W * (1L << range.Zoom));
+            return new OsmDataStats((int)Math.Min(vertices, int.MaxValue), worldLength * metersPerWorldUnit);
+        }
+
+        private sealed class TileRange
+        {
+            public PMTilesReader Reader;
+            public int Zoom, MinTx, MinTy, Cols, Rows;
+            public long TileCount => (long)Cols * Rows;
+            public Envelope BboxWorldEnvelope;
+        }
+
+        /// <exception cref="OsmQueryTooLargeException">More tiles than <see cref="OsmElevationOptions.PMTilesMaxTilesPerQuery"/>.</exception>
+        private TileRange GetTileRange(BoundingBox bbox)
         {
             if (bbox.SRID != Reprojection.SRID_GEODETIC)
                 bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
@@ -126,10 +193,26 @@ namespace DEM.Net.Extension.Osm
 
             var (minTx, minTy) = TileMath.LonLatToTile(bbox.xMin, bbox.yMax, z);
             var (maxTx, maxTy) = TileMath.LonLatToTile(bbox.xMax, bbox.yMin, z);
-            int cols = maxTx - minTx + 1, rows = maxTy - minTy + 1;
-            long tileCount = (long)cols * rows;
-            if (tileCount > _options.PMTilesMaxTilesPerQuery)
-                throw new InvalidOperationException($"Bounding box needs {tileCount:N0} z{z} tiles, more than {nameof(OsmElevationOptions.PMTilesMaxTilesPerQuery)}={_options.PMTilesMaxTilesPerQuery:N0}.");
+            var range = new TileRange { Reader = reader, Zoom = z, MinTx = minTx, MinTy = minTy, Cols = maxTx - minTx + 1, Rows = maxTy - minTy + 1 };
+            if (range.TileCount > _options.PMTilesMaxTilesPerQuery)
+                throw new OsmQueryTooLargeException(range.TileCount, _options.PMTilesMaxTilesPerQuery, z);
+
+            double worldSize = W * (1L << z);
+            var (bx0, by0) = TileMath.LonLatToWorld(bbox.xMin, bbox.yMax, worldSize);
+            var (bx1, by1) = TileMath.LonLatToWorld(bbox.xMax, bbox.yMin, worldSize);
+            range.BboxWorldEnvelope = new Envelope(bx0, bx1, by0, by1);
+            return range;
+        }
+
+        internal List<IFeature> Query(BoundingBox bbox, ProtomapsLayerMapping mapping)
+        {
+            if (bbox.SRID != Reprojection.SRID_GEODETIC)
+                bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
+
+            var range = GetTileRange(bbox);
+            PMTilesReader reader = range.Reader;
+            int z = range.Zoom, minTx = range.MinTx, minTy = range.MinTy, cols = range.Cols;
+            long tileCount = range.TileCount;
 
             var wantedLayers = new HashSet<string>(mapping.SourceLayers, StringComparer.Ordinal);
             var complete = new ConcurrentBag<Fragment>();

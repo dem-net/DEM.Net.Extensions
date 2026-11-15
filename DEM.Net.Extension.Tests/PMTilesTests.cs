@@ -117,15 +117,63 @@ namespace DEM.Net.Extension.Tests
             finally { File.Delete(path); }
         }
 
+        [Fact]
+        public void DataStats_CountsVerticesAndLengthWithoutBuildingGeometries()
+        {
+            string path = WriteTestArchive(useLeafDirectory: false);
+            try
+            {
+                var service = CreateService(path, fallback: false);
+
+                // buildings: 2 rectangles in tile A + the seam building's part in tile B (4 vertices each, ClosePath not counted)
+                Assert.Equal(12, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
+                // the road: 2 vertices per tile; the rail stays out of highways
+                var roads = service.GetOsmDataStats(TestBbox(), new TestFilter("highways"));
+                Assert.Equal(4, roads.Vertices);
+                // both road parts with their tile buffer: (4200 - 3000) + (500 + 1096) world px at z15
+                var bbox = TestBbox();
+                double metersPerPx = 40075016.686 * Math.Cos((bbox.yMin + bbox.yMax) / 2 * Math.PI / 180) / (4096d * (1 << Z));
+                Assert.Equal(2796 * metersPerPx, roads.LengthMeters.Value, 6);
+                Assert.Equal(2, service.GetOsmDataStats(TestBbox(), new TestFilter("railway")).Vertices);
+                Assert.Equal(new OsmDataStats(0, 0), service.GetOsmDataStats(TestBbox(), new TestFilter("skipistes")));
+                // historical scale kept for GetOsmDataCount
+                Assert.Equal(24, service.GetOsmDataCount(TestBbox(), new TestFilter("buildings")));
+
+                // close to the full query (which adds closing points and seam vertices, then merges the seam building)
+                int queried = service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")).Sum(f => f.Geometry.NumPoints);
+                Assert.InRange(queried, 8, 12);
+
+                // partial bbox: only the small building of tile A (px 1000-1100)
+                var small = new BoundingBox(TileLon(TX + 0.2), TileLon(TX + 0.3), TileLat(TY + 0.3), TileLat(TY + 0.2));
+                Assert.Equal(4, service.GetOsmDataStats(small, new TestFilter("buildings")).Vertices);
+            }
+            finally { File.Delete(path); }
+        }
+
+        [Fact]
+        public void DataService_TooManyTilesThrowsTooLarge()
+        {
+            string path = WriteTestArchive(useLeafDirectory: false);
+            try
+            {
+                var service = CreateService(path, fallback: false, maxTiles: 1);
+                var ex = Assert.Throws<OsmQueryTooLargeException>(() => service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")));
+                Assert.Equal(2, ex.TileCount);
+                Assert.Throws<OsmQueryTooLargeException>(() => service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")));
+            }
+            finally { File.Delete(path); }
+        }
+
         #region Helpers
 
-        private static PMTilesDataService CreateService(string path, bool fallback = true)
+        private static PMTilesDataService CreateService(string path, bool fallback = true, int maxTiles = 2500)
         {
             var options = Options.Create(new OsmElevationOptions
             {
                 DataServiceType = OsmDataServiceType.PMTiles,
                 PMTilesFilePath = path,
                 PMTilesFallbackToOverpass = fallback,
+                PMTilesMaxTilesPerQuery = maxTiles,
             });
             var provider = new PMTilesReaderProvider(options, NullLogger<PMTilesReaderProvider>.Instance);
             return new PMTilesDataService(NullLogger<PMTilesDataService>.Instance, provider, options,

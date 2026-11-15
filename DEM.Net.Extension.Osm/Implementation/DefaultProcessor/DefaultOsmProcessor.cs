@@ -109,7 +109,28 @@ namespace DEM.Net.Extension.Osm
 
             return count;
 
-            
+
+        }
+
+        /// <summary>
+        /// Source vertex count (OSM nodes) and line length per requested layer, for size estimates. With the PMTiles
+        /// data service this only decodes tiles (no geometry is built).
+        /// </summary>
+        /// <exception cref="OsmQueryTooLargeException">The bbox needs more PMTiles tiles than allowed.</exception>
+        public IReadOnlyDictionary<OsmLayer, OsmDataStats> GetDataStats(BoundingBox bbox, OsmLayer layers)
+        {
+            var counts = new Dictionary<OsmLayer, OsmDataStats>();
+            if (layers == OsmLayer.None)
+                return counts;
+
+            IOsmDataService osmDataService = _dataServiceFactory.Create(Settings.DataServiceType);
+            foreach (OsmLayer layer in new[] { OsmLayer.Buildings, OsmLayer.Highways, OsmLayer.PisteSki, OsmLayer.Railway, OsmLayer.Water })
+            {
+                if (!layers.HasFlag(layer)) continue;
+                var processor = Build(layer).Single();
+                counts[layer] = osmDataService.GetOsmDataStats(bbox, processor.DataSettings);
+            }
+            return counts;
         }
 
     }
