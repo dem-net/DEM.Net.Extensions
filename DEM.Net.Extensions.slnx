@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/License/">
+    <File Path="LICENSE - ThirdParty.md" />
+    <File Path="LICENSE.md" />
+  </Folder>
+  <Folder Name="/Readme/">
+    <File Path="OSMTests.txt" />
+  </Folder>
+  <Project Path="../DEM.Net/DEM.Net.Core/DEM.Net.Core.csproj" />
+  <Project Path="../DEM.Net/DEM.Net.glTF/DEM.Net.glTF.csproj" />
+  <Project Path="../SketchFabApi.Net/SketchFabApi.Net/SketchFabApi.Net.csproj" />
+  <Project Path="DEM.Net.Extension.Osm/DEM.Net.Extension.Osm.csproj" />
+  <Project Path="DEM.Net.Extension.Tests/DEM.Net.Extension.Tests.csproj" />
+  <Project Path="DEM.Net.Extension.VisualTopo/DEM.Net.Extension.VisualTopo.csproj" />
+  <Project Path="Samples/Samples.csproj" />
+  <Properties Name="MonoDevelopProperties">
+    <Property Name="$0.DotNetNamingPolicy" Value="$1" />
+    <Property Name="$0.StandardHeader" Value="$2" />
+    <Property Name="$0.VersionControlPolicy" Value="$3" />
+    <Property Name="$1.DirectoryNamespaceAssociation" Value="PrefixedHierarchical" />
+    <Property Name="description" Value="Elevation library for .Net Core" />
+    <Property Name="Policies" Value="$0" />
+  </Properties>
+</Solution>
