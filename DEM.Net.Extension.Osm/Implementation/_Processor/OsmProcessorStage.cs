@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using NetTopologySuite.Features;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace DEM.Net.Extension.Osm
 {
@@ -50,34 +52,8 @@ namespace DEM.Net.Extension.Osm
         public virtual GeoTransformPipeline Transform { get; set; }
 
 
-        public ModelRoot Run(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles)
+        public async Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default)
         {
-#if TOLIST
-            try
-            {
-                // Download buildings and convert them to GeoJson
-                var features = OsmFeatureClipper.ClipToBoundingBox(_osmDataService.GetOsmDataAsGeoJson(bbox, DataSettings), bbox).ToList();
-                // Create internal building model
-                var parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory).ToList();
-
-                //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
-                // Compute elevations (faster elevation when point count is known in advance)
-                // Download elevation data if missing
-                if (computeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
-                parsed = this.ComputeModelElevationsAndTransform(parsed, computeElevations, dataSet, downloadMissingFiles).ToList();
-
-                gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
-
-
-                return gltfModel;
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
-                throw;
-            }
-#else
             try
             {
                 // Download buildings and convert them to GeoJson
@@ -87,24 +63,18 @@ namespace DEM.Net.Extension.Osm
                 // Create internal building model
                 IEnumerable<T> parsed = this.CreateModelsFromGeoJson<T>(features, ModelFactory);
 
-                //_logger.LogInformation($"Computing elevations ({parsed.Models.Count} lines, {parsed.TotalPoints} total points)...");
-                // Compute elevations (faster elevation when point count is known in advance)
-                // Download elevation data if missing
-                if (DataSettings.ComputeElevations && downloadMissingFiles) _elevationService.DownloadMissingFiles(dataSet, bbox);
+                // Download elevation data if missing: elevations are then read from local files
+                if (DataSettings.ComputeElevations && downloadMissingFiles)
+                    await _elevationService.DownloadMissingFilesAsync(dataSet, bbox, cancellationToken).ConfigureAwait(false);
                 parsed = this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet, downloadMissingFiles);
 
-                gltfModel = this.AddToModel(gltfModel, glTFNodeName, parsed);
-
-
-                return gltfModel;
-
+                return this.AddToModel(gltfModel, glTFNodeName, parsed);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
                 throw;
             }
-#endif
         }
 
         /// <summary>
@@ -120,6 +90,7 @@ namespace DEM.Net.Extension.Osm
             return pointsWgs84.ReprojectTo(Reprojection.SRID_GEODETIC, dataSet.SRID);
         }
 
+        /// <summary>Elevations are read from local files: <see cref="RunAsync"/> downloads the missing ones first.</summary>
         protected abstract IEnumerable<T> ComputeModelElevationsAndTransform(IEnumerable<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
 
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<T> models);

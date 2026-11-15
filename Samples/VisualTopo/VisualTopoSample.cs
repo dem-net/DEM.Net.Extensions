@@ -1,4 +1,5 @@
-﻿using DEM.Net.Core;
+﻿using System.Threading.Tasks;
+using DEM.Net.Core;
 using DEM.Net.Core.Imagery;
 using DEM.Net.Extension.VisualTopo;
 using DEM.Net.glTF.SharpglTF;
@@ -41,25 +42,25 @@ namespace SampleApp
             _visualTopoService = visualTopoService;
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
 
             // All files in given directory
             foreach (var file in Directory.EnumerateFileSystemEntries(@"C:\Users\xfischer\Dropbox\Perso\Projets\DEM.net\2020 IPVSMN\fichiers tro\temp", "*.tro", SearchOption.AllDirectories))
             {
                 _logger.LogInformation("Generating model for file " + Path.GetFileName(file));
-                Run_3DModelGeneration(file, ImageryProvider.ThunderForestLandscape, bboxMarginMeters: 50, generateTopoOnlyModel: false);
+                await Run3DModelGenerationAsync(file, ImageryProvider.ThunderForestLandscape, bboxMarginMeters: 50, generateTopoOnlyModel: false);
             }
 
 
             // Disconnected graph
-            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
-            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), dataSet: DEMDataSet.NASADEM);
+            await RunExcelExportAsync(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "small", "disconnected.TRO"), dataSet: DEMDataSet.NASADEM);
+            await RunExcelExportAsync(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), dataSet: DEMDataSet.NASADEM);
 
 
-            Run_ExcelExport(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
+            await RunExcelExportAsync(visualTopoFile: Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), dataSet: DEMDataSet.NASADEM);
 
-            Run_3DModelGeneration();
+            await Run3DModelGenerationAsync();
 
         }
 
@@ -71,7 +72,7 @@ namespace SampleApp
         /// </summary>
         /// <param name="visualTopoFile"></param>
         /// <param name="dataSet"></param>
-        private void Run_ExcelExport(string visualTopoFile, DEMDataSet dataSet)
+        private async Task RunExcelExportAsync(string visualTopoFile, DEMDataSet dataSet)
         {
             try
             {
@@ -94,7 +95,7 @@ namespace SampleApp
                                         .Translate(model.EntryPoint.Longitude, model.EntryPoint.Latitude, model.EntryPoint.Elevation ?? 0) // absolute coords
                                         .Pad(50) // margin around model
                                         .ReprojectTo(model.SRID, dataSet.SRID);
-                _elevationService.DownloadMissingFiles(dataSet, bbox);
+                await _elevationService.DownloadMissingFilesAsync(dataSet, bbox);
 
                 timeLog.LogTime("Terrain height map");
 
@@ -107,14 +108,14 @@ namespace SampleApp
 
                 // CSV
                 string csvFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".csv"));
-                File.WriteAllBytes(csvFileName, _visualTopoService.ExportToCsv(model, "\t").ToArray());
+                await File.WriteAllBytesAsync(csvFileName, _visualTopoService.ExportToCsv(model, "\t").ToArray());
 
                 // Excel
                 string xlsFileName = Path.GetFileName(Path.ChangeExtension(visualTopoFile, ".xlsx"));
 
                 using (MemoryStream ms = _visualTopoService.ExportToExcel(model, autoFitColumns: false))
                 {
-                    File.WriteAllBytes(xlsFileName, ms.ToArray());
+                    await File.WriteAllBytesAsync(xlsFileName, ms.ToArray());
                 }
 
                 timeLog.LogTime("Cavity points elevation");
@@ -128,31 +129,31 @@ namespace SampleApp
             }
         }
 
-        private void Run_3DModelGeneration()
+        private async Task Run3DModelGenerationAsync()
         {
 
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 25, generateTopoOnlyModel: true, zFactor: 2f);
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true, zFactor: 1f);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "topo asperge avec ruisseau.TRO"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 500, generateTopoOnlyModel: true, zFactor: 1f);
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 3 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 3 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 4 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "Test 4 arcs.tro"), imageryProvider: null, bboxMarginMeters: 50, generateTopoOnlyModel: true);
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), imageryProvider: ImageryProvider.OpenTopoMap, bboxMarginMeters: 50);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "LA SALLE.TRO"), imageryProvider: ImageryProvider.OpenTopoMap, bboxMarginMeters: 50);
 
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 2f);
 
             // Single file
-            Run_3DModelGeneration(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
+            await Run3DModelGenerationAsync(Path.Combine("SampleData", "VisualTopo", "small", "0 bifurc", "TestSections.tro"), imageryProvider: ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true, zFactor: 1f);
 
 
             // All files in given directory
             foreach (var file in Directory.EnumerateFileSystemEntries(Path.Combine("SampleData", "VisualTopo"), "*.tro", SearchOption.AllDirectories))
             {
                 _logger.LogInformation("Generating model for file " + file);
-                Run_3DModelGeneration(file, ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true);
+                await Run3DModelGenerationAsync(file, ImageryProvider.MapBoxSatelliteStreet, bboxMarginMeters: 50, generateTopoOnlyModel: true);
             }
         }
 
@@ -163,7 +164,7 @@ namespace SampleApp
         /// <param name="vtopoFile">VisualTopo .TRO file</param>
         /// <param name="imageryProvider">Imagery provider for terrain texture. Set to null for untextured model</param>
         /// <param name="bboxMarginMeters">Terrain margin (meters) around VisualTopo model</param>
-        public void Run_3DModelGeneration(string vtopoFile, ImageryProvider imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
+        public async Task Run3DModelGenerationAsync(string vtopoFile, ImageryProvider imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
         {
             try
             {
@@ -203,7 +204,7 @@ namespace SampleApp
                                         .ReprojectTo(model.SRID, dataset.SRID); // DEM coords
                                                                                 // Get height map
                                                                                 // Note that ref Bbox means that the bbox will be adjusted to match DEM data
-                var heightMap = _elevationService.GetHeightMap(ref bbox, dataset, downloadMissingFiles: true);
+                var heightMap = await _elevationService.GetHeightMapAsync(bbox, dataset, downloadMissingFiles: true);
                 var bboxTerrainSpace = bbox.ReprojectTo(dataset.SRID, outputSRID); // terrain coords
                 timeLog.LogTime("Terrain height map");
 
@@ -290,7 +291,7 @@ namespace SampleApp
                 PBRTexture pbrTexture = null;
                 if (imageryProvider != null)
                 {
-                    TileRange tiles = _imageryService.DownloadTiles(bbox, imageryProvider, TEXTURE_TILES);
+                    TileRange tiles = await _imageryService.DownloadTilesAsync(bbox, imageryProvider, TEXTURE_TILES);
                     string fileName = Path.Combine(outputDir, "Texture.jpg");
                     timeLog.LogTime("Imagery download");
 

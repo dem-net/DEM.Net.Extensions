@@ -72,7 +72,7 @@ namespace SampleApp
         }
 
 
-        public void Run()
+        public async Task RunAsync()
         {
             _logger.LogInformation("OnStarted has been called.");
 
@@ -80,20 +80,20 @@ namespace SampleApp
             {
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
                 {
-                    services.GetService<VisualTopoSample>().Run();
+                    await services.GetService<VisualTopoSample>().RunAsync();
                 }
 
 
                 //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
                 //{
-                //    services.GetService<HelladicSample>().Run();
+                //    await services.GetService<HelladicSample>().RunAsync();
                 //}
 
                 Debugger.Break();
 
                 //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchfabSample), _logger))
                 //{
-                //    services.GetService<SketchfabSample>().Run();
+                //    await services.GetService<SketchfabSample>().RunAsync();
                 //}
 
                 //Debugger.Break();

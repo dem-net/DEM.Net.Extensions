@@ -68,7 +68,7 @@ namespace SampleApp
             ConfigureServices(config, serviceCollection);
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<SampleApplication>().Run();
+            await serviceProvider.GetRequiredService<SampleApplication>().RunAsync();
 
         }
 

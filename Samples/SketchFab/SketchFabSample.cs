@@ -1,4 +1,5 @@
-﻿using DEM.Net.Core.Configuration;
+﻿using System.Threading.Tasks;
+using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sketchfab;
@@ -28,10 +29,10 @@ namespace SampleApp
             }
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
 
-            List<Collection> collections = _sketchFabApi.GetMyCollectionsAsync(_sketchFabToken, TokenType.Token).GetAwaiter().GetResult();
+            List<Collection> collections = await _sketchFabApi.GetMyCollectionsAsync(_sketchFabToken, TokenType.Token);
 
             if (collections.Any(c => c.name == "Helladic Tests"))
             {
@@ -51,7 +52,7 @@ namespace SampleApp
             };
 
 
-            var uuid = _sketchFabApi.UploadModelAsync(upload, _sketchFabToken).GetAwaiter().GetResult();
+            var uuid = await _sketchFabApi.UploadModelAsync(upload, _sketchFabToken);
         }
     }
 }

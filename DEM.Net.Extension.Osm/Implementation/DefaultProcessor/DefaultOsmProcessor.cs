@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using DEM.Net.Extension.Osm.Highways;
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.Options;
 using DEM.Net.Extension.Osm.Railway;
@@ -63,7 +65,7 @@ namespace DEM.Net.Extension.Osm
 
             return processors;
         }
-        public ModelRoot Run(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
+        public async Task<ModelRoot> RunAsync(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null, CancellationToken cancellationToken = default)
         {
 
             model = model ?? _gltfService.CreateNewModel();
@@ -78,7 +80,7 @@ namespace DEM.Net.Extension.Osm
             {
                 p.Init(_elevationService, _gltfService, _meshService, osmDataService, _logger);
 
-                model = p.Run(model, bbox, dataSet, downloadMissingFiles);
+                model = await p.RunAsync(model, bbox, dataSet, downloadMissingFiles, cancellationToken).ConfigureAwait(false);
             }
 
             return model;

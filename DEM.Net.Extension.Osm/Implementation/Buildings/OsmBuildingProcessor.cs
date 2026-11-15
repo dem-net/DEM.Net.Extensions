@@ -69,10 +69,9 @@ namespace DEM.Net.Extension.Osm.Buildings
                     .SelectMany(b => b.Points);
 
                 // Compute elevations if requested
-                IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints
+                IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints // files downloaded by RunAsync
                                                                         , dataSet
-                                                                        , behavior: NoDataBehavior.SetToZero
-                                                                        , downloadMissingFiles: downloadMissingFiles)
+                                                                        , behavior: NoDataBehavior.SetToZero)
                                                                     : allBuildingPoints;
 
                 geoPoints = Transform?.TransformPoints(geoPoints);
