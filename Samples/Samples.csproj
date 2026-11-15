@@ -16,11 +16,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.14" />
-    <PackageReference Include="SketchfabApi.Net" Version="1.0.4" />
-    <PackageReference Include="System.Security.Permissions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <PackageReference Include="SketchfabApi.Net" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />

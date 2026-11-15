@@ -14,6 +14,8 @@ using DEM.Net.glTF.SharpglTF;
 
 namespace DEM.Net.Extension.Tests
 {
+    // Overpass queries and DEM / imagery downloads: excluded from CI (dotnet test --filter Category!=Network)
+    [Trait("Category", "Network")]
     public class OsmTests : IClassFixture<DemNetFixture>
     {
 

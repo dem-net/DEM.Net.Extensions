@@ -1,0 +1,48 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # The extensions reference DEM.Net.Core / DEM.Net.glTF as projects (../DEM.Net): check both repos out side by side
+    - uses: actions/checkout@v4
+      with:
+        path: DEM.Net.Extensions
+    - uses: actions/checkout@v4
+      with:
+        repository: dem-net/DEM.Net
+        ref: master
+        path: DEM.Net
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: DEM.Net.Extensions/global.json
+    # The test project builds Osm and VisualTopo. The solution also lists Samples and sibling repos
+    # (OpenStreetMapDotNet, SketchFabApi.Net) that are not part of the packages.
+    - name: Build
+      working-directory: DEM.Net.Extensions
+      run: dotnet build DEM.Net.Extension.Tests
+    # Tests tagged [Trait("Category", "Network")] query Overpass or download datasets: run them locally
+    - name: Test (offline)
+      working-directory: DEM.Net.Extensions
+      run: dotnet test DEM.Net.Extension.Tests --no-build --filter "Category!=Network" --verbosity normal
+      env:
+        DEMNetOptions__LocalDirectory: ${{ runner.temp }}/DEM.Net
+    - name: Check for vulnerable packages
+      working-directory: DEM.Net.Extensions
+      run: |
+        dotnet list DEM.Net.Extension.Tests package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+        if grep -q "has the following vulnerable packages" vulnerable.txt; then
+          echo "::error::Vulnerable NuGet packages found (see above)"
+          exit 1
+        fi

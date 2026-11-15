@@ -70,8 +70,8 @@
     <None Include="DEMnet_64.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.1" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.403">
+    <PackageReference Include="ClosedXML" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
