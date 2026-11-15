@@ -105,6 +105,19 @@ namespace DEM.Net.Extension.Osm
 #endif
         }
 
+        /// <summary>
+        /// OSM lines are in WGS84, as are the points returned by GetLineGeometryElevation, while <see cref="Transform"/>
+        /// starts from the dataset SRID (Web Mercator for Mapterhorn).
+        /// </summary>
+        protected static IEnumerable<GeoPoint> ToDataSetSrid(IEnumerable<GeoPoint> pointsWgs84, DEMDataSet dataSet)
+        {
+            if (pointsWgs84 == null)
+                return Enumerable.Empty<GeoPoint>();
+            if (dataSet == null || dataSet.SRID == Reprojection.SRID_GEODETIC)
+                return pointsWgs84;
+            return pointsWgs84.ReprojectTo(Reprojection.SRID_GEODETIC, dataSet.SRID);
+        }
+
         protected abstract IEnumerable<T> ComputeModelElevationsAndTransform(IEnumerable<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
 
         protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<T> models);

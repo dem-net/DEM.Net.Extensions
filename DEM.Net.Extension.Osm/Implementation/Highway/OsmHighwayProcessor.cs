@@ -67,13 +67,7 @@ namespace DEM.Net.Extension.Osm.Highways
                     Stopwatch sw = Stopwatch.StartNew();
                     foreach (var model in models)
                     {
-                        IEnumerable<GeoPoint> lineString = model.LineString;
-                        if (dataSet.SRID != 4326)
-                        {
-                            lineString  = lineString.ReprojectTo(4326, dataSet.SRID);
-                        }
-
-                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(lineString, dataSet))
+                        model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
                                              .ToList();
                         pointCount += model.LineString.Count;
 
@@ -95,7 +89,7 @@ namespace DEM.Net.Extension.Osm.Highways
                 {
                     foreach (var model in models)
                     {
-                        model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
+                        model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
                         yield return model;
                     }
                 }
