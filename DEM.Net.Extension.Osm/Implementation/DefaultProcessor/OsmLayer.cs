@@ -10,10 +10,10 @@ namespace DEM.Net.Extension.Osm
         None = 0,
         Buildings = 1,
         Highways = 2,
-        PisteSki = 4,
         Railway = 8,
         Water = 16,
 
-        All = Buildings | Highways | PisteSki,        
+        // 4 was PisteSki (removed with the Overpass API data service): kept free so the other values do not change
+        All = Buildings | Highways,
     }
 }

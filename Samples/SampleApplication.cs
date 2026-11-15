@@ -62,12 +62,10 @@ namespace SampleApp
         }
         internal static void RegisterSamples(IServiceCollection services)
         {
-            services.AddScoped<OsmExtensionSample>()
-                    .AddScoped<HelladicSample>()
+            services.AddScoped<HelladicSample>()
                     .AddScoped<Sketchfab.SketchfabApi>()
                     .AddScoped<SketchfabSample>()
-                    .AddScoped<VisualTopoSample>()
-                    .AddScoped<HighestPointFinder>();
+                    .AddScoped<VisualTopoSample>();
             // .. more samples here
 
             services.AddScoped<SampleApplication>();
@@ -80,18 +78,10 @@ namespace SampleApp
 
             try
             {
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
-                //{
-                //    services.GetService<OsmExtensionSample>().Run();
-                //}
                 using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
                 {
                     services.GetService<VisualTopoSample>().Run();
                 }
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HighestPointFinder), _logger))
-                //{
-                //    services.GetService<HighestPointFinder>().Run();
-                //}
 
 
                 //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
@@ -107,14 +97,6 @@ namespace SampleApp
                 //}
 
                 //Debugger.Break();
-
-
-
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(OsmExtensionSample), _logger))
-                //{
-                //    services.GetService<OsmExtensionSample>().Run();
-                //    if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
-                //}
 
             }
             catch (Exception ex)

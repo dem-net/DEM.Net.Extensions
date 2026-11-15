@@ -74,15 +74,13 @@ namespace DEM.Net.Extension.Osm
         private readonly ILogger<PMTilesDataService> _logger;
         private readonly PMTilesReaderProvider _readerProvider;
         private readonly OsmElevationOptions _options;
-        private readonly Func<OverpassAPIDataService> _overpassFallback;
 
         public PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReaderProvider readerProvider,
-            IOptions<OsmElevationOptions> options, Func<OverpassAPIDataService> overpassFallback)
+            IOptions<OsmElevationOptions> options)
         {
             _logger = logger;
             _readerProvider = readerProvider;
             _options = options.Value;
-            _overpassFallback = overpassFallback;
         }
 
         public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
@@ -90,11 +88,6 @@ namespace DEM.Net.Extension.Osm
             var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
             if (mapping == null)
             {
-                if (_options.PMTilesFallbackToOverpass)
-                {
-                    _logger.LogInformation("Layer {Layer} is not in the Protomaps schema, falling back to Overpass API.", filter?.FilterIdentifier);
-                    return _overpassFallback().GetOsmDataAsGeoJson(bbox, filter);
-                }
                 _logger.LogWarning("Layer {Layer} is not in the Protomaps schema, no data returned.", filter?.FilterIdentifier);
                 return new List<IFeature>();
             }
@@ -111,9 +104,9 @@ namespace DEM.Net.Extension.Osm
         {
             var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
             if (mapping == null)
-                return _options.PMTilesFallbackToOverpass ? _overpassFallback().GetOsmDataCount(bbox, filter) : 0;
+                return 0;
 
-            // Same scale as OverpassAPIDataService (node count * 2) so generation estimates stay comparable
+            // Node count * 2, the scale of the former Overpass API service, which the size estimates were calibrated with
             return CountVertices(bbox, mapping).Vertices * 2;
         }
 
@@ -121,7 +114,7 @@ namespace DEM.Net.Extension.Osm
         {
             var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
             if (mapping == null)
-                return _options.PMTilesFallbackToOverpass ? ((IOsmDataService)_overpassFallback()).GetOsmDataStats(bbox, filter) : new OsmDataStats(0, 0);
+                return new OsmDataStats(0, 0);
 
             using (new TimeSpanBlock(nameof(GetOsmDataStats), _logger, LogLevel.Debug))
                 return CountVertices(bbox, mapping);

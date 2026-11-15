@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using DEM.Net.glTF.SharpglTF;
 using SharpGLTF.Schema2;
 using System.Numerics;
-using DEM.Net.Extension.Osm.Model;
 
 namespace DEM.Net.Extension.Osm.Buildings
 {
