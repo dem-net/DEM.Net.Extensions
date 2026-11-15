@@ -43,7 +43,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 {
                     foreach (var model in models)
                     {
-                        model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                        model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
                                              .ToList();
 
                         yield return model;
@@ -58,7 +58,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                 {
                     foreach (var model in models)
                     {
-                        model.LineString = new List<GeoPoint>(Transform.TransformPoints(model.LineString));
+                        model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
                         yield return model;
                     }
                 }
