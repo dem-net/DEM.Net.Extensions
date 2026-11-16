@@ -176,14 +176,13 @@ namespace DEM.Net.Extension.VisualTopo
         public void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
         {
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-            model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
+            model.EntryPoint = model.EntryPoint with { Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0 };
 
             foreach (var set in model.Sets.Where(s => s.Data.First().GeoPointLocal != null))
             {
                 VisualTopoData setStartData = set.Data.First(d => d.GeoPointLocal != null);
-                GeoPoint dataPoint = setStartData.GeoPointLocal.Clone();
-                dataPoint.Longitude += model.EntryPoint.Longitude;
-                dataPoint.Latitude += model.EntryPoint.Latitude;
+                GeoPoint local = setStartData.GeoPointLocal.Point;
+                GeoPoint dataPoint = local with { Longitude = local.Longitude + model.EntryPoint.Longitude, Latitude = local.Latitude + model.EntryPoint.Latitude };
                 var setStartPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
                 setStartData.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
             }
@@ -191,13 +190,12 @@ namespace DEM.Net.Extension.VisualTopo
         public void ComputeFullCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
         {
             var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-            model.EntryPoint.Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0;
+            model.EntryPoint = model.EntryPoint with { Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0 };
 
             foreach (var data in model.Graph.AllNodes.Where(n => n.Model.GeoPointLocal != null).Select(n => n.Model))
             {
-                GeoPoint dataPoint = data.GeoPointLocal.Clone();
-                dataPoint.Longitude += model.EntryPoint.Longitude;
-                dataPoint.Latitude += model.EntryPoint.Latitude;
+                GeoPoint local = data.GeoPointLocal.Point;
+                GeoPoint dataPoint = local with { Longitude = local.Longitude + model.EntryPoint.Longitude, Latitude = local.Latitude + model.EntryPoint.Latitude };
                 var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
 
                 data.GeoPointGlobal_ProjectedCoords = dataPoint;

@@ -260,7 +260,7 @@ namespace SampleApp
                         // Add line to model
                         gltfModel = _gltfService.AddLine(gltfModel
                                                         , string.Concat("GPX", i++)     // name of 3D node
-                                                        , TransformLine(line)               // call transform function
+                                                        , TransformLine(line.Select(p => p.Point)) // call transform function
                                                         , color: VectorsExtensions.CreateColor(255, 0, 0, 128)
                                                         , lineWidth);
                     }
@@ -297,7 +297,7 @@ namespace SampleApp
 
                     Console.WriteLine("Construct texture...");
                     //TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
-                    var topoTexture = model.Topology3D.SelectMany(l => l).Translate(model.EntryPoint).ReprojectTo(model.SRID, 4326);
+                    var topoTexture = model.Topology3D.SelectMany(l => l).Select(p => p.Point).Translate(model.EntryPoint).ReprojectTo(model.SRID, 4326);
                     TextureInfo texInfo = _imageryService.ConstructTextureWithGpxTrack(tiles, bbox, fileName, TextureImageFormat.image_jpeg
                         , topoTexture, false);
 
