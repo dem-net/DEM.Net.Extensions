@@ -58,20 +58,18 @@ public class OsmHighwayProcessor(GeoTransformPipeline transform, string highways
         using TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug);
         if (computeElevations)
         {
-            int i = 0;
-            long pointCount = 0;
+            var roads = models as IReadOnlyList<HighwayModel> ?? [.. models];
             Stopwatch sw = Stopwatch.StartNew();
-            foreach (var model in models)
+            var lines = GetLinesElevation(roads, m => m.LineString, dataSet);
+            long pointCount = 0;
+            for (int i = 0; i < roads.Count; i++)
             {
-                var points = (_elevationService.GetLineGeometryElevation(model.LineString, dataSet) ?? Enumerable.Empty<GeoPoint>())
-                    .Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters })
-                    .ToList();
-                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(points, dataSet))];
-                pointCount += model.LineString.Count;
-
-                if (++i % 100 == 0) _logger.LogInformation($"Computed {i:N0} highways elevation ({pointCount:N0} points {pointCount / sw.Elapsed.TotalSeconds:N0} pts/s)...");
-                yield return model;
+                var points = lines[i].Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters });
+                roads[i].LineString = [.. Transform.TransformPoints(ToDataSetSrid(points, dataSet))];
+                pointCount += roads[i].LineString.Count;
+                yield return roads[i];
             }
+            _logger.LogInformation("Computed {Count:N0} highways elevation ({Points:N0} points, {Rate:N0} pts/s)", roads.Count, pointCount, pointCount / Math.Max(sw.Elapsed.TotalSeconds, 1e-3));
         }
         else
         {
