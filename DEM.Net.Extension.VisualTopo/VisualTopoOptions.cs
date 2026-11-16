@@ -23,10 +23,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-namespace DEM.Net.Extension.VisualTopo
+namespace DEM.Net.Extension.VisualTopo;
+
+public class VisualTopoOptions
 {
-    public class VisualTopoOptions
-    {
-        public int MemoryCacheDurationMinutes { get; set; } = 60;
-    }
+    public int MemoryCacheDurationMinutes { get; set; } = 60;
 }

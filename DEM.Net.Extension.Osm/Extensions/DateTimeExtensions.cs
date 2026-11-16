@@ -15,73 +15,54 @@
  * limitations under the License.
  */
 
-#region Usings
 
 using System;
 using System.Text;
 
-#endregion
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+
+/// <summary>
+/// Extensions to the DateTime class.
+/// </summary>
+public static class DateTimeExtensions
 {
 
+
     /// <summary>
-    /// Extensions to the DateTime class.
+    /// The UNIX epoch.
     /// </summary>
-    public static class DateTimeExtensions
+    public static DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0);
+
+    /// <summary>
+    /// Convert the given DateTime object to UNIX timestamp.
+    /// </summary>
+    /// <param name="Date">A DateTime object.</param>
+    /// <returns>The seconds since 1. January 1970</returns>
+    public static Int64 ToUnixTimeStamp(this DateTime DateTime)
     {
-
-        #region UnixEpoch
-
-        /// <summary>
-        /// The UNIX epoch.
-        /// </summary>
-        public static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);
-
-        #endregion
-
-        #region ToUnixTimeStamp(this DateTime)
-
-        /// <summary>
-        /// Convert the given DateTime object to UNIX timestamp.
-        /// </summary>
-        /// <param name="Date">A DateTime object.</param>
-        /// <returns>The seconds since 1. January 1970</returns>
-        public static Int64 ToUnixTimeStamp(this DateTime DateTime)
-        {
-            return (Int64) Math.Round(DateTime.Subtract(UnixEpoch).TotalSeconds);
-        }
-
-        #endregion
-
-        #region FromUnixTimeStamp(this UnixTimestamp)
-
-        /// <summary>
-        /// Convert the given UNIX timestamp to a .NET DateTime object.
-        /// </summary>
-        /// <param name="UnixTimestamp">A UNIX timestamp (seconds since 1. January 1970)</param>
-        public static DateTime FromUnixTimeStamp(this Int64 UnixTimestamp)
-        {
-            return UnixEpoch.AddTicks(UnixTimestamp);
-        }
-
-        #endregion
-
-
-        #region ToIso8601(this DateTime)
-
-        /// <summary>
-        /// Convert the given DateTime object to an ISO 8601 datetime string.
-        /// </summary>
-        /// <param name="DateTime">A DateTime object.</param>
-        /// <returns>The DateTime formated as "yyyy-MM-ddTHH:mm:ss.fff" + "Z"</returns>
-        public static String ToIso8601(this DateTime DateTime)
-        {
-            return DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fff") + "Z";
-        }
-
-        #endregion
-
+        return (Int64) Math.Round(DateTime.Subtract(UnixEpoch).TotalSeconds);
     }
+
+    /// <summary>
+    /// Convert the given UNIX timestamp to a .NET DateTime object.
+    /// </summary>
+    /// <param name="UnixTimestamp">A UNIX timestamp (seconds since 1. January 1970)</param>
+    public static DateTime FromUnixTimeStamp(this Int64 UnixTimestamp)
+    {
+        return UnixEpoch.AddTicks(UnixTimestamp);
+    }
+
+    /// <summary>
+    /// Convert the given DateTime object to an ISO 8601 datetime string.
+    /// </summary>
+    /// <param name="DateTime">A DateTime object.</param>
+    /// <returns>The DateTime formated as "yyyy-MM-ddTHH:mm:ss.fff" + "Z"</returns>
+    public static String ToIso8601(this DateTime DateTime)
+    {
+        return DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fff") + "Z";
+    }
+
 
 }

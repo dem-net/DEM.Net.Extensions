@@ -23,123 +23,118 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using Microsoft.Extensions.Logging;
-using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+public abstract class OsmModelFactory<TModel>(ILogger logger) where TModel : CommonModel
 {
-    public abstract class OsmModelFactory<TModel> where TModel : CommonModel
+    public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
+    internal int _totalPoints;
+    private readonly ILogger _logger = logger;
+
+    /// <summary>
+    /// Parse model tags and return bool indicating if the model is valid.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public abstract bool ParseTags(TModel model);
+    public abstract IEnumerable<TModel> CreateModel(IFeature feature);
+
+    public virtual void RegisterTags(IFeature feature)
     {
-        public OsmModelFactory(ILogger logger)
-        {
-            _logger = logger;
-        }
-        public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
-        internal int _totalPoints;
-        private readonly ILogger _logger;
-
-        /// <summary>
-        /// Parse model tags and return bool indicating if the model is valid.
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        public abstract bool ParseTags(TModel model);
-        public abstract IEnumerable<TModel> CreateModel(IFeature feature);
-
-        public virtual void RegisterTags(IFeature feature)
-        {
-            TagRegistry.RegisterTags(feature);
-        }
-
-        internal string GetTagsReport()
-        {
-            return TagRegistry.GetReport();
-        }
-
-        protected virtual void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
-        {
-            ParseTag<T, T>(model, tagName, t => t, updateAction);
-        }
-        protected virtual void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
-        {
-            if (model.Tags.TryGetValue(tagName, out object val))
-            {
-                try
-                {
-                    Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
-                    Tout outVal = transformFunc(typedVal);
-                    updateAction(outVal);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
-                }
-            }
-        }
-
+        TagRegistry.RegisterTags(feature);
     }
-    public class TagRegistry
+
+    internal string GetTagsReport()
     {
-        const string Separator = "\t";
-        Dictionary<string, int> _tagsOccurences = new Dictionary<string, int>();
-        Dictionary<OgcGeometryType, int> _geomTypes = new Dictionary<OgcGeometryType, int>();
-        Dictionary<string, Dictionary<object, int>> _tagsValuesOccurences = new Dictionary<string, Dictionary<object, int>>();
+        return TagRegistry.GetReport();
+    }
 
-        internal string GetReport()
+    protected virtual void ParseTag<T>(TModel model, string tagName, Action<T> updateAction)
+    {
+        ParseTag<T, T>(model, tagName, t => t, updateAction);
+    }
+    protected virtual void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
+    {
+        if (model.Tags.TryGetValue(tagName, out object val))
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(string.Join(Separator, "GeometryType", "Tag", "Value", "Occurences"));
-            foreach (var occur in _geomTypes.OrderBy(k => k.Key))
+            try
             {
-                sb.AppendLine(string.Join(Separator, occur.Key, "", "", occur.Value));
+                Tin typedVal = (Tin)Convert.ChangeType(val, typeof(Tin), CultureInfo.InvariantCulture);
+                Tout outVal = transformFunc(typedVal);
+                updateAction(outVal);
             }
-            foreach (var occur in _tagsOccurences.OrderBy(k => k.Key))
+            catch (Exception ex)
             {
-                sb.AppendLine(string.Join(Separator, "", occur.Key, "", occur.Value));
+                _logger.LogWarning($"Cannot convert tag value {tagName}, got value {val}. {ex.Message}");
             }
-            foreach (var occur in _tagsValuesOccurences.OrderBy(k => k.Key))
-            {
-                if (occur.Key == "osmid") continue;
-
-                foreach (var valOccur in occur.Value.OrderBy(k => k.Key))
-                {
-                    sb.AppendLine(string.Join(Separator, "", occur.Key, valOccur.Key, valOccur.Value));
-                }
-            }
-            return sb.ToString();
         }
+    }
 
-        internal void RegisterTags(IFeature feature)
+}
+public class TagRegistry
+{
+    const string Separator = "\t";
+    Dictionary<string, int> _tagsOccurences = [];
+    Dictionary<OgcGeometryType, int> _geomTypes = [];
+    Dictionary<string, Dictionary<object, int>> _tagsValuesOccurences = [];
+
+    internal string GetReport()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine(string.Join(Separator, "GeometryType", "Tag", "Value", "Occurences"));
+        foreach (var occur in _geomTypes.OrderBy(k => k.Key))
         {
-            if (!_geomTypes.ContainsKey(feature.Geometry.OgcGeometryType))
+            sb.AppendLine(string.Join(Separator, occur.Key, "", "", occur.Value));
+        }
+        foreach (var occur in _tagsOccurences.OrderBy(k => k.Key))
+        {
+            sb.AppendLine(string.Join(Separator, "", occur.Key, "", occur.Value));
+        }
+        foreach (var occur in _tagsValuesOccurences.OrderBy(k => k.Key))
+        {
+            if (occur.Key == "osmid") continue;
+
+            foreach (var valOccur in occur.Value.OrderBy(k => k.Key))
             {
-                _geomTypes.Add(feature.Geometry.OgcGeometryType, 0);
+                sb.AppendLine(string.Join(Separator, "", occur.Key, valOccur.Key, valOccur.Value));
             }
-            _geomTypes[feature.Geometry.OgcGeometryType]++;
+        }
+        return sb.ToString();
+    }
 
-            foreach (var prop in feature.Attributes as AttributesTable)
+    internal void RegisterTags(IFeature feature)
+    {
+        if (!_geomTypes.ContainsKey(feature.Geometry.OgcGeometryType))
+        {
+            _geomTypes.Add(feature.Geometry.OgcGeometryType, 0);
+        }
+        _geomTypes[feature.Geometry.OgcGeometryType]++;
+
+        foreach (var prop in feature.Attributes as AttributesTable)
+        {
+            if (!_tagsOccurences.ContainsKey(prop.Key))
             {
-                if (!_tagsOccurences.ContainsKey(prop.Key))
-                {
-                    _tagsOccurences.Add(prop.Key, 0);
-                    _tagsValuesOccurences.Add(prop.Key, new Dictionary<object, int>());
-                }
-                if (!_tagsValuesOccurences[prop.Key].ContainsKey(prop.Value))
-                {
-                    _tagsValuesOccurences[prop.Key].Add(prop.Value, 0);
-                }
-
-
-                _tagsOccurences[prop.Key]++;
-                _tagsValuesOccurences[prop.Key][prop.Value]++;
-
+                _tagsOccurences.Add(prop.Key, 0);
+                _tagsValuesOccurences.Add(prop.Key, []);
             }
+            if (!_tagsValuesOccurences[prop.Key].ContainsKey(prop.Value))
+            {
+                _tagsValuesOccurences[prop.Key].Add(prop.Value, 0);
+            }
+
+
+            _tagsOccurences[prop.Key]++;
+            _tagsValuesOccurences[prop.Key][prop.Value]++;
+
         }
     }
 }

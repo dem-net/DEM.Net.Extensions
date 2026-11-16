@@ -1,37 +1,30 @@
-﻿using DEM.Net.Core;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Numerics;
+using DEM.Net.Core;
 
-namespace DEM.Net.Extension.Osm.Highways
+namespace DEM.Net.Extension.Osm.Highways;
+
+public class HighwayModel(List<GeoPoint> lineString) : CommonModel
 {
-    public class HighwayModel : CommonModel
+
+    // layer
+    // aera = yes
+
+    public string Name { get; internal set; }
+    public int? Lanes { get; internal set; }
+    public bool Area { get; internal set; } = false;
+    public bool Tunnel { get; internal set; } = false;
+    public bool Bridge { get; internal set; } = false;
+    public int Layer { get; internal set; } = 0;
+
+    public List<GeoPoint> LineString { get; set; } = lineString;
+
+    public IEnumerable<GeoPoint> Points
     {
-
-        // layer
-        // aera = yes
-
-        public string Name { get; internal set; }
-        public int? Lanes { get; internal set; }
-        public bool Area { get; internal set; } = false;
-        public bool Tunnel { get; internal set; } = false;
-        public bool Bridge { get; internal set; } = false;
-        public int Layer { get; internal set; } = 0;
-
-        public List<GeoPoint> LineString { get; set; }
-
-        public IEnumerable<GeoPoint> Points
+        get
         {
-            get
-            {
-                return LineString;
-            }
+            return LineString;
         }
-        public Vector4 Color { get; internal set; }
-
-        public HighwayModel(List<GeoPoint> lineString)
-        {
-            this.LineString = lineString;
-        }
-
     }
+    public Vector4 Color { get; internal set; }
 }

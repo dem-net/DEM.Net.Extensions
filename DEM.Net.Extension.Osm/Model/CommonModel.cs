@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+public class CommonModel
 {
-    public class CommonModel
-    {
-        public string Id { get; internal set; }
-        public string Type { get; internal set; }
-        public IDictionary<string, object> Tags { get; internal set; }
-    }
+    public string Id { get; internal set; }
+    public string Type { get; internal set; }
+    public IDictionary<string, object> Tags { get; internal set; }
 }

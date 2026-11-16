@@ -1,9 +1,8 @@
-﻿namespace DEM.Net.Extension.Osm.Water
-{
-    internal class WaterDataFilter : IOsmDataSettings
-    {
-        public string FilterIdentifier => "water";
+﻿namespace DEM.Net.Extension.Osm.Water;
 
-        public bool ComputeElevations { get; set; }
-    }
+internal class WaterDataFilter : IOsmDataSettings
+{
+    public string FilterIdentifier => "water";
+
+    public bool ComputeElevations { get; set; }
 }

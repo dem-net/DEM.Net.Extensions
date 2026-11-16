@@ -23,34 +23,30 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using DEM.Net.Core;
 using System.Numerics;
+using DEM.Net.Core;
 
-namespace DEM.Net.Extension.VisualTopo
+namespace DEM.Net.Extension.VisualTopo;
+
+public class VisualTopoData
 {
-    public class VisualTopoData
-    {
-        public string Comment { get; internal set; }
-        public string Entree { get; internal set; }
-        public string Sortie { get; internal set; }
-        public float Longueur { get; internal set; }
-        public float Cap { get; internal set; }
-        public float Pente { get; internal set; }
-        public (float left, float right, float up, float down) CutSection { get; internal set; }
-        public Vector3 VectorLocal { get; internal set; }
-        public GeoPointRays GeoPointLocal { get; internal set; }
-        public GeoPoint? GeoPointGlobal_DEMProjection { get; internal set; }
-        public GeoPoint? GeoPointGlobal_ProjectedCoords { get; internal set; }
-        public double TerrainElevationAbove { get; set; }
-        public double Depth { get; set; }
-        public bool IsRoot { get; internal set; }
-        public VisualTopoSet Set { get; internal set; }
-        public bool IsSectionStart { get; internal set; }
-        public double DistanceFromEntry { get; internal set; }
-        public bool IsDisconnected { get; internal set; } 
-    }
-
-
-
+    public string Comment { get; internal set; }
+    public string Entree { get; internal set; }
+    public string Sortie { get; internal set; }
+    public float Longueur { get; internal set; }
+    public float Cap { get; internal set; }
+    public float Pente { get; internal set; }
+    public (float left, float right, float up, float down) CutSection { get; internal set; }
+    public Vector3 VectorLocal { get; internal set; }
+    public GeoPointRays GeoPointLocal { get; internal set; }
+    public GeoPoint? GeoPointGlobal_DEMProjection { get; internal set; }
+    public GeoPoint? GeoPointGlobal_ProjectedCoords { get; internal set; }
+    public double TerrainElevationAbove { get; set; }
+    public double Depth { get; set; }
+    public bool IsRoot { get; internal set; }
+    public VisualTopoSet Set { get; internal set; }
+    public bool IsSectionStart { get; internal set; }
+    public double DistanceFromEntry { get; internal set; }
+    public bool IsDisconnected { get; internal set; } 
 }
 

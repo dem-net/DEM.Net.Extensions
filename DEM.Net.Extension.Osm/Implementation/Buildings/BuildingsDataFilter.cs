@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+class BuildingsDataFilter : IOsmDataSettings
 {
-    class BuildingsDataFilter : IOsmDataSettings
-    {
-        public string FilterIdentifier => "buildings";
-        public bool ComputeElevations { get; set; }
-    }
+    public string FilterIdentifier => "buildings";
+    public bool ComputeElevations { get; set; }
 }

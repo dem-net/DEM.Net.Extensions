@@ -1,9 +1,8 @@
-﻿namespace DEM.Net.Extension.Osm.Railway
-{
-    internal class RailwayDataFilter : IOsmDataSettings
-    {
-        public string FilterIdentifier => "railway";
+﻿namespace DEM.Net.Extension.Osm.Railway;
 
-        public bool ComputeElevations { get; set; }
-    }
+internal class RailwayDataFilter : IOsmDataSettings
+{
+    public string FilterIdentifier => "railway";
+
+    public bool ComputeElevations { get; set; }
 }

@@ -24,112 +24,111 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using DEM.Net.Core;
-using System.IO;
 using System;
-using Microsoft.Extensions.DependencyInjection;
-using DEM.Net.glTF;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Debug;
-using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Configuration;
-using DEM.Net.Core.Configuration;
+using System.IO;
 using System.Threading.Tasks;
+using DEM.Net.Core;
+using DEM.Net.Core.Configuration;
 using DEM.Net.Extension.Osm;
 using DEM.Net.Extension.VisualTopo;
+using DEM.Net.glTF;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Logging.Debug;
 
-namespace SampleApp
+namespace SampleApp;
+
+
+/// <summary>
+/// Console program entry point. This is boilerplate code for .Net Core Console logging and DI
+/// except for the RegisterSamples() where samples are registered
+/// 
+/// Here we configure logging and services (via dependency injection)
+/// And setup and run the main Application
+/// </summary>
+class Program
 {
 
-    /// <summary>
-    /// Console program entry point. This is boilerplate code for .Net Core Console logging and DI
-    /// except for the RegisterSamples() where samples are registered
-    /// 
-    /// Here we configure logging and services (via dependency injection)
-    /// And setup and run the main Application
-    /// </summary>
-    class Program
+    static async Task Main(string[] args)
     {
 
-        static async Task Main(string[] args)
+        // Load config
+        // Load appsettings.json
+        var config = LoadAppSettings();
+        if (null == config)
         {
-
-            // Load config
-            // Load appsettings.json
-            var config = LoadAppSettings();
-            if (null == config)
-            {
-                Console.WriteLine("Missing or invalid appsettings.json file.");
-                return;
-            }
-
-            // Setting up dependency injection
-            var serviceCollection = new ServiceCollection();
-            ConfigureServices(config, serviceCollection);
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-
-            await serviceProvider.GetRequiredService<SampleApplication>().RunAsync();
-
+            Console.WriteLine("Missing or invalid appsettings.json file.");
+            return;
         }
 
-        private static IConfigurationRoot LoadAppSettings()
-        {
-            try
-            {
+        // Setting up dependency injection
+        var serviceCollection = new ServiceCollection();
+        ConfigureServices(config, serviceCollection);
+        var serviceProvider = serviceCollection.BuildServiceProvider();
 
-                var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false)
-                //.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
-                .AddJsonFile("secrets.json", optional: true, reloadOnChange: false)
-                .Build();
-
-                return config;
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                return null;
-            }
-        }
-
-
-        private static void ConfigureServices(IConfigurationRoot appConfig, IServiceCollection services)
-        {
-            services
-            .AddLogging(config =>
-            {
-                // clear out default configuration
-                config.ClearProviders();
-
-                config.AddConfiguration(appConfig.GetSection("Logging"));
-                config.AddDebug();
-                config.AddSimpleConsole(o =>
-                        {
-                            o.IncludeScopes = false;
-                            o.ColorBehavior= LoggerColorBehavior.Default;
-                        }); // Log to console (colored !)
-            })
-           //.Configure<LoggerFilterOptions>(options =>
-           //{
-           //    options.AddFilter<DebugLoggerProvider>(null /* category*/ , LogLevel.Information /* min level */);
-           //    options.AddFilter<ConsoleLoggerProvider>(null  /* category*/ , LogLevel.Information /* min level */);
-           //    options.AddFilter<ConsoleLoggerProvider>("System.Net.Http.HttpClient", LogLevel.Warning);
-
-           //    // Comment this line to see all internal DEM.Net logs
-           //    //options.AddFilter<ConsoleLoggerProvider>("DEM.Net", LogLevel.Information);
-           //})
-           .Configure<AppSecrets>(appConfig.GetSection(nameof(AppSecrets)))
-           .Configure<DEMNetOptions>(appConfig.GetSection(nameof(DEMNetOptions)))
-           .Configure<OsmElevationOptions>(appConfig.GetSection(nameof(OsmElevationOptions)))
-           .AddDemNetCore()
-           .AddDemNetglTF()
-           .AddDemNetOsmExtension()
-           .AddDemNetVisualTopoExtension();
-
-            SampleApplication.RegisterSamples(services);
-
-
-        }
+        await serviceProvider.GetRequiredService<SampleApplication>().RunAsync();
 
     }
+
+    private static IConfigurationRoot LoadAppSettings()
+    {
+        try
+        {
+
+            var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false)
+            //.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true)
+            .AddJsonFile("secrets.json", optional: true, reloadOnChange: false)
+            .Build();
+
+            return config;
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            return null;
+        }
+    }
+
+
+    private static void ConfigureServices(IConfigurationRoot appConfig, IServiceCollection services)
+    {
+        services
+        .AddLogging(config =>
+        {
+            // clear out default configuration
+            config.ClearProviders();
+
+            config.AddConfiguration(appConfig.GetSection("Logging"));
+            config.AddDebug();
+            config.AddSimpleConsole(o =>
+                    {
+                        o.IncludeScopes = false;
+                        o.ColorBehavior= LoggerColorBehavior.Default;
+                    }); // Log to console (colored !)
+        })
+       //.Configure<LoggerFilterOptions>(options =>
+       //{
+       //    options.AddFilter<DebugLoggerProvider>(null /* category*/ , LogLevel.Information /* min level */);
+       //    options.AddFilter<ConsoleLoggerProvider>(null  /* category*/ , LogLevel.Information /* min level */);
+       //    options.AddFilter<ConsoleLoggerProvider>("System.Net.Http.HttpClient", LogLevel.Warning);
+
+       //    // Comment this line to see all internal DEM.Net logs
+       //    //options.AddFilter<ConsoleLoggerProvider>("DEM.Net", LogLevel.Information);
+       //})
+       .Configure<AppSecrets>(appConfig.GetSection(nameof(AppSecrets)))
+       .Configure<DEMNetOptions>(appConfig.GetSection(nameof(DEMNetOptions)))
+       .Configure<OsmElevationOptions>(appConfig.GetSection(nameof(OsmElevationOptions)))
+       .AddDemNetCore()
+       .AddDemNetglTF()
+       .AddDemNetOsmExtension()
+       .AddDemNetVisualTopoExtension();
+
+        SampleApplication.RegisterSamples(services);
+
+
+    }
+
 }

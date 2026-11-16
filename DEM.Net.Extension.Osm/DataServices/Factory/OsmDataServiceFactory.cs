@@ -2,26 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+public class OsmDataServiceFactory(Func<PMTilesDataService> pmTilesService) : IOsmDataServiceFactory
 {
-    public class OsmDataServiceFactory : IOsmDataServiceFactory
+    private readonly Func<PMTilesDataService> _pmTilesService = pmTilesService;
+
+    public IOsmDataService Create(OsmDataServiceType dataServiceType)
     {
-        private readonly Func<PMTilesDataService> _pmTilesService;
-
-        public OsmDataServiceFactory(Func<PMTilesDataService> pmTilesService)
+        return dataServiceType switch
         {
-            this._pmTilesService = pmTilesService;
-        }
-        public IOsmDataService Create(OsmDataServiceType dataServiceType)
-        {
-            switch (dataServiceType)
-            {
-                case OsmDataServiceType.PMTiles:
-                    return _pmTilesService();
-                default:
-                    throw new NotImplementedException(dataServiceType.ToString());
-            }
-        }
+            OsmDataServiceType.PMTiles => _pmTilesService(),
+            _ => throw new NotImplementedException(dataServiceType.ToString()),
+        };
     }
-
 }

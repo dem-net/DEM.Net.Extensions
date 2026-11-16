@@ -23,47 +23,43 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using DEM.Net.Core;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using DEM.Net.Core.Graph;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using DEM.Net.Core;
+using DEM.Net.Core.Graph;
 
-namespace DEM.Net.Extension.VisualTopo
+namespace DEM.Net.Extension.VisualTopo;
+
+public class VisualTopoModel
 {
-    public class VisualTopoModel
+    public string Name { get; internal set; }
+    public GeoPoint EntryPoint { get; internal set; }
+    public string EntryPointProjectionCode { get; internal set; }
+
+    public Graph<VisualTopoData> Graph { get; set; } = new Graph<VisualTopoData>();
+    public List<VisualTopoSet> Sets { get; set; } = [];
+
+    public Dictionary<string, VisualTopoData> GlobalPosPerSortie { get; internal set; }
+    public string Author { get; internal set; }
+    public bool TopoRobot { get; internal set; }
+    public Vector4 DefaultColor { get; internal set; }
+    public string Entree { get; internal set; }
+    public int SRID { get; internal set; }
+
+    public BoundingBox BoundingBox
     {
-        public string Name { get; internal set; }
-        public GeoPoint EntryPoint { get; internal set; }
-        public string EntryPointProjectionCode { get; internal set; }
-
-        public Graph<VisualTopoData> Graph { get; set; } = new Graph<VisualTopoData>();
-        public List<VisualTopoSet> Sets { get; set; } = new List<VisualTopoSet>();
-
-        public Dictionary<string, VisualTopoData> GlobalPosPerSortie { get; internal set; }
-        public string Author { get; internal set; }
-        public bool TopoRobot { get; internal set; }
-        public Vector4 DefaultColor { get; internal set; }
-        public string Entree { get; internal set; }
-        public int SRID { get; internal set; }
-
-        public BoundingBox BoundingBox
+        get
         {
-            get
-            {
-                var bbox = new BoundingBox() { SRID = this.SRID };
-                Graph.AllNodes.ForEach(n => { if (n.Model.GeoPointLocal != null) bbox.UnionWith(n.Model.GeoPointLocal.Longitude, n.Model.GeoPointLocal.Latitude, n.Model.GeoPointLocal.Elevation ?? 0); });
-                return bbox;
-            }
+            var bbox = new BoundingBox() { SRID = this.SRID };
+            Graph.AllNodes.ForEach(n => { if (n.Model.GeoPointLocal != null) bbox.UnionWith(n.Model.GeoPointLocal.Longitude, n.Model.GeoPointLocal.Latitude, n.Model.GeoPointLocal.Elevation ?? 0); });
+            return bbox;
         }
-
-        public List<List<GeoPointRays>> Topology3D { get; internal set; }
-        public TriangulationList<Vector3> TriangulationFull3D { get; internal set; }
     }
 
-
-
+    public List<List<GeoPointRays>> Topology3D { get; internal set; }
+    public TriangulationList<Vector3> TriangulationFull3D { get; internal set; }
 }
 
