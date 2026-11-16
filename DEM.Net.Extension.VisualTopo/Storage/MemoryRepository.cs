@@ -28,59 +28,58 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
-namespace DEM.Net.Extension.VisualTopo.Storage
+namespace DEM.Net.Extension.VisualTopo.Storage;
+
+public class MemoryRepository : IVisualTopoRepository
 {
-    public class MemoryRepository : IVisualTopoRepository
+    private readonly IMemoryCache memoryCache;
+    private readonly VisualTopoOptions options;
+    private const string CacheKey = "_TopoModel";
+
+    public MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptions> options)
     {
-        private readonly IMemoryCache memoryCache;
-        private readonly VisualTopoOptions options;
-        private const string CacheKey = "_TopoModel";
-
-        public MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptions> options)
-        {
-            this.memoryCache = memoryCache;
-            this.options = options.Value;
-        }
-
-        public async Task<Guid> AddModelAsync(VisualTopoModel model)
-        {
-            Guid id = Guid.NewGuid();
-
-            await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
-            {
-                entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
-                return Task.FromResult(model);
-            });
-
-            return id;
-        }
-
-        public Task DeleteModelAsync(Guid id)
-        {
-            memoryCache.Remove(GetKey(id));
-            return Task.CompletedTask;
-        }
-
-        public Task<VisualTopoModel> GetModelAsync(Guid id)
-        {
-            return Task.FromResult(memoryCache.Get<VisualTopoModel>(GetKey(id)));
-        }
-
-        public async Task UpdateModelAsync(VisualTopoModel model, Guid id)
-        {
-            await DeleteModelAsync(id);
-            await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
-            {
-                entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
-                return Task.FromResult(model);
-            });
-        }
-
-        private string GetKey(Guid id)
-        {
-            return string.Concat(id, CacheKey);
-        }
-
-
+        this.memoryCache = memoryCache;
+        this.options = options.Value;
     }
+
+    public async Task<Guid> AddModelAsync(VisualTopoModel model)
+    {
+        Guid id = Guid.NewGuid();
+
+        await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
+        {
+            entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
+            return Task.FromResult(model);
+        });
+
+        return id;
+    }
+
+    public Task DeleteModelAsync(Guid id)
+    {
+        memoryCache.Remove(GetKey(id));
+        return Task.CompletedTask;
+    }
+
+    public Task<VisualTopoModel> GetModelAsync(Guid id)
+    {
+        return Task.FromResult(memoryCache.Get<VisualTopoModel>(GetKey(id)));
+    }
+
+    public async Task UpdateModelAsync(VisualTopoModel model, Guid id)
+    {
+        await DeleteModelAsync(id);
+        await memoryCache.GetOrCreateAsync(GetKey(id), entry =>
+        {
+            entry.SetSlidingExpiration(TimeSpan.FromMinutes(options.MemoryCacheDurationMinutes));
+            return Task.FromResult(model);
+        });
+    }
+
+    private string GetKey(Guid id)
+    {
+        return string.Concat(id, CacheKey);
+    }
+
+
 }

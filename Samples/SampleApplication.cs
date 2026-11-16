@@ -24,88 +24,87 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using DEM.Net.Core;
 using System;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using DEM.Net.Core;
+using DEM.Net.Core.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using DEM.Net.Core.Configuration;
-using System.Threading;
-using System.Threading.Tasks;
 using Sketchfab;
 
-namespace SampleApp
+namespace SampleApp;
+
+/// <summary>
+/// Main sample application
+/// </summary>
+public class SampleApplication
 {
-    /// <summary>
-    /// Main sample application
-    /// </summary>
-    public class SampleApplication
+    private readonly ILogger<SampleApplication> _logger;
+    private readonly RasterService rasterService;
+    private readonly IServiceProvider services;
+    private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
+
+    public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
+        RasterService rasterService)
     {
-        private readonly ILogger<SampleApplication> _logger;
-        private readonly RasterService rasterService;
-        private readonly IServiceProvider services;
-        private const string DATA_FILES_PATH = null; //@"C:\Users\ElevationAPI\AppData\Local"; // Leave to null for default location (Environment.SpecialFolder.LocalApplicationData)
+        _logger = logger;
+        this.rasterService = rasterService;
+        this.services = services;
 
-        public SampleApplication(ILogger<SampleApplication> logger, IServiceProvider services,
-            RasterService rasterService)
+        // Change data dir if not null
+        if (!string.IsNullOrWhiteSpace(DATA_FILES_PATH))
         {
-            _logger = logger;
-            this.rasterService = rasterService;
-            this.services = services;
-
-            // Change data dir if not null
-            if (!string.IsNullOrWhiteSpace(DATA_FILES_PATH))
-            {
-                rasterService.SetLocalDirectory(DATA_FILES_PATH);
-            }
+            rasterService.SetLocalDirectory(DATA_FILES_PATH);
         }
-        internal static void RegisterSamples(IServiceCollection services)
-        {
-            services.AddScoped<HelladicSample>()
-                    .AddScoped<Sketchfab.SketchfabApi>()
-                    .AddScoped<SketchfabSample>()
-                    .AddScoped<VisualTopoSample>();
-            // .. more samples here
+    }
+    internal static void RegisterSamples(IServiceCollection services)
+    {
+        services.AddScoped<HelladicSample>()
+                .AddScoped<Sketchfab.SketchfabApi>()
+                .AddScoped<SketchfabSample>()
+                .AddScoped<VisualTopoSample>();
+        // .. more samples here
 
-            services.AddScoped<SampleApplication>();
+        services.AddScoped<SampleApplication>();
+    }
+
+
+    public async Task RunAsync()
+    {
+        _logger.LogInformation("OnStarted has been called.");
+
+        try
+        {
+            using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
+            {
+                await services.GetService<VisualTopoSample>().RunAsync();
+            }
+
+
+            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
+            //{
+            //    await services.GetService<HelladicSample>().RunAsync();
+            //}
+
+            Debugger.Break();
+
+            //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchfabSample), _logger))
+            //{
+            //    await services.GetService<SketchfabSample>().RunAsync();
+            //}
+
+            //Debugger.Break();
+
         }
-
-
-        public async Task RunAsync()
+        catch (Exception ex)
         {
-            _logger.LogInformation("OnStarted has been called.");
-
-            try
-            {
-                using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
-                {
-                    await services.GetService<VisualTopoSample>().RunAsync();
-                }
-
-
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(HelladicSample), _logger))
-                //{
-                //    await services.GetService<HelladicSample>().RunAsync();
-                //}
-
-                Debugger.Break();
-
-                //using (TimeSpanBlock timer = new TimeSpanBlock(nameof(SketchfabSample), _logger))
-                //{
-                //    await services.GetService<SketchfabSample>().RunAsync();
-                //}
-
-                //Debugger.Break();
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error: {ex.ToString()}");
-
-            }
+            _logger.LogError($"Error: {ex.ToString()}");
 
         }
 
     }
+
 }

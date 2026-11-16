@@ -1,86 +1,85 @@
-﻿using DEM.Net.Core;
-using Microsoft.Extensions.Logging;
-using SharpGLTF.Schema2;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DEM.Net.Core;
+using Microsoft.Extensions.Logging;
+using SharpGLTF.Schema2;
 
-namespace DEM.Net.Extension.Osm.Water
+namespace DEM.Net.Extension.Osm.Water;
+
+internal class OsmWaterProcessor : OsmProcessorStage<WaterModel>
 {
-    internal class OsmWaterProcessor : OsmProcessorStage<WaterModel>
+
+    private const float WaterWidthMeters = 30F;
+
+    public OsmWaterProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
+    {
+        this.DataSettings = new WaterDataFilter();
+    }
+    public override OsmModelFactory<WaterModel> ModelFactory => new WaterValidator(base._logger);
+
+
+    public override IOsmDataSettings DataSettings { get; set; }
+    public override string glTFNodeName => nameof(WaterModel);
+
+    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<WaterModel> models)
     {
 
-        private const float WaterWidthMeters = 30F;
+        gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, getLines(models), VectorsExtensions.CreateColor(102, 178, 255));
 
-        public OsmWaterProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
+        return gltfModel;
+    }
+
+    private IEnumerable<(IEnumerable<GeoPoint> points, float trailWidthMeters)> getLines(IEnumerable<WaterModel> models)
+    {
+        foreach (var m in models)
         {
-            this.DataSettings = new WaterDataFilter();
+            var geom = m.LineString.AsEnumerable();
+            float lineWidth = getWaterWidthMeters(m);
+            yield return (geom, lineWidth);
         }
-        public override OsmModelFactory<WaterModel> ModelFactory => new WaterValidator(base._logger);
+    }
 
-
-        public override IOsmDataSettings DataSettings { get; set; }
-        public override string glTFNodeName => nameof(WaterModel);
-
-        protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<WaterModel> models)
+    private float getWaterWidthMeters(WaterModel m)
+    {
+        switch (m.NaturalType)
         {
-
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, getLines(models), VectorsExtensions.CreateColor(102, 178, 255));
-
-            return gltfModel;
+            default:
+                _logger.LogWarning($"Water natural type not matched: Natural : {m.NaturalType}, waterway : {m.WaterwayType}");
+                return WaterWidthMeters;
         }
+    }
 
-        private IEnumerable<(IEnumerable<GeoPoint> points, float trailWidthMeters)> getLines(IEnumerable<WaterModel> models)
+    protected override IEnumerable<WaterModel> ComputeModelElevationsAndTransform(IEnumerable<WaterModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
+    {
+        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
         {
-            foreach (var m in models)
+            if (computeElevations)
             {
-                var geom = m.LineString.AsEnumerable();
-                float lineWidth = getWaterWidthMeters(m);
-                yield return (geom, lineWidth);
-            }
-        }
-
-        private float getWaterWidthMeters(WaterModel m)
-        {
-            switch (m.NaturalType)
-            {
-                default:
-                    _logger.LogWarning($"Water natural type not matched: Natural : {m.NaturalType}, waterway : {m.WaterwayType}");
-                    return WaterWidthMeters;
-            }
-        }
-
-        protected override IEnumerable<WaterModel> ComputeModelElevationsAndTransform(IEnumerable<WaterModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
-        {
-            using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
-            {
-                if (computeElevations)
+                foreach (var model in models)
                 {
-                    foreach (var model in models)
-                    {
-                        model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
-                                             .ToList();
+                    model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
+                                         .ToList();
 
-                        yield return model;
-                    }
-                    //Parallel.ForEach(models, model =>
-                    //{
-                    //    model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                    //                         .ToList();
-                    //});
+                    yield return model;
                 }
-                else
+                //Parallel.ForEach(models, model =>
+                //{
+                //    model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
+                //                         .ToList();
+                //});
+            }
+            else
+            {
+                foreach (var model in models)
                 {
-                    foreach (var model in models)
-                    {
-                        model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
-                        yield return model;
-                    }
+                    model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
+                    yield return model;
                 }
-
             }
 
         }
+
     }
 }

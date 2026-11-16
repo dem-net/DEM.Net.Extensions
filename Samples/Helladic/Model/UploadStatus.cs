@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SampleApp
+namespace SampleApp;
+
+public enum UploadStatus
 {
-    public enum UploadStatus
-    {
-        None,
-        OK,
-        Error,
-    }
+    None,
+    OK,
+    Error,
 }

@@ -18,45 +18,43 @@
 #region Usings
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 #endregion
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+
+/// <summary>
+/// Extension methods for the IList interface.
+/// </summary>
+public static class IListExtensions
 {
 
     /// <summary>
-    /// Extension methods for the IList interface.
+    /// Reverse and return the given list;
     /// </summary>
-    public static class IListExtensions
+    /// <param name="List">A list of elements.</param>
+    public static IEnumerable<T> ReverseAndReturn<T>(this IList<T> List)
+    {
+        return List.Reverse();
+    }
+
+
+    /// <summary>
+    /// Remove and return first element of the given list;
+    /// </summary>
+    /// <param name="List">A list of elements.</param>
+    public static T RemoveAndReturnFirst<T>(this IList<T> List)
     {
 
-        /// <summary>
-        /// Reverse and return the given list;
-        /// </summary>
-        /// <param name="List">A list of elements.</param>
-        public static IEnumerable<T> ReverseAndReturn<T>(this IList<T> List)
-        {
-            return List.Reverse();
-        }
+        var Element = List.First();
+        List.Remove(Element);
 
-
-        /// <summary>
-        /// Remove and return first element of the given list;
-        /// </summary>
-        /// <param name="List">A list of elements.</param>
-        public static T RemoveAndReturnFirst<T>(this IList<T> List)
-        {
-
-            var Element = List.First();
-            List.Remove(Element);
-
-            return Element;
-
-        }
-
+        return Element;
 
     }
+
 
 }

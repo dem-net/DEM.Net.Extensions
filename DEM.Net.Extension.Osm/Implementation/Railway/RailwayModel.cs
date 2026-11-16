@@ -4,29 +4,28 @@ using System.Numerics;
 using System.Text;
 using DEM.Net.Core;
 
-namespace DEM.Net.Extension.Osm.Railway
+namespace DEM.Net.Extension.Osm.Railway;
+
+class RailwayModel : CommonModel
 {
-    class RailwayModel : CommonModel
+    public List<GeoPoint> LineString { get; internal set; }
+
+    public IEnumerable<GeoPoint> Points
     {
-        public List<GeoPoint> LineString { get; internal set; }
-
-        public IEnumerable<GeoPoint> Points
+        get
         {
-            get
-            {
-                return LineString;
-            }
+            return LineString;
         }
-
-
-        public Vector4 ColorVec4 { get; internal set; }
-        public bool Tunnel { get; internal set; }
-        public bool Bridge { get; internal set; }
-
-        public RailwayModel(List<GeoPoint> lineString)
-        {
-            this.LineString = lineString;
-        }
-
     }
+
+
+    public Vector4 ColorVec4 { get; internal set; }
+    public bool Tunnel { get; internal set; }
+    public bool Bridge { get; internal set; }
+
+    public RailwayModel(List<GeoPoint> lineString)
+    {
+        this.LineString = lineString;
+    }
+
 }

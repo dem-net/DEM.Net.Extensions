@@ -1,37 +1,36 @@
-﻿using System.Linq;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Collections;
+using System.Linq;
 
-namespace DEM.Net.Extension.Osm
+namespace DEM.Net.Extension.Osm;
+
+public class OsmModelList<T> : IEnumerable<T> where T : CommonModel
 {
-    public class OsmModelList<T> : IEnumerable<T> where T : CommonModel
+    public OsmModelList()
     {
-        public OsmModelList()
-        {
-            this.Models = new List<T>();
-        }
-        public OsmModelList(int count)
-        {
-            this.Models = new List<T>(count);
-        }
+        this.Models = new List<T>();
+    }
+    public OsmModelList(int count)
+    {
+        this.Models = new List<T>(count);
+    }
 
-        public int Count => Models?.Count ?? 0;
-        public List<T> Models { get; set; }
-        public int TotalPoints { get; set; }
+    public int Count => Models?.Count ?? 0;
+    public List<T> Models { get; set; }
+    public int TotalPoints { get; set; }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return Models.GetEnumerator();
-        }
+    public IEnumerator<T> GetEnumerator()
+    {
+        return Models.GetEnumerator();
+    }
 
-        internal void Add(T model)
-        {
-            Models.Add(model);
-        }
+    internal void Add(T model)
+    {
+        Models.Add(model);
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return Models.GetEnumerator();
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return Models.GetEnumerator();
     }
 }

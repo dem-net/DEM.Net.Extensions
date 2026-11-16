@@ -26,28 +26,24 @@
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace DEM.Net.Extension.VisualTopo
+namespace DEM.Net.Extension.VisualTopo;
+
+public class VisualTopoSet
 {
-    public class VisualTopoSet
+    public List<VisualTopoData> Data { get; private set; } = new List<VisualTopoData>();
+    public string Name { get; internal set; }
+    public Vector4 Color { get; internal set; }
+
+    public override string ToString()
     {
-        public List<VisualTopoData> Data { get; private set; } = new List<VisualTopoData>();
-        public string Name { get; internal set; }
-        public Vector4 Color { get; internal set; }
-
-        public override string ToString()
-        {
-            return $"Set {Name} with {Data.Count} data entries";
-        }
-
-        internal void Add(VisualTopoData topoData)
-        {
-            Data.Add(topoData);
-            topoData.Set = this;
-            topoData.IsSectionStart = this.Data.Count == 1;
-        }
+        return $"Set {Name} with {Data.Count} data entries";
     }
 
-
-
+    internal void Add(VisualTopoData topoData)
+    {
+        Data.Add(topoData);
+        topoData.Set = this;
+        topoData.IsSectionStart = this.Data.Count == 1;
+    }
 }
 
