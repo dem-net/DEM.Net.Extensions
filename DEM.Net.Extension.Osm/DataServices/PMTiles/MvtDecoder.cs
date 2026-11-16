@@ -13,9 +13,9 @@ internal sealed class MvtLayer
 {
     public string Name;
     public uint Extent = 4096;
-    public readonly List<string> Keys = new List<string>();
-    public readonly List<object> Values = new List<object>();
-    public readonly List<MvtFeature> Features = new List<MvtFeature>();
+    public readonly List<string> Keys = [];
+    public readonly List<object> Values = [];
+    public readonly List<MvtFeature> Features = [];
 
     public Dictionary<string, object> GetProperties(MvtFeature feature)
     {
@@ -34,8 +34,8 @@ internal sealed class MvtFeature
 {
     public ulong? Id;
     public MvtGeometryType Type;
-    public readonly List<uint> Tags = new List<uint>();
-    public readonly List<uint> Geometry = new List<uint>();
+    public readonly List<uint> Tags = [];
+    public readonly List<uint> Geometry = [];
 }
 
 /// <summary>
@@ -160,7 +160,7 @@ internal static class MvtDecoder
                     {
                         cx += ZigZag32(g[i++]);
                         cy += ZigZag32(g[i++]);
-                        current = new List<Coordinate> { new Coordinate(ox + cx * scale, oy + cy * scale) };
+                        current = [new(ox + cx * scale, oy + cy * scale)];
                         parts.Add(current);
                     }
                     break;
@@ -193,9 +193,9 @@ internal static class MvtDecoder
             case MvtGeometryType.LineString:
                 var lines = new List<LineString>(parts.Count);
                 foreach (var part in parts)
-                    if (part.Count >= 2) lines.Add(factory.CreateLineString(part.ToArray()));
+                    if (part.Count >= 2) lines.Add(factory.CreateLineString([.. part]));
                 if (lines.Count == 0) return null;
-                return lines.Count == 1 ? (Geometry)lines[0] : factory.CreateMultiLineString(lines.ToArray());
+                return lines.Count == 1 ? (Geometry)lines[0] : factory.CreateMultiLineString([.. lines]);
 
             case MvtGeometryType.Polygon:
                 return BuildPolygons(parts, factory);
@@ -257,7 +257,7 @@ internal static class MvtDecoder
 
         void Flush()
         {
-            if (shell != null) polygons.Add(factory.CreatePolygon(shell, holes.ToArray()));
+            if (shell != null) polygons.Add(factory.CreatePolygon(shell, [.. holes]));
             shell = null;
             holes.Clear();
         }
@@ -270,7 +270,7 @@ internal static class MvtDecoder
             double area = SignedArea(ring);
             if (area == 0) continue;
 
-            var linearRing = factory.CreateLinearRing(ring.ToArray());
+            var linearRing = factory.CreateLinearRing([.. ring]);
             if (area > 0 || shell == null)
             {
                 Flush();
@@ -281,7 +281,7 @@ internal static class MvtDecoder
         Flush();
 
         if (polygons.Count == 0) return null;
-        return polygons.Count == 1 ? (Geometry)polygons[0] : factory.CreateMultiPolygon(polygons.ToArray());
+        return polygons.Count == 1 ? (Geometry)polygons[0] : factory.CreateMultiPolygon([.. polygons]);
     }
 
     // Relative to the first vertex to keep precision with large world coordinates
@@ -302,24 +302,17 @@ internal static class MvtDecoder
 }
 
 /// <summary>Just enough protobuf wire-format reading for MVT.</summary>
-internal sealed class ProtoReader
+internal sealed class ProtoReader(byte[] buffer, int start, int length)
 {
     public const int WireVarint = 0, Wire64 = 1, WireLengthDelimited = 2, Wire32 = 5;
 
-    private readonly byte[] _buffer;
-    private readonly int _end;
-    private int _pos;
-
-    public ProtoReader(byte[] buffer, int start, int length)
-    {
-        _buffer = buffer;
-        _pos = start;
-        _end = start + length;
-    }
+    private readonly byte[] _buffer = buffer;
+    private readonly int _end = start + length;
+    private int _pos = start;
 
     public bool HasMore => _pos < _end;
 
-    public ProtoReader Clone() => new ProtoReader(_buffer, _pos, _end - _pos);
+    public ProtoReader Clone() => new(_buffer, _pos, _end - _pos);
 
     public ulong ReadVarint()
     {

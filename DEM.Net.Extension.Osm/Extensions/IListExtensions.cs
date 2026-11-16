@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-#region Usings
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-#endregion
 
 namespace DEM.Net.Extension.Osm;
 

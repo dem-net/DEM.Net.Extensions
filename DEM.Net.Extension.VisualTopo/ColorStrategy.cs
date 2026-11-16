@@ -18,14 +18,9 @@ internal class ColorFromModelCalculation : IColorCalculator
 {
     public Vector4 GetColor(VisualTopoData currentNode, Vector3 position) => currentNode.Set.Color;
 }
-internal class ColorFromDepthCalculation : IColorCalculator
+internal class ColorFromDepthCalculation(VisualTopoModel model) : IColorCalculator
 {
-    private readonly float _maxDepth;
-
-    public ColorFromDepthCalculation(VisualTopoModel model)
-    {
-        _maxDepth = model.Graph.AllNodes.Min(n => n.Model.VectorLocal.Z);
-    }
+    private readonly float _maxDepth = model.Graph.AllNodes.Min(n => n.Model.VectorLocal.Z);
 
     public Vector4 GetColor(VisualTopoData currentNode, Vector3 position)
     {

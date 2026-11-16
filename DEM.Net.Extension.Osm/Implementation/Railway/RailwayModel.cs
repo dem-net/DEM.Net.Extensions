@@ -6,9 +6,9 @@ using DEM.Net.Core;
 
 namespace DEM.Net.Extension.Osm.Railway;
 
-class RailwayModel : CommonModel
+class RailwayModel(List<GeoPoint> lineString) : CommonModel
 {
-    public List<GeoPoint> LineString { get; internal set; }
+    public List<GeoPoint> LineString { get; internal set; } = lineString;
 
     public IEnumerable<GeoPoint> Points
     {
@@ -22,10 +22,4 @@ class RailwayModel : CommonModel
     public Vector4 ColorVec4 { get; internal set; }
     public bool Tunnel { get; internal set; }
     public bool Bridge { get; internal set; }
-
-    public RailwayModel(List<GeoPoint> lineString)
-    {
-        this.LineString = lineString;
-    }
-
 }

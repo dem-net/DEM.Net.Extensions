@@ -164,7 +164,6 @@ public class PMTilesTests
         finally { File.Delete(path); }
     }
 
-    #region Helpers
 
     private static PMTilesDataService CreateService(string path, int maxTiles = 2500)
     {
@@ -182,12 +181,11 @@ public class PMTilesTests
     private static double TileLat(double y) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * y / (1 << Z)))) * 180d / Math.PI;
 
     // Inside both tiles, a bit away from the outer borders
-    private static BoundingBox TestBbox() => new BoundingBox(TileLon(TX + 0.05), TileLon(TX + 1.95), TileLat(TY + 0.95), TileLat(TY + 0.05));
+    private static BoundingBox TestBbox() => new(TileLon(TX + 0.05), TileLon(TX + 1.95), TileLat(TY + 0.95), TileLat(TY + 0.05));
 
-    private sealed class TestFilter : IOsmDataSettings
+    private sealed class TestFilter(string id) : IOsmDataSettings
     {
-        public TestFilter(string id) => FilterIdentifier = id;
-        public string FilterIdentifier { get; }
+        public string FilterIdentifier { get; } = id;
         public bool ComputeElevations { get; set; }
     }
 
@@ -220,12 +218,12 @@ public class PMTilesTests
             tileData.Write(t.Data);
         }
 
-        byte[] leaf = Array.Empty<byte>();
+        byte[] leaf = [];
         byte[] root;
         if (useLeafDirectory)
         {
             leaf = Gzip(EncodeDirectory(tileEntries));
-            root = Gzip(EncodeDirectory(new List<(ulong, ulong, ulong, ulong)> { (tiles[0].Id, 0, (ulong)leaf.Length, 0) }));
+            root = Gzip(EncodeDirectory([(tiles[0].Id, 0, (ulong)leaf.Length, 0)]));
         }
         else root = Gzip(EncodeDirectory(tileEntries));
 
@@ -284,7 +282,8 @@ public class PMTilesTests
     }
 
     private static TestFeature Feature(int type, List<uint> geometry, params (string, object)[] props)
-        => new TestFeature { Type = type, Geometry = geometry, Props = props };
+        => new()
+        { Type = type, Geometry = geometry, Props = props };
 
     private static (string Name, TestFeature[] Features) Layer(string name, params TestFeature[] features) => (name, features);
 
@@ -378,5 +377,4 @@ public class PMTilesTests
         WriteBytes(s, field, ms.ToArray());
     }
 
-    #endregion
 }

@@ -4,7 +4,7 @@ using DEM.Net.Core;
 
 namespace DEM.Net.Extension.Osm.Highways;
 
-public class HighwayModel : CommonModel
+public class HighwayModel(List<GeoPoint> lineString) : CommonModel
 {
 
     // layer
@@ -17,7 +17,7 @@ public class HighwayModel : CommonModel
     public bool Bridge { get; internal set; } = false;
     public int Layer { get; internal set; } = 0;
 
-    public List<GeoPoint> LineString { get; set; }
+    public List<GeoPoint> LineString { get; set; } = lineString;
 
     public IEnumerable<GeoPoint> Points
     {
@@ -27,10 +27,4 @@ public class HighwayModel : CommonModel
         }
     }
     public Vector4 Color { get; internal set; }
-
-    public HighwayModel(List<GeoPoint> lineString)
-    {
-        this.LineString = lineString;
-    }
-
 }

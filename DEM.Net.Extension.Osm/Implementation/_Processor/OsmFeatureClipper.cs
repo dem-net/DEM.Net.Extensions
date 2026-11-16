@@ -66,7 +66,7 @@ public static class OsmFeatureClipper
         var polygons = PolygonExtracter.GetPolygons(clipped).Cast<Polygon>().Where(g => !g.IsEmpty && g.Area > 0).ToArray();
         if (source.OgcGeometryType == OgcGeometryType.Polygon)
             return polygons;
-        return polygons.Length == 0 ? Array.Empty<Geometry>() : new Geometry[] { source.Factory.CreateMultiPolygon(polygons) };
+        return polygons.Length == 0 ? Array.Empty<Geometry>() : [source.Factory.CreateMultiPolygon(polygons)];
     }
 
     private static Geometry Intersection(Geometry geom, Geometry clip)

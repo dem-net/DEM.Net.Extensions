@@ -18,29 +18,19 @@ namespace SampleApp;
 /// VisualTopo integration
 /// Goal: generate 3D model from visual topo file
 /// </summary>
-class VisualTopoSample
-{
-    private readonly ILogger<VisualTopoSample> _logger;
-    private readonly SharpGltfService _gltfService;
-    private readonly MeshService _meshService;
-    private readonly ImageryService _imageryService;
-    private readonly VisualTopoService _visualTopoService;
-    private readonly ElevationService _elevationService;
-
-    public VisualTopoSample(ILogger<VisualTopoSample> logger
+class VisualTopoSample(ILogger<VisualTopoSample> logger
             , SharpGltfService gltfService
             , MeshService meshService
             , ElevationService elevationService
             , ImageryService imageryService
             , VisualTopoService visualTopoService)
-    {
-        _logger = logger;
-        _meshService = meshService;
-        _gltfService = gltfService;
-        _elevationService = elevationService;
-        _imageryService = imageryService;
-        _visualTopoService = visualTopoService;
-    }
+{
+    private readonly ILogger<VisualTopoSample> _logger = logger;
+    private readonly SharpGltfService _gltfService = gltfService;
+    private readonly MeshService _meshService = meshService;
+    private readonly ImageryService _imageryService = imageryService;
+    private readonly VisualTopoService _visualTopoService = visualTopoService;
+    private readonly ElevationService _elevationService = elevationService;
 
     public async Task RunAsync()
     {

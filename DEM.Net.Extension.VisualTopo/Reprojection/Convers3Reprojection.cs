@@ -88,30 +88,26 @@ public class Convers3Reprojection
     }
     internal bool NeedsConversApi(string projCode)
     {
-        switch (projCode)
+        return projCode switch
         {
-            case "WGS84":
-            case "WebMercator":
-            case "UTM":
-            case "LT93":
-                return false;
-            case "LT3":
-            case "LT3C":
-                return true;
-            default: throw new NotImplementedException($"Projection not {projCode} not implemented");
+            "WGS84" or "WebMercator" or "UTM" or "LT93" => false,
+            "LT3" or "LT3C" => true,
+            _ => throw new NotImplementedException($"Projection not {projCode} not implemented"),
         };
+        ;
     }
     internal string GetProjectionCodeFromSrid(int srid)
     {
-        switch (srid)
+        return srid switch
         {
-            case 32631: return "UTM";
-            case 27573: return "LT3C"; // HACK: replace LT3 (Lambert III) by LT3C (Lambert III Carto). LT3C files have all LT3 faultly set by legacy software
-            case 4326: return "WGS84";
-            case 3857: return "WebMercator";
-            case 2154: return "LT93";
-            default: throw new NotImplementedException($"Projection not {srid} not implemented in GetProjectionCodeFromSrid");
+            32631 => "UTM",
+            27573 => "LT3C",// HACK: replace LT3 (Lambert III) by LT3C (Lambert III Carto). LT3C files have all LT3 faultly set by legacy software
+            4326 => "WGS84",
+            3857 => "WebMercator",
+            2154 => "LT93",
+            _ => throw new NotImplementedException($"Projection not {srid} not implemented in GetProjectionCodeFromSrid"),
         };
+        ;
     }
 
     internal int GetSridFromProjectionCode(ref string projectionCode, out double multiplicationFactor, out int zone)

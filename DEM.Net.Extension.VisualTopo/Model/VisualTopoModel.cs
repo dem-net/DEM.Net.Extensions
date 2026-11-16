@@ -40,7 +40,7 @@ public class VisualTopoModel
     public string EntryPointProjectionCode { get; internal set; }
 
     public Graph<VisualTopoData> Graph { get; set; } = new Graph<VisualTopoData>();
-    public List<VisualTopoSet> Sets { get; set; } = new List<VisualTopoSet>();
+    public List<VisualTopoSet> Sets { get; set; } = [];
 
     public Dictionary<string, VisualTopoData> GlobalPosPerSortie { get; internal set; }
     public string Author { get; internal set; }

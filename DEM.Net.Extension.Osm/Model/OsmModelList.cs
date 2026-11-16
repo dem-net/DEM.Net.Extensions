@@ -8,7 +8,7 @@ public class OsmModelList<T> : IEnumerable<T> where T : CommonModel
 {
     public OsmModelList()
     {
-        this.Models = new List<T>();
+        this.Models = [];
     }
     public OsmModelList(int count)
     {

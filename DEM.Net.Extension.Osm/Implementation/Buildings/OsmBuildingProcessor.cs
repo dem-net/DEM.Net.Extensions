@@ -12,22 +12,15 @@ using SharpGLTF.Schema2;
 namespace DEM.Net.Extension.Osm.Buildings;
 
 
-public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
+public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : OsmProcessorStage<BuildingModel>(transformPipeline)
 {
 
     const double LevelHeightMeters = 3;
-    private readonly bool withBuildingsColors;
-    private readonly string defaultBuildingsColor;
+    private readonly bool withBuildingsColors = withBuildingsColors;
+    private readonly string defaultBuildingsColor = defaultBuildingsColor;
 
-    public OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : base(transformPipeline)
-    {
-        this.withBuildingsColors = withBuildingsColors;
-        this.defaultBuildingsColor = defaultBuildingsColor;
-        this.DataSettings = new BuildingsDataFilter();
-    }
+    public override IOsmDataSettings DataSettings { get; set; } = new BuildingsDataFilter();
 
-    public override IOsmDataSettings DataSettings { get; set; }
-    
     public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
     public override string glTFNodeName => "Buildings";
 
@@ -52,15 +45,8 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
         List<GeoPoint> transformedPoints = null;
 
         //// georeference
-        //var bbox = new BoundingBox();
-        //foreach (var p in models.Models)
-        //{
-        //    foreach (var pt in p.ExteriorRing)
-        //        bbox.UnionWith(pt.Longitude, pt.Latitude, 0);
-        //}
-        //var bbox3857 = bbox.ReprojectTo(4326, 3857);
 
-        List<BuildingModel> models = modelsEnum.ToList();
+        List<BuildingModel> models = [.. modelsEnum];
         using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
         {
             // Select all points (outer ring) + (inner rings)
@@ -74,7 +60,7 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
                                                                     , behavior: NoDataBehavior.SetToZero)
                                                                 : allBuildingPoints;
 
-            transformedPoints = Transform.TransformPoints(geoPoints).ToList();
+            transformedPoints = [.. Transform.TransformPoints(geoPoints)];
 
             //.ZScale(zScale)
             //.ReprojectGeodeticToCartesian(pointCount)
@@ -102,15 +88,14 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
 
     }
 
-    #region Triangulation
 
     public TriangulationNormals Triangulate(IEnumerable<BuildingModel> buildingModels)
     {
 
-        List<Vector3> positions = new List<Vector3>();
-        List<Vector4> colors = new List<Vector4>();
-        List<int> indices = new List<int>();
-        List<Vector3> normals = new List<Vector3>();
+        List<Vector3> positions = [];
+        List<Vector4> colors = [];
+        List<int> indices = [];
+        List<Vector3> normals = [];
 
         using (TimeSpanBlock timer = new TimeSpanBlock(nameof(Triangulate), _logger, LogLevel.Information))
         {
@@ -134,7 +119,7 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
                 int initialPositionsCount = positions.Count;
 
                 positions.AddRange(positionsVec3);
-                indices.AddRange(triangulation.Indices.Select(i => i + initialPositionsCount).ToList());
+                indices.AddRange([.. triangulation.Indices.Select(i => i + initialPositionsCount)]);
                 colors.AddRange(triangulation.Colors);
                 normals.AddRange(buildingNormals);
             }
@@ -168,9 +153,11 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
 
         // Triangulate wall for each ring
         // (We add floor indices before copying the vertices, they will be duplicated and z shifted later on)
-        List<int> numVerticesPerRing = new List<int>();
-        numVerticesPerRing.Add(building.ExteriorRing.Count - 1);
-        numVerticesPerRing.AddRange(building.InteriorRings.Select(r => r.Count - 1));
+        List<int> numVerticesPerRing =
+        [
+            building.ExteriorRing.Count - 1,
+            .. building.InteriorRings.Select(r => r.Count - 1),
+        ];
         triangulation = this.TriangulateRingsWalls(triangulation, numVerticesPerRing, totalPoints);
 
         // Roof
@@ -199,7 +186,7 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
         Vector4 DefaultColor = Vector4.One;
         bool mustCopyVerticesForRoof = (building.Color ?? DefaultColor) != (building.RoofColor ?? building.Color);
         // assign wall or default color to all vertices
-        triangulation.Colors = triangulation.Positions.Select(p => building.Color ?? DefaultColor).ToList();
+        triangulation.Colors = [.. triangulation.Positions.Select(p => building.Color ?? DefaultColor)];
 
         if (mustCopyVerticesForRoof)
         {
@@ -328,7 +315,4 @@ public class OsmBuildingProcessor : OsmProcessorStage<BuildingModel>
         return building;
     }
 
-    
-
-    #endregion
 }

@@ -8,14 +8,9 @@ using NetTopologySuite.Geometries;
 
 namespace DEM.Net.Extension.Osm.Railway;
 
-internal class RailwayValidator : OsmModelFactory<RailwayModel>
+internal class RailwayValidator(ILogger logger) : OsmModelFactory<RailwayModel>(logger ?? NullLogger<RailwayValidator>.Instance)
 {
-    public RailwayValidator(ILogger logger) : base(logger ?? NullLogger<RailwayValidator>.Instance)
-    {
-        this._logger = logger ?? NullLogger<RailwayValidator>.Instance;
-    }
-
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger ?? NullLogger<RailwayValidator>.Instance;
 
     public override bool ParseTags(RailwayModel model)
     {

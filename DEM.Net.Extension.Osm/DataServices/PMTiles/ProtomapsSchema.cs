@@ -22,17 +22,17 @@ internal sealed class ProtomapsLayerMapping
 
 internal static class ProtomapsSchema
 {
-    private static readonly HashSet<string> NonHighwayRoadKinds = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> NonHighwayRoadKinds = new(StringComparer.Ordinal)
     {
         "rail", "ferry", "aerialway", "transit", "aeroway", "pier"
     };
 
-    private static readonly Dictionary<string, ProtomapsLayerMapping> Mappings = new Dictionary<string, ProtomapsLayerMapping>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, ProtomapsLayerMapping> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         ["buildings"] = new ProtomapsLayerMapping
         {
             FilterIdentifier = "buildings",
-            SourceLayers = new[] { "buildings" },
+            SourceLayers = ["buildings"],
             Accept = (layer, p, type) => type == MvtGeometryType.Polygon,
             ToOsmTags = (p, type) =>
             {
@@ -51,7 +51,7 @@ internal static class ProtomapsSchema
         ["highways"] = new ProtomapsLayerMapping
         {
             FilterIdentifier = "highways",
-            SourceLayers = new[] { "roads" },
+            SourceLayers = ["roads"],
             Accept = (layer, p, type) => type == MvtGeometryType.LineString && Kind(p) is string k && !NonHighwayRoadKinds.Contains(k),
             ToOsmTags = (p, type) =>
             {
@@ -72,7 +72,7 @@ internal static class ProtomapsSchema
         ["railway"] = new ProtomapsLayerMapping
         {
             FilterIdentifier = "railway",
-            SourceLayers = new[] { "roads", "transit" },
+            SourceLayers = ["roads", "transit"],
             Accept = (layer, p, type) => type == MvtGeometryType.LineString && Kind(p) == "rail",
             ToOsmTags = (p, type) =>
             {
@@ -91,7 +91,7 @@ internal static class ProtomapsSchema
         ["water"] = new ProtomapsLayerMapping
         {
             FilterIdentifier = "water",
-            SourceLayers = new[] { "water" },
+            SourceLayers = ["water"],
             Accept = (layer, p, type) => type == MvtGeometryType.Polygon || type == MvtGeometryType.LineString,
             PolygonsAsMultiPolygon = true,
             ToOsmTags = (p, type) =>
@@ -153,14 +153,14 @@ internal static class ProtomapsSchema
 
     private static string HighwayFromKind(string kind)
     {
-        switch (kind)
+        return kind switch
         {
-            case "highway": return "motorway";
-            case "major_road": return "primary";
-            case "medium_road": return "secondary";
-            case "minor_road": return "residential";
-            case "path": return "path";
-            default: return "road";
-        }
+            "highway" => "motorway",
+            "major_road" => "primary",
+            "medium_road" => "secondary",
+            "minor_road" => "residential",
+            "path" => "path",
+            _ => "road",
+        };
     }
 }

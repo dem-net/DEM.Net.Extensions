@@ -16,37 +16,26 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm;
 
-public class DefaultOsmProcessor
-{
-    private readonly IOsmDataServiceFactory _dataServiceFactory;
-    private readonly DEMNetOptions _options;
-    private readonly ElevationService _elevationService;
-    private readonly SharpGltfService _gltfService;
-    private readonly MeshService _meshService;
-    private readonly ILogger<DefaultOsmProcessor> _logger;
-
-    public OsmElevationOptions Settings { get; set; } 
-
-    public DefaultOsmProcessor(ElevationService elevationService
+public class DefaultOsmProcessor(ElevationService elevationService
         , SharpGltfService gltfService
         , MeshService meshService
         , IOsmDataServiceFactory dataServiceFactory
         , IOptions<DEMNetOptions> options
         , IOptions<OsmElevationOptions> osmOptions
         , ILogger<DefaultOsmProcessor> logger)
-    {
-        this._dataServiceFactory = dataServiceFactory;
-        this._options = options.Value;
-        this.Settings = osmOptions.Value;
-        this._elevationService = elevationService;
-        this._gltfService = gltfService;
-        this._meshService = meshService;
-        this._logger = logger;
-    }
+{
+    private readonly IOsmDataServiceFactory _dataServiceFactory = dataServiceFactory;
+    private readonly DEMNetOptions _options = options.Value;
+    private readonly ElevationService _elevationService = elevationService;
+    private readonly SharpGltfService _gltfService = gltfService;
+    private readonly MeshService _meshService = meshService;
+    private readonly ILogger<DefaultOsmProcessor> _logger = logger;
+
+    public OsmElevationOptions Settings { get; set; } = osmOptions.Value;
 
     private List<IOsmProcessor> Build(OsmLayer layers, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
     {
-        List<IOsmProcessor> processors = new List<IOsmProcessor>();
+        List<IOsmProcessor> processors = [];
 
         if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor));
         if (layers.HasFlag(OsmLayer.Railway)) processors.Add(new OsmRailwayProcessor(transform));

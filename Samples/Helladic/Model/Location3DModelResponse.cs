@@ -14,7 +14,7 @@ public class Location3DModelResponse
     public Location3DModelSettings Settings { get; set; }
     public string UploadedFileId { get; set; }
 
-    public List<Attribution> Attributions { get; set; } = new List<Attribution>();
+    public List<Attribution> Attributions { get; set; } = [];
     public TimeSpan Elapsed { get; internal set; }
     public int? NumTiles { get; internal set; }
     public GeoPoint Origin { get; internal set; }

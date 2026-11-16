@@ -30,17 +30,11 @@ using Microsoft.Extensions.Options;
 
 namespace DEM.Net.Extension.VisualTopo.Storage;
 
-public class MemoryRepository : IVisualTopoRepository
+public class MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptions> options) : IVisualTopoRepository
 {
-    private readonly IMemoryCache memoryCache;
-    private readonly VisualTopoOptions options;
+    private readonly IMemoryCache memoryCache = memoryCache;
+    private readonly VisualTopoOptions options = options.Value;
     private const string CacheKey = "_TopoModel";
-
-    public MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptions> options)
-    {
-        this.memoryCache = memoryCache;
-        this.options = options.Value;
-    }
 
     public async Task<Guid> AddModelAsync(VisualTopoModel model)
     {

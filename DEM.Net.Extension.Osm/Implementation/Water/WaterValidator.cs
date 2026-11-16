@@ -8,14 +8,9 @@ using NetTopologySuite.Geometries;
 
 namespace DEM.Net.Extension.Osm.Water;
 
-internal class WaterValidator : OsmModelFactory<WaterModel>
+internal class WaterValidator(ILogger logger) : OsmModelFactory<WaterModel>(logger ?? NullLogger<WaterValidator>.Instance)
 {
-    public WaterValidator(ILogger logger) : base(logger ?? NullLogger<WaterValidator>.Instance)
-    {
-        this._logger = logger ?? NullLogger<WaterValidator>.Instance;
-    }
-
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger ?? NullLogger<WaterValidator>.Instance;
 
     public override bool ParseTags(WaterModel model)
     {

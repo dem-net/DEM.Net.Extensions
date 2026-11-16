@@ -34,15 +34,11 @@ using NetTopologySuite.Geometries;
 
 namespace DEM.Net.Extension.Osm;
 
-public abstract class OsmModelFactory<TModel> where TModel : CommonModel
+public abstract class OsmModelFactory<TModel>(ILogger logger) where TModel : CommonModel
 {
-    public OsmModelFactory(ILogger logger)
-    {
-        _logger = logger;
-    }
     public TagRegistry TagRegistry { get; private set; } = new TagRegistry();
     internal int _totalPoints;
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger;
 
     /// <summary>
     /// Parse model tags and return bool indicating if the model is valid.
@@ -87,9 +83,9 @@ public abstract class OsmModelFactory<TModel> where TModel : CommonModel
 public class TagRegistry
 {
     const string Separator = "\t";
-    Dictionary<string, int> _tagsOccurences = new Dictionary<string, int>();
-    Dictionary<OgcGeometryType, int> _geomTypes = new Dictionary<OgcGeometryType, int>();
-    Dictionary<string, Dictionary<object, int>> _tagsValuesOccurences = new Dictionary<string, Dictionary<object, int>>();
+    Dictionary<string, int> _tagsOccurences = [];
+    Dictionary<OgcGeometryType, int> _geomTypes = [];
+    Dictionary<string, Dictionary<object, int>> _tagsValuesOccurences = [];
 
     internal string GetReport()
     {
@@ -128,7 +124,7 @@ public class TagRegistry
             if (!_tagsOccurences.ContainsKey(prop.Key))
             {
                 _tagsOccurences.Add(prop.Key, 0);
-                _tagsValuesOccurences.Add(prop.Key, new Dictionary<object, int>());
+                _tagsValuesOccurences.Add(prop.Key, []);
             }
             if (!_tagsValuesOccurences[prop.Key].ContainsKey(prop.Value))
             {

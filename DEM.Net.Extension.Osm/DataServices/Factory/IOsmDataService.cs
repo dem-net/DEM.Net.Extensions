@@ -14,5 +14,5 @@ public interface IOsmDataService
     /// filter in the bounding box, for size estimates. The default derives the vertex count from
     /// <see cref="GetOsmDataCount"/> (which returns twice the node count) and leaves the length unknown.
     /// </summary>
-    OsmDataStats GetOsmDataStats(BoundingBox bbox, IOsmDataSettings filter) => new OsmDataStats(GetOsmDataCount(bbox, filter) / 2, null);
+    OsmDataStats GetOsmDataStats(BoundingBox bbox, IOsmDataSettings filter) => new(GetOsmDataCount(bbox, filter) / 2, null);
 }

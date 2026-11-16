@@ -144,26 +144,13 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
 
                     string unit = match.Groups[3].Value;
                     double factor = 1d;
-                    switch (unit.ToLower())
+                    factor = unit.ToLower() switch
                     {
-                        case "ft":
-                        case "feet":
-                        case "foot":
-                        case "'":
-                            factor = 0.3048009193;
-                            break;
-
-                        case "":
-                            factor = 1d;
-                            break;
-                        case "m":
-                        case "meters":
-                            factor = 1d;
-                            break;
-                        default:
-                            throw new NotSupportedException($"Length unit {unit} conversion is not supported.");
-                    }
-
+                        "ft" or "feet" or "foot" or "'" => 0.3048009193,
+                        "" => 1d,
+                        "m" or "meters" => 1d,
+                        _ => throw new NotSupportedException($"Length unit {unit} conversion is not supported."),
+                    };
                     typedVal *= factor;
 
                     updateAction(typedVal);
@@ -191,7 +178,7 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
         List<List<GeoPoint>> interiorRings = null;
         if (poly.NumPoints > 1)
         {
-            interiorRings = new List<List<GeoPoint>>();
+            interiorRings = [];
             foreach (LineString innerRing in poly.InteriorRings)
             {
                 interiorRings.Add(ConvertBuildingLineString(innerRing, ref geoPointIdCounter));

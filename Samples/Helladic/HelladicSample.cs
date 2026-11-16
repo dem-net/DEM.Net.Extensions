@@ -102,80 +102,78 @@ public class HelladicSample
         // Generate and upload
         int sumTilesDownloaded = 0;
 
-        using (StreamWriter sw = new StreamWriter(outFilePath, append: append, Encoding.UTF8))
+        using StreamWriter sw = new StreamWriter(outFilePath, append: append, Encoding.UTF8);
+        await sw.WriteLineAsync(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
+
+        foreach (var request in requests.Values)
         {
-            await sw.WriteLineAsync(string.Join("\t", "pk", "pn", "lat", "lon", "link", "tilecount_running_total", "sketchfab_status", "sketchfab_id"));
-
-            foreach (var request in requests.Values)
+            UploadModelRequest uploadRequest;
+            try
             {
-                UploadModelRequest uploadRequest;
-                try
+                bool modelExists = File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
+                Location3DModelResponse response = null;
+                if (!(modelExists && responses.TryGetValue(request.Id, out response))) // check model file exist
                 {
-                    bool modelExists = File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
-                    Location3DModelResponse response = null;
-                    if (!(modelExists && responses.TryGetValue(request.Id, out response))) // check model file exist
+                    try
                     {
-                        try
-                        {
-                            //===========================
-                            // Generation
-                            response = await Generate3DLocationModelAsync(request, settings);
-                            sumTilesDownloaded += response.NumTiles ?? 0;
-                            response.Id = request.Id;
-                            responses[response.Id] = response;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex.Message);
-                        }
-                        finally
-                        {
-                            _logger.LogInformation("Model generated.");
-                        }
+                        //===========================
+                        // Generation
+                        response = await Generate3DLocationModelAsync(request, settings);
+                        sumTilesDownloaded += response.NumTiles ?? 0;
+                        response.Id = request.Id;
+                        responses[response.Id] = response;
                     }
-
-                    if (response != null && string.IsNullOrWhiteSpace(response.UploadedFileId))
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            //===========================
-                            // Upload
-                            uploadRequest = GetUploadRequest(settings, request);
-                            var sfResponse = await _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken);
-                            response.UploadedFileId = sfResponse.ModelId;
-                            response.UploadStatus = sfResponse.StatusCode == HttpStatusCode.Created ? UploadStatus.OK : UploadStatus.Error;
-                            _logger.LogInformation($"Sketchfab upload ok : {response.UploadedFileId}");
-                        }
-                        catch (Exception ex)
-                        {
-                            response.UploadStatus = UploadStatus.Error;
-                            response.UploadedFileId = null;
-                            _logger.LogError(ex.Message);
-                        }
-                        finally
-                        {
-                            _logger.LogInformation($"Waiting 10s...");
-                            Thread.Sleep(10000); // wait 2 sec to give SkecthFab some breath
-                        }
+                        _logger.LogError(ex.Message);
                     }
-
-                    await sw.WriteLineAsync(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
-                       , request.Description // link
-                       , sumTilesDownloaded // tilecount_running_total
-                       , response.UploadStatus.ToString() // sketchfab_status
-                       , response.UploadedFileId // sketchfab_id
-                        ));
-
-                    await sw.FlushAsync();
-                    if (responses.Count > 0)
-                        _logger.LogInformation($"Reponse: {responses.Last().Value.Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Value.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far, {sumTilesDownloaded} tiles)");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.Message);
+                    finally
+                    {
+                        _logger.LogInformation("Model generated.");
+                    }
                 }
 
+                if (response != null && string.IsNullOrWhiteSpace(response.UploadedFileId))
+                {
+                    try
+                    {
+                        //===========================
+                        // Upload
+                        uploadRequest = GetUploadRequest(settings, request);
+                        var sfResponse = await _sketchFabApi.UploadModelAsync(uploadRequest, _sketchFabToken);
+                        response.UploadedFileId = sfResponse.ModelId;
+                        response.UploadStatus = sfResponse.StatusCode == HttpStatusCode.Created ? UploadStatus.OK : UploadStatus.Error;
+                        _logger.LogInformation($"Sketchfab upload ok : {response.UploadedFileId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        response.UploadStatus = UploadStatus.Error;
+                        response.UploadedFileId = null;
+                        _logger.LogError(ex.Message);
+                    }
+                    finally
+                    {
+                        _logger.LogInformation($"Waiting 10s...");
+                        Thread.Sleep(10000); // wait 2 sec to give SkecthFab some breath
+                    }
+                }
+
+                await sw.WriteLineAsync(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
+                   , request.Description // link
+                   , sumTilesDownloaded // tilecount_running_total
+                   , response.UploadStatus.ToString() // sketchfab_status
+                   , response.UploadedFileId // sketchfab_id
+                    ));
+
+                await sw.FlushAsync();
+                if (responses.Count > 0)
+                    _logger.LogInformation($"Reponse: {responses.Last().Value.Elapsed.TotalSeconds:N3} s, Average: {responses.Average(r => r.Value.Elapsed.TotalSeconds):N3} s ({responses.Count}/{requests.Count} model(s) so far, {sumTilesDownloaded} tiles)");
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
+
         }
 
 
@@ -185,7 +183,7 @@ public class HelladicSample
     #region Input/Output file parsing
     private Dictionary<string, Location3DModelRequest> ParseInputFile(string fileName)
     {
-        Dictionary<string, Location3DModelRequest> requests = new Dictionary<string, Location3DModelRequest>();
+        Dictionary<string, Location3DModelRequest> requests = [];
         using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
         {
             sr.ReadLine(); // skip header
@@ -201,19 +199,17 @@ public class HelladicSample
     }
     private Dictionary<string, Location3DModelResponse> ParseOutputFile(string fileName)
     {
-        Dictionary<string, Location3DModelResponse> results = new Dictionary<string, Location3DModelResponse>();
+        Dictionary<string, Location3DModelResponse> results = [];
         if (File.Exists(fileName))
         {
-            using (StreamReader sr = new StreamReader(fileName, Encoding.UTF8))
+            using StreamReader sr = new StreamReader(fileName, Encoding.UTF8);
+            sr.ReadLine(); // skip header
+            do
             {
-                sr.ReadLine(); // skip header
-                do
-                {
-                    //pk,pn,lat,lon,link
-                    Location3DModelResponse result = ParseResultCsvLine(sr.ReadLine(), '\t');
-                    results.Add(result.Id, result);
-                } while (!sr.EndOfStream);
-            }
+                //pk,pn,lat,lon,link
+                Location3DModelResponse result = ParseResultCsvLine(sr.ReadLine(), '\t');
+                results.Add(result.Id, result);
+            } while (!sr.EndOfStream);
         }
 
         return results;
@@ -282,15 +278,16 @@ public class HelladicSample
 
     private string GenerateDescription(Location3DModelSettings settings, Location3DModelRequest request)
     {
-        List<string> desc = new List<string>();
-        // Location
-        //desc.Add($"[See on Helladic.info](https://www.google.com/maps/@{request.Latitude:N7},{request.Longitude:N7},13z)");
+        List<string> desc =
+        [
+            // Location
+            //desc.Add($"[See on Helladic.info](https://www.google.com/maps/@{request.Latitude:N7},{request.Longitude:N7},13z)");
 
-        // Helladic.info
-        desc.Add($"[Helladic.info Link]({request.Description})");
-
-        desc.AddRange(settings.Attributions.Select(a => $"{a.Subject}: [{a.Text}]({a.Url})"));
-        desc.Add($"Elevation: [{settings.Dataset.Attribution.Text}]({settings.Dataset.Attribution.Url})");
+            // Helladic.info
+            $"[Helladic.info Link]({request.Description})",
+            .. settings.Attributions.Select(a => $"{a.Subject}: [{a.Text}]({a.Url})"),
+            $"Elevation: [{settings.Dataset.Attribution.Text}]({settings.Dataset.Attribution.Url})",
+        ];
         if (settings.OsmBuildings)
         {
             desc.Add("Data: OpenStreetMap and Contributors [www.openstreetmap.org](https://www.openstreetmap.org)");
@@ -308,69 +305,67 @@ public class HelladicSample
         try
         {
             bool imageryFailed = false;
-            using (TimeSpanBlock timer = new TimeSpanBlock($"3D model {request.Id}", _logger))
+            using TimeSpanBlock timer = new TimeSpanBlock($"3D model {request.Id}", _logger);
+            BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
+
+            HeightMap hMap = await _elevationService.GetHeightMapAsync(bbox, settings.Dataset);
+            var transform = new ModelGenerationTransform(bbox, settings.Dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
+
+            response.Attributions.AddRange(settings.Attributions); // will be added to the model
+            response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
+
+
+            PBRTexture pbrTexture = null;
+            if (settings.ImageryProvider != null)
             {
-                BoundingBox bbox = GetBoundingBoxAroundLocation(request.Latitude, request.Longitude, settings.SideSizeKm);
+                response.Attributions.Add(settings.ImageryProvider.Attribution); // will be added to the model
 
-                HeightMap hMap = await _elevationService.GetHeightMapAsync(bbox, settings.Dataset);
-                var transform = new ModelGenerationTransform(bbox,settings.Dataset.SRID, Reprojection.SRID_PROJECTED_MERCATOR, centerOnOrigin: true, settings.ZScale, centerOnZOrigin: true);
+                // Imagery
+                TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
+                Debug.Assert(tiles.Count < 400);
 
-                response.Attributions.AddRange(settings.Attributions); // will be added to the model
-                response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
+                tiles = await _imageryService.DownloadTilesAsync(tiles, settings.ImageryProvider);
 
+                string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
+                DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
 
-                PBRTexture pbrTexture = null;
-                if (settings.ImageryProvider != null)
-                {
-                    response.Attributions.Add(settings.ImageryProvider.Attribution); // will be added to the model
-
-                    // Imagery
-                    TileRange tiles = _imageryService.ComputeBoundingBoxTileRange(bbox, settings.ImageryProvider, settings.MinTilesPerImage);
-                    Debug.Assert(tiles.Count < 400);
-
-                    tiles = await _imageryService.DownloadTilesAsync(tiles, settings.ImageryProvider);
-
-                    string fileName = Path.Combine(settings.OutputDirectory, $"{request.Id}_Texture.jpg");
-                    DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
-
-                    transform.BoundingBox = bbox;
-                    hMap = transform.TransformHeightMap(hMap);
+                transform.BoundingBox = bbox;
+                hMap = transform.TransformHeightMap(hMap);
 
 
-                    //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
-                    pbrTexture = PBRTexture.Create(texInfo);
-                }
-
-                // Center on origin
-                //hMap = hMap.CenterOnOrigin(out Matrix4x4 transform).BakeCoordinates();
-                //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
-
-                ModelRoot model = _gltfService.CreateNewModel();
-
-                //=======================
-                // Buildings
-                if (settings.OsmBuildings)
-                {
-                    _sampleOsmProcessor.Settings.ComputeElevations=true;
-                    model = await _sampleOsmProcessor.RunAsync(model, OsmLayer.Buildings, bbox, transform, settings.Dataset, settings.DownloadMissingFiles);
-                }
-
-
-                model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture, 0.5f);
-                model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
-                //model.TryUseExtrasAsList(true).AddRange(response.Attributions);
-                model.SaveGLB(Path.Combine(settings.OutputDirectory, string.Concat(imageryFailed ? "imageryFailed_" : "", settings.ModelFileNameGenerator(settings, request))));
-
-                // cleanup
-                //if (pbrTexture != null)
-                //{
-                //    if (pbrTexture.NormalTexture != null) File.Delete(pbrTexture.NormalTexture.FilePath);
-                //    File.Delete(pbrTexture.BaseColorTexture.FilePath);
-                //}
-
-                response.Elapsed = timer.Elapsed;
-                response.NumTiles = pbrTexture.BaseColorTexture.TileCount;
+                //var normalMap = _imageryService.GenerateNormalMap(hMap, settings.OutputDirectory, $"{request.Id}_normalmap.png");
+                pbrTexture = PBRTexture.Create(texInfo);
             }
+
+            // Center on origin
+            //hMap = hMap.CenterOnOrigin(out Matrix4x4 transform).BakeCoordinates();
+            //response.Origin = new GeoPoint(request.Latitude, request.Longitude).ReprojectTo(Reprojection.SRID_GEODETIC, Reprojection.SRID_PROJECTED_MERCATOR);
+
+            ModelRoot model = _gltfService.CreateNewModel();
+
+            //=======================
+            // Buildings
+            if (settings.OsmBuildings)
+            {
+                _sampleOsmProcessor.Settings.ComputeElevations = true;
+                model = await _sampleOsmProcessor.RunAsync(model, OsmLayer.Buildings, bbox, transform, settings.Dataset, settings.DownloadMissingFiles);
+            }
+
+
+            model = _gltfService.AddTerrainMesh(model, hMap, pbrTexture, 0.5f);
+            model.Asset.Generator = "DEM Net Elevation API with SharpGLTF";
+            //model.TryUseExtrasAsList(true).AddRange(response.Attributions);
+            model.SaveGLB(Path.Combine(settings.OutputDirectory, string.Concat(imageryFailed ? "imageryFailed_" : "", settings.ModelFileNameGenerator(settings, request))));
+
+            // cleanup
+            //if (pbrTexture != null)
+            //{
+            //    if (pbrTexture.NormalTexture != null) File.Delete(pbrTexture.NormalTexture.FilePath);
+            //    File.Delete(pbrTexture.BaseColorTexture.FilePath);
+            //}
+
+            response.Elapsed = timer.Elapsed;
+            response.NumTiles = pbrTexture.BaseColorTexture.TileCount;
         }
         catch (Exception)
         {

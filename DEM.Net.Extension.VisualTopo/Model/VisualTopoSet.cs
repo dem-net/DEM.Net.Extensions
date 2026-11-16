@@ -30,7 +30,7 @@ namespace DEM.Net.Extension.VisualTopo;
 
 public class VisualTopoSet
 {
-    public List<VisualTopoData> Data { get; private set; } = new List<VisualTopoData>();
+    public List<VisualTopoData> Data { get; private set; } = [];
     public string Name { get; internal set; }
     public Vector4 Color { get; internal set; }
 

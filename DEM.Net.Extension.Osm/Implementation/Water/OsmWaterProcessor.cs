@@ -8,19 +8,15 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm.Water;
 
-internal class OsmWaterProcessor : OsmProcessorStage<WaterModel>
+internal class OsmWaterProcessor(GeoTransformPipeline transformPipeline) : OsmProcessorStage<WaterModel>(transformPipeline)
 {
 
     private const float WaterWidthMeters = 30F;
 
-    public OsmWaterProcessor(GeoTransformPipeline transformPipeline) : base(transformPipeline)
-    {
-        this.DataSettings = new WaterDataFilter();
-    }
     public override OsmModelFactory<WaterModel> ModelFactory => new WaterValidator(base._logger);
 
 
-    public override IOsmDataSettings DataSettings { get; set; }
+    public override IOsmDataSettings DataSettings { get; set; } = new WaterDataFilter();
     public override string glTFNodeName => nameof(WaterModel);
 
     protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<WaterModel> models)
@@ -53,32 +49,23 @@ internal class OsmWaterProcessor : OsmProcessorStage<WaterModel>
 
     protected override IEnumerable<WaterModel> ComputeModelElevationsAndTransform(IEnumerable<WaterModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
     {
-        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
+        using TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug);
+        if (computeElevations)
         {
-            if (computeElevations)
+            foreach (var model in models)
             {
-                foreach (var model in models)
-                {
-                    model.LineString = Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))
-                                         .ToList();
+                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))];
 
-                    yield return model;
-                }
-                //Parallel.ForEach(models, model =>
-                //{
-                //    model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                //                         .ToList();
-                //});
+                yield return model;
             }
-            else
+        }
+        else
+        {
+            foreach (var model in models)
             {
-                foreach (var model in models)
-                {
-                    model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
-                    yield return model;
-                }
+                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet))];
+                yield return model;
             }
-
         }
 
     }

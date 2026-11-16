@@ -17,7 +17,7 @@ namespace DEM.Net.Extension.Tests;
 
 // DEM / imagery downloads and a local Protomaps archive (OsmElevationOptions__PMTilesFilePath): excluded from CI (dotnet test --filter Category!=Network)
 [Trait("Category", "Network")]
-public class OsmTests : IClassFixture<DemNetFixture>
+public class OsmTests(DemNetFixture fixture) : IClassFixture<DemNetFixture>
 {
 
     const string WKT_SF_BIG = "POLYGON((-122.53517427420718 37.81548554152065,-122.35149660086734 37.81548554152065,-122.35149660086734 37.70311455416941,-122.53517427420718 37.70311455416941,-122.53517427420718 37.81548554152065))";
@@ -62,20 +62,10 @@ public class OsmTests : IClassFixture<DemNetFixture>
 
     const string WKT_UKRAINE_MOUNTAINS = "POLYGON((23.621024638843874 48.915008011278594,23.98014023942981 48.915008011278594,23.98014023942981 48.67119290393242,23.621024638843874 48.67119290393242,23.621024638843874 48.915008011278594))";
 
-    private readonly DefaultOsmProcessor _osmProcessor;
-    private readonly ElevationService _elevationService;
-    private readonly ImageryService _imageryService;
-    private readonly SharpGltfService _gltfService;
-
-    public OsmTests(DemNetFixture fixture)
-    {
-        _osmProcessor = fixture.ServiceProvider.GetService<DefaultOsmProcessor>();
-        _elevationService = fixture.ServiceProvider.GetService<ElevationService>();
-
-        _imageryService = fixture.ServiceProvider.GetService<ImageryService>();
-        _gltfService = fixture.ServiceProvider.GetService<SharpGltfService>();
-    }
-
+    private readonly DefaultOsmProcessor _osmProcessor = fixture.ServiceProvider.GetService<DefaultOsmProcessor>();
+    private readonly ElevationService _elevationService = fixture.ServiceProvider.GetService<ElevationService>();
+    private readonly ImageryService _imageryService = fixture.ServiceProvider.GetService<ImageryService>();
+    private readonly SharpGltfService _gltfService = fixture.ServiceProvider.GetService<SharpGltfService>();
 
     [Theory(DisplayName = "OSM Buildings")]
     [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]

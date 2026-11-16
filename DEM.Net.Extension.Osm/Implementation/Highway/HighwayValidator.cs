@@ -39,15 +39,11 @@ internal class HighwayValidator : OsmModelFactory<HighwayModel>
         if (model.Area)
         {
             _logger.LogWarning($"Area polygons not supported yet. Will process only exterior ring. {nameof(HighwayModel)} {model.Type} {model.Id}.");
-            switch (model.Type)
+            return model.Type switch
             {
-                case "pedestrian":
-                case "platform":
-                case "footway":
-                    return false;
-                default:
-                    return true;
-            }
+                "pedestrian" or "platform" or "footway" => false,
+                _ => true,
+            };
         }
         return true;
     }

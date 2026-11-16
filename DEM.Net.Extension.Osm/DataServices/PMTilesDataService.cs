@@ -24,13 +24,9 @@ namespace DEM.Net.Extension.Osm;
 /// <summary>
 /// Opens the configured PMTiles archive once and shares it (file handle + directory cache) across requests.
 /// </summary>
-public sealed class PMTilesReaderProvider : IDisposable
+public sealed class PMTilesReaderProvider(IOptions<OsmElevationOptions> options, ILogger<PMTilesReaderProvider> logger) : IDisposable
 {
-    private readonly Lazy<PMTilesReader> _reader;
-
-    public PMTilesReaderProvider(IOptions<OsmElevationOptions> options, ILogger<PMTilesReaderProvider> logger)
-    {
-        _reader = new Lazy<PMTilesReader>(() =>
+    private readonly Lazy<PMTilesReader> _reader = new Lazy<PMTilesReader>(() =>
         {
             string path = options.Value.PMTilesFilePath;
             if (string.IsNullOrWhiteSpace(path))
@@ -45,7 +41,6 @@ public sealed class PMTilesReaderProvider : IDisposable
             logger.LogInformation("Opened {Path}: {Header}", path, reader.Header);
             return reader;
         }, LazyThreadSafetyMode.ExecutionAndPublication);
-    }
 
     public PMTilesReader Reader => _reader.Value;
 
@@ -60,28 +55,21 @@ public sealed class PMTilesReaderProvider : IDisposable
 /// Features are read at the archive max zoom, clipped to exact tile bounds, stitched back across tile seams and
 /// returned with OSM-like tags so the existing validators can process them unchanged.
 /// </summary>
-public class PMTilesDataService : IOsmDataService
+public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReaderProvider readerProvider,
+    IOptions<OsmElevationOptions> options) : IOsmDataService
 {
     private const double W = MvtDecoder.WorldUnitsPerTile;
     private const double BorderEpsilon = 1e-6;
     private const double EarthCircumferenceMeters = 40075016.686;
 
     // World coordinates (4096 units per tile at the query zoom, y down). Snapping to 1 unit ≈ 0.3 m at z15.
-    private static readonly GeometryFactory WorldFactory = new GeometryFactory();
-    private static readonly PrecisionModel SnapPrecision = new PrecisionModel(1.0);
-    private static readonly GeometryFactory LonLatFactory = new GeometryFactory(new PrecisionModel(), Reprojection.SRID_GEODETIC);
+    private static readonly GeometryFactory WorldFactory = new();
+    private static readonly PrecisionModel SnapPrecision = new(1.0);
+    private static readonly GeometryFactory LonLatFactory = new(new PrecisionModel(), Reprojection.SRID_GEODETIC);
 
-    private readonly ILogger<PMTilesDataService> _logger;
-    private readonly PMTilesReaderProvider _readerProvider;
-    private readonly OsmElevationOptions _options;
-
-    public PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReaderProvider readerProvider,
-        IOptions<OsmElevationOptions> options)
-    {
-        _logger = logger;
-        _readerProvider = readerProvider;
-        _options = options.Value;
-    }
+    private readonly ILogger<PMTilesDataService> _logger = logger;
+    private readonly PMTilesReaderProvider _readerProvider = readerProvider;
+    private readonly OsmElevationOptions _options = options.Value;
 
     public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
     {
@@ -89,7 +77,7 @@ public class PMTilesDataService : IOsmDataService
         if (mapping == null)
         {
             _logger.LogWarning("Layer {Layer} is not in the Protomaps schema, no data returned.", filter?.FilterIdentifier);
-            return new List<IFeature>();
+            return [];
         }
 
         using (new TimeSpanBlock(nameof(GetOsmDataAsGeoJson), _logger, LogLevel.Debug))
@@ -135,7 +123,7 @@ public class PMTilesDataService : IOsmDataService
         var bboxEnv = range.BboxWorldEnvelope;
         long vertices = 0;
         double worldLength = 0;
-        var sync = new object();
+        var sync = new Lock();
 
         Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d), (idx, _, local) =>
         {
@@ -255,7 +243,6 @@ public class PMTilesDataService : IOsmDataService
         return ToFeatures(fragments, mapping, bbox, z);
     }
 
-    #region Clipping and seam merging (world coordinates)
 
     private IEnumerable<Geometry> ClipToTile(Geometry geom, MvtGeometryType type, Envelope tileEnv)
     {
@@ -268,11 +255,11 @@ public class PMTilesDataService : IOsmDataService
         }
 
         Geometry clipped = tileEnv.Contains(geom.EnvelopeInternal) ? geom : SafeIntersection(geom, WorldFactory.ToGeometry(tileEnv), type);
-        if (clipped == null || clipped.IsEmpty) return Array.Empty<Geometry>();
+        if (clipped == null || clipped.IsEmpty) return [];
 
         return type == MvtGeometryType.Polygon
             ? PolygonExtracter.GetPolygons(clipped).Where(g => !g.IsEmpty && g.Area > 0).ToList()
-            : LineStringExtracter.GetLines(clipped).Where(g => !g.IsEmpty && g.Length > 0).ToList();
+            : [.. LineStringExtracter.GetLines(clipped).Where(g => !g.IsEmpty && g.Length > 0)];
     }
 
     private Geometry SafeIntersection(Geometry geom, Geometry clip, MvtGeometryType type)
@@ -325,19 +312,19 @@ public class PMTilesDataService : IOsmDataService
                     var union = UnaryUnionNG.Union(WorldFactory.BuildGeometry(parts.Select(p => p.Geometry)), SnapPrecision);
                     // Drop the now collinear vertices left on the former seam (~3 mm tolerance at z15)
                     union = DouglasPeuckerSimplifier.Simplify(union, 0.01);
-                    merged = PolygonExtracter.GetPolygons(union).Where(g => !g.IsEmpty).ToList();
+                    merged = [.. PolygonExtracter.GetPolygons(union).Where(g => !g.IsEmpty)];
                 }
                 else
                 {
                     var merger = new LineMerger();
                     foreach (var p in parts) merger.Add(SnapEndpoints((LineString)p.Geometry));
-                    merged = merger.GetMergedLineStrings().Cast<Geometry>().ToList();
+                    merged = [.. merger.GetMergedLineStrings().Cast<Geometry>()];
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogDebug("Seam merge failed for {Key}, keeping {Count} fragments: {Message}", group.Key, parts.Count, ex.Message);
-                merged = parts.Select(p => p.Geometry).ToList();
+                merged = [.. parts.Select(p => p.Geometry)];
             }
 
             foreach (var g in merged)
@@ -357,7 +344,6 @@ public class PMTilesDataService : IOsmDataService
         return WorldFactory.CreateLineString(coords);
     }
 
-    #endregion
 
     private List<IFeature> ToFeatures(List<Fragment> fragments, ProtomapsLayerMapping mapping, BoundingBox bbox, int z)
     {
@@ -380,7 +366,7 @@ public class PMTilesDataService : IOsmDataService
             if (g is Polygon polygon)
             {
                 polygon = ToRfc7946Orientation(polygon);
-                g = mapping.PolygonsAsMultiPolygon ? (Geometry)LonLatFactory.CreateMultiPolygon(new[] { polygon }) : polygon;
+                g = mapping.PolygonsAsMultiPolygon ? (Geometry)LonLatFactory.CreateMultiPolygon([polygon]) : polygon;
             }
 
             var attributes = new AttributesTable
@@ -406,24 +392,14 @@ public class PMTilesDataService : IOsmDataService
         return LonLatFactory.CreatePolygon(shell, holes);
     }
 
-    private sealed class Fragment
+    private sealed class Fragment(string layer, IReadOnlyDictionary<string, object> properties, ulong? id, MvtGeometryType type, Geometry geometry, string syntheticId)
     {
-        public Fragment(string layer, IReadOnlyDictionary<string, object> properties, ulong? id, MvtGeometryType type, Geometry geometry, string syntheticId)
-        {
-            Layer = layer;
-            Properties = properties;
-            Id = id;
-            Type = type;
-            Geometry = geometry;
-            SyntheticId = syntheticId;
-        }
-
-        public string Layer { get; }
-        public IReadOnlyDictionary<string, object> Properties { get; }
-        public ulong? Id { get; }
-        public MvtGeometryType Type { get; }
-        public Geometry Geometry { get; }
-        public string SyntheticId { get; }
+        public string Layer { get; } = layer;
+        public IReadOnlyDictionary<string, object> Properties { get; } = properties;
+        public ulong? Id { get; } = id;
+        public MvtGeometryType Type { get; } = type;
+        public Geometry Geometry { get; } = geometry;
+        public string SyntheticId { get; } = syntheticId;
 
         public string MergeKey
         {
@@ -437,13 +413,13 @@ public class PMTilesDataService : IOsmDataService
             }
         }
 
-        public Fragment WithGeometry(Geometry g) => new Fragment(Layer, Properties, Id, Type, g, SyntheticId);
+        public Fragment WithGeometry(Geometry g) => new(Layer, Properties, Id, Type, g, SyntheticId);
     }
 
-    private sealed class WorldToLonLatFilter : ICoordinateSequenceFilter
+    private sealed class WorldToLonLatFilter(double worldSize) : ICoordinateSequenceFilter
     {
-        private readonly double _worldSize;
-        public WorldToLonLatFilter(double worldSize) => _worldSize = worldSize;
+        private readonly double _worldSize = worldSize;
+
         public bool Done => false;
         public bool GeometryChanged => true;
 

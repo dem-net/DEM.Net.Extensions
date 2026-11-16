@@ -37,11 +37,10 @@ namespace DEM.Net.Extension.Osm.Extensions;
 public static class HtmlColorTranslator
 {
 
-    private static Dictionary<string, Color> knownColors = new Dictionary<string, Color>();
+    private static Dictionary<string, Color> knownColors = [];
 
     static HtmlColorTranslator()
     {
-        #region Known colors
 
         knownColors.Add("aliceblue", Color.FromArgb(240, 248, 255));
         knownColors.Add("antiquewhite", Color.FromArgb(250, 235, 215));
@@ -190,7 +189,6 @@ public static class HtmlColorTranslator
         knownColors.Add("whitesmoke", Color.FromArgb(245, 245, 245));
         knownColors.Add("yellow", Color.FromArgb(255, 255, 0));
         knownColors.Add("yellowgreen", Color.FromArgb(154, 205, 50));
-        #endregion
 
     }
 

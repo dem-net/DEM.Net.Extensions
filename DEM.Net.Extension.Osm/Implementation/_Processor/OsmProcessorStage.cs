@@ -11,7 +11,7 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm;
 
-public abstract class OsmProcessorStage<T> : IOsmProcessor
+public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOsmProcessor
     where T : CommonModel
 {
     protected ElevationService _elevationService;
@@ -33,11 +33,6 @@ public abstract class OsmProcessorStage<T> : IOsmProcessor
         this._logger = logger;
     }
 
-    public OsmProcessorStage(GeoTransformPipeline transform)
-    {
-        this.Transform = transform?.Clone();
-    }
-
     public void AddPostTransform(Func<IEnumerable<GeoPoint>, IEnumerable<GeoPoint>> postTransform)
     {
         Transform.TransformPoints = Transform.TransformPoints.PostTransform(p => postTransform(p));
@@ -49,7 +44,7 @@ public abstract class OsmProcessorStage<T> : IOsmProcessor
 
     public abstract string glTFNodeName { get; }
 
-    public virtual GeoTransformPipeline Transform { get; set; }
+    public virtual GeoTransformPipeline Transform { get; set; } = transform?.Clone();
 
 
     public async Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default)
@@ -84,7 +79,7 @@ public abstract class OsmProcessorStage<T> : IOsmProcessor
     protected static IEnumerable<GeoPoint> ToDataSetSrid(IEnumerable<GeoPoint> pointsWgs84, DEMDataSet dataSet)
     {
         if (pointsWgs84 == null)
-            return Enumerable.Empty<GeoPoint>();
+            return [];
         if (dataSet == null || dataSet.SRID == Reprojection.SRID_GEODETIC)
             return pointsWgs84;
         return pointsWgs84.ReprojectTo(Reprojection.SRID_GEODETIC, dataSet.SRID);

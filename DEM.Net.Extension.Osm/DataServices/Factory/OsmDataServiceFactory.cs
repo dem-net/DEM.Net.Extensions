@@ -4,22 +4,16 @@ using System.Text;
 
 namespace DEM.Net.Extension.Osm;
 
-public class OsmDataServiceFactory : IOsmDataServiceFactory
+public class OsmDataServiceFactory(Func<PMTilesDataService> pmTilesService) : IOsmDataServiceFactory
 {
-    private readonly Func<PMTilesDataService> _pmTilesService;
+    private readonly Func<PMTilesDataService> _pmTilesService = pmTilesService;
 
-    public OsmDataServiceFactory(Func<PMTilesDataService> pmTilesService)
-    {
-        this._pmTilesService = pmTilesService;
-    }
     public IOsmDataService Create(OsmDataServiceType dataServiceType)
     {
-        switch (dataServiceType)
+        return dataServiceType switch
         {
-            case OsmDataServiceType.PMTiles:
-                return _pmTilesService();
-            default:
-                throw new NotImplementedException(dataServiceType.ToString());
-        }
+            OsmDataServiceType.PMTiles => _pmTilesService(),
+            _ => throw new NotImplementedException(dataServiceType.ToString()),
+        };
     }
 }

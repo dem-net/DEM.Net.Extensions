@@ -38,21 +38,14 @@ using Microsoft.Extensions.Logging;
 
 namespace DEM.Net.Extension.VisualTopo;
 
-public class VisualTopoService
+public class VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
 {
-    private readonly MeshService _meshService;
-    private readonly ElevationService _elevationService;
-    private readonly ILogger<VisualTopoService> _logger;
+    private readonly MeshService _meshService = meshService;
+    private readonly ElevationService _elevationService = elevationService;
+    private readonly ILogger<VisualTopoService> _logger = logger;
     private const int ModelDefaultSRID = Reprojection.SRID_PROJECTED_LAMBERT_93;
-    private readonly Convers3Reprojection convers3Reprojection;
+    private readonly Convers3Reprojection convers3Reprojection = new Convers3Reprojection();
 
-    public VisualTopoService(MeshService meshService, ElevationService elevationService, ILogger<VisualTopoService> logger)
-    {
-        _meshService = meshService;
-        _elevationService = elevationService;
-        convers3Reprojection = new Convers3Reprojection();
-        _logger = logger;
-    }
     public VisualTopoModel LoadFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams, float zFactor = 1f)
     {
         var model = ParseFile(vtopoFile, encoding, decimalDegrees, ignoreRadialBeams);
@@ -136,7 +129,7 @@ public class VisualTopoService
     }
     private void CreateGraph(VisualTopoModel model)
     {
-        Dictionary<string, Node<VisualTopoData>> nodesByName = new Dictionary<string, Node<VisualTopoData>>();
+        Dictionary<string, Node<VisualTopoData>> nodesByName = [];
 
         foreach (var data in model.Sets.SelectMany(s => s.Data))
         {
@@ -205,9 +198,6 @@ public class VisualTopoService
             data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.VectorLocal.Z;
         }
     }
-
-    #region Graph Traversal (full 3D)
-
 
     private void Build3DTopology_Triangulation(VisualTopoModel model, IColorCalculator colorFunc)
     {
@@ -337,13 +327,9 @@ public class VisualTopoService
         triangulation.Indices.Add(i1);
     }
 
-    #endregion
-
-    #region Graph Traversal and vectors computation
-
     private void Build3DTopology(VisualTopoModel model, float zFactor)
     {
-        List<List<GeoPointRays>> branches = new List<List<GeoPointRays>>();
+        List<List<GeoPointRays>> branches = [];
         GraphTraversal_Lines(model.Graph.Root, branches, null, Vector3.Zero, 0, zFactor);
         model.Topology3D = branches;
     }
@@ -366,7 +352,7 @@ public class VisualTopoService
         p.DistanceFromEntry = runningTotalLength;
 
 
-        if (current == null) current = new List<GeoPointRays>();
+        if (current == null) current = [];
         if (node.Arcs.Count == 0) // leaf
         {
             current.Add(node.Model.GeoPointLocal);
@@ -397,22 +383,16 @@ public class VisualTopoService
         }
     }
 
-
-
-    #endregion
-
-    #region DebugBranches
-
     // Useful to debug : output graph as node names
     public List<List<string>> GetBranchesNodeNames(VisualTopoModel model)
     {
-        List<List<string>> branches = new List<List<string>>();
+        List<List<string>> branches = [];
         GetBranches(model.Graph.Root, branches, null, n => n.Sortie);
         return branches;
     }
     private void GetBranches<T>(Node<VisualTopoData> node, List<List<T>> branches, List<T> current, Func<VisualTopoData, T> extractInfo)
     {
-        if (current == null) current = new List<T>();
+        if (current == null) current = [];
 
         T info = extractInfo(node.Model);
         if (node.Arcs.Count == 0)
@@ -444,10 +424,6 @@ public class VisualTopoService
         }
     }
 
-    #endregion
-
-    #region Parsing
-
     private void ParseEntryHeader(VisualTopoModel model, string entry)
     {
         var data = entry.Split(',');
@@ -466,7 +442,7 @@ public class VisualTopoService
         sr.ReadUntil(string.IsNullOrWhiteSpace);
         var headerLines = sr.ReadUntil(string.IsNullOrWhiteSpace)
                             .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .Select(s => s.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries))
+                            .Select(s => s.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries))
                             .ToDictionary(s => s[0], s => s[1]);
         if (headerLines.TryGetValue("Trou", out string trou))
         {
@@ -504,8 +480,8 @@ public class VisualTopoService
         }
 
         // Set header
-        var data = setHeader.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-        var headerSlots = data[0].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var data = setHeader.Split([';'], StringSplitOptions.RemoveEmptyEntries);
+        var headerSlots = data[0].Split([' '], StringSplitOptions.RemoveEmptyEntries);
         set.Color = this.ParseColor(headerSlots);
         set.Name = data.Length > 1 ? data[1].Trim() : string.Empty;
 
@@ -517,7 +493,7 @@ public class VisualTopoService
 
             var parts = dataLine.Split(';');
             if (parts.Length > 1) topoData.Comment = parts[1].Trim();
-            var slots = parts[0].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var slots = parts[0].Split([' '], StringSplitOptions.RemoveEmptyEntries);
 
             //Debug.Assert(slots.Length == 13);
 
@@ -596,7 +572,6 @@ public class VisualTopoService
         return VectorsExtensions.CreateColor(slots[0], slots[1], slots[2]);
     }
 
-    #endregion
 
 }
 

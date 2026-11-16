@@ -6,23 +6,18 @@ using DEM.Net.Core;
 
 namespace DEM.Net.Extension.Osm.Buildings;
 
-public class BuildingModel : CommonModel, IPolygon<GeoPoint>
+public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint>> interiorRings) : CommonModel, IPolygon<GeoPoint>
 {
-    public List<GeoPoint> ExteriorRing { get; set; }
+    public List<GeoPoint> ExteriorRing { get; set; } = exteriorRingPoints;
 
-    public List<List<GeoPoint>> InteriorRings { get; set; }
+    public List<List<GeoPoint>> InteriorRings { get; set; } = interiorRings ?? [];
 
     public IEnumerable<GeoPoint> Points
     {
         get
         {
-            return ExteriorRing.Concat(this.InteriorRings == null ? Enumerable.Empty<GeoPoint>() : this.InteriorRings.SelectMany(r => r));
+            return ExteriorRing.Concat(this.InteriorRings == null ? [] : this.InteriorRings.SelectMany(r => r));
         }
-    }
-    public BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint>> interiorRings)
-    {
-        this.ExteriorRing = exteriorRingPoints;
-        this.InteriorRings = interiorRings ?? new List<List<GeoPoint>>();
     }
 
     // building:levels

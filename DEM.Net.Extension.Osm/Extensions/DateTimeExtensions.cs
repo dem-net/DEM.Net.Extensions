@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-#region Usings
 
 using System;
 using System.Text;
 
-#endregion
 
 namespace DEM.Net.Extension.Osm;
 
@@ -31,16 +29,11 @@ namespace DEM.Net.Extension.Osm;
 public static class DateTimeExtensions
 {
 
-    #region UnixEpoch
 
     /// <summary>
     /// The UNIX epoch.
     /// </summary>
-    public static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);
-
-    #endregion
-
-    #region ToUnixTimeStamp(this DateTime)
+    public static DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0);
 
     /// <summary>
     /// Convert the given DateTime object to UNIX timestamp.
@@ -52,10 +45,6 @@ public static class DateTimeExtensions
         return (Int64) Math.Round(DateTime.Subtract(UnixEpoch).TotalSeconds);
     }
 
-    #endregion
-
-    #region FromUnixTimeStamp(this UnixTimestamp)
-
     /// <summary>
     /// Convert the given UNIX timestamp to a .NET DateTime object.
     /// </summary>
@@ -64,11 +53,6 @@ public static class DateTimeExtensions
     {
         return UnixEpoch.AddTicks(UnixTimestamp);
     }
-
-    #endregion
-
-
-    #region ToIso8601(this DateTime)
 
     /// <summary>
     /// Convert the given DateTime object to an ISO 8601 datetime string.
@@ -80,6 +64,5 @@ public static class DateTimeExtensions
         return DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fff") + "Z";
     }
 
-    #endregion
 
 }

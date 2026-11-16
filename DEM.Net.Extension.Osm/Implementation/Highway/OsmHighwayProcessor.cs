@@ -10,7 +10,7 @@ using SharpGLTF.Schema2;
 namespace DEM.Net.Extension.Osm.Highways;
 
 
-public class OsmHighwayProcessor : OsmProcessorStage<HighwayModel>
+public class OsmHighwayProcessor(GeoTransformPipeline transform, string highwaysColor) : OsmProcessorStage<HighwayModel>(transform)
 {
 
     private const float LaneWidthMeters = 3.5F;
@@ -19,16 +19,9 @@ public class OsmHighwayProcessor : OsmProcessorStage<HighwayModel>
     /// exact DEM elevation they flicker through it (z-fighting), and the reduced terrain mesh departs from the DEM.
     /// </summary>
     public const double HeightAboveTerrainMeters = 0.5;
-    private readonly string highwaysColor;
+    private readonly string highwaysColor = highwaysColor;
 
-    public OsmHighwayProcessor(GeoTransformPipeline transform, string highwaysColor) : base(transform)
-    {
-        this.DataSettings = new HighwaysDataFilter();
-        this.highwaysColor = highwaysColor;
-    }
-
-
-    public override IOsmDataSettings DataSettings { get; set; }
+    public override IOsmDataSettings DataSettings { get; set; } = new HighwaysDataFilter();
     public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger, highwaysColor);
     public override string glTFNodeName => "Streets";
 
@@ -51,57 +44,42 @@ public class OsmHighwayProcessor : OsmProcessorStage<HighwayModel>
         }
         else
         {
-            switch (road.Type)
+            return road.Type switch
             {
-                case "unclassified": return 3;
-                default:
-                    return LaneWidthMeters;
-            }
+                "unclassified" => 3,
+                _ => LaneWidthMeters,
+            };
         }
     }
 
     protected override IEnumerable<HighwayModel> ComputeModelElevationsAndTransform(IEnumerable<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
     {
 
-        using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
+        using TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug);
+        if (computeElevations)
         {
-            if (computeElevations)
+            int i = 0;
+            long pointCount = 0;
+            Stopwatch sw = Stopwatch.StartNew();
+            foreach (var model in models)
             {
-                int i = 0;
-                long pointCount = 0;
-                Stopwatch sw = Stopwatch.StartNew();
-                foreach (var model in models)
-                {
-                    var points = (_elevationService.GetLineGeometryElevation(model.LineString, dataSet) ?? Enumerable.Empty<GeoPoint>())
-                        .Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters })
-                        .ToList();
-                    model.LineString = Transform.TransformPoints(ToDataSetSrid(points, dataSet))
-                                         .ToList();
-                    pointCount += model.LineString.Count;
+                var points = (_elevationService.GetLineGeometryElevation(model.LineString, dataSet) ?? Enumerable.Empty<GeoPoint>())
+                    .Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters })
+                    .ToList();
+                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(points, dataSet))];
+                pointCount += model.LineString.Count;
 
-                    if (++i % 100 == 0) _logger.LogInformation($"Computed {i:N0} highways elevation ({pointCount:N0} points {pointCount/sw.Elapsed.TotalSeconds:N0} pts/s)...");
-                    yield return model;
-                }
-                //int parallelCount = -1;
-                //Parallel.ForEach(models, new ParallelOptions { MaxDegreeOfParallelism = parallelCount }, model =>
-                //   {
-
-                //       model.LineString = Transform.TransformPoints(_elevationService.GetLineGeometryElevation(model.LineString, dataSet))
-                //                            .ToList();
-
-                //       yield return model;
-                //   }
-                //);
+                if (++i % 100 == 0) _logger.LogInformation($"Computed {i:N0} highways elevation ({pointCount:N0} points {pointCount / sw.Elapsed.TotalSeconds:N0} pts/s)...");
+                yield return model;
             }
-            else
+        }
+        else
+        {
+            foreach (var model in models)
             {
-                foreach (var model in models)
-                {
-                    model.LineString = Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet)).ToList();
-                    yield return model;
-                }
+                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(model.LineString, dataSet))];
+                yield return model;
             }
-
         }
 
     }

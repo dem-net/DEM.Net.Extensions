@@ -105,7 +105,7 @@ public sealed class PMTilesReader : IDisposable
 
     private readonly SafeFileHandle _handle;
     private readonly PMTilesDirectoryEntry[] _rootDirectory;
-    private readonly ConcurrentDictionary<ulong, PMTilesDirectoryEntry[]> _leafCache = new ConcurrentDictionary<ulong, PMTilesDirectoryEntry[]>();
+    private readonly ConcurrentDictionary<ulong, PMTilesDirectoryEntry[]> _leafCache = new();
 
     public string FilePath { get; }
     public PMTilesHeader Header { get; }
@@ -238,21 +238,15 @@ public sealed class PMTilesReader : IDisposable
 
     internal static byte[] Decompress(byte[] data, PMTilesCompression compression)
     {
-        switch (compression)
+        return compression switch
         {
-            case PMTilesCompression.None:
-                return data;
-            case PMTilesCompression.Unknown:
-                return data.Length > 2 && data[0] == 0x1f && data[1] == 0x8b ? Inflate(new GZipStream(new MemoryStream(data), CompressionMode.Decompress)) : data;
-            case PMTilesCompression.Gzip:
-                return Inflate(new GZipStream(new MemoryStream(data), CompressionMode.Decompress));
-            case PMTilesCompression.Brotli:
-                return Inflate(new BrotliStream(new MemoryStream(data), CompressionMode.Decompress));
-            case PMTilesCompression.Zstd:
-                throw new NotSupportedException("Zstd-compressed PMTiles are not supported. Protomaps builds use gzip; re-encode the archive or add a zstd decoder.");
-            default:
-                throw new NotSupportedException($"Unknown PMTiles compression {(byte)compression}.");
-        }
+            PMTilesCompression.None => data,
+            PMTilesCompression.Unknown => data.Length > 2 && data[0] == 0x1f && data[1] == 0x8b ? Inflate(new GZipStream(new MemoryStream(data), CompressionMode.Decompress)) : data,
+            PMTilesCompression.Gzip => Inflate(new GZipStream(new MemoryStream(data), CompressionMode.Decompress)),
+            PMTilesCompression.Brotli => Inflate(new BrotliStream(new MemoryStream(data), CompressionMode.Decompress)),
+            PMTilesCompression.Zstd => throw new NotSupportedException("Zstd-compressed PMTiles are not supported. Protomaps builds use gzip; re-encode the archive or add a zstd decoder."),
+            _ => throw new NotSupportedException($"Unknown PMTiles compression {(byte)compression}."),
+        };
     }
 
     private static byte[] Inflate(Stream decompressor)
