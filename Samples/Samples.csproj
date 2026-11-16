@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
     <PackageReference Include="SketchfabApi.Net" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\DEM.Net\DEM.Net.Core\DEM.Net.Core.csproj" />

@@ -13,6 +13,8 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
     <PackageVersion Include="NetTopologySuite.Features" Version="2.2.0" />
+    <!-- SketchfabApi.Net 1.0.4 depends on Newtonsoft.Json 12.0.3 (GHSA-5crp-9r3c-p9vr), DEM.Net.Core no longer lifts it since v11 -->
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="SketchfabApi.Net" Version="1.0.4" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
