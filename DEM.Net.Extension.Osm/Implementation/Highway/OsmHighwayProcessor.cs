@@ -25,11 +25,11 @@ public class OsmHighwayProcessor(GeoTransformPipeline transform, string highways
     public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger, highwaysColor);
     public override string glTFNodeName => "Streets";
 
-    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<HighwayModel> models)
+    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<HighwayModel> models)
     {
-        if (models.Any())
+        if (models.Count > 0)
         {
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models.First().Color);
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models[0].Color);
         }
 
         return gltfModel;

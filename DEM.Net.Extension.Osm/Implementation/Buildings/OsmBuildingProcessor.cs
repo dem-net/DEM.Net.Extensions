@@ -24,11 +24,11 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
     public override OsmModelFactory<BuildingModel> ModelFactory => new BuildingValidator(base._logger, withBuildingsColors, defaultBuildingsColor);
     public override string glTFNodeName => "Buildings";
 
-    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<BuildingModel> models)
+    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<BuildingModel> models)
     {
         TriangulationNormals triangulation = this.Triangulate(models);
 
-        if (triangulation.Positions.Count() == 0)
+        if (!triangulation.Positions.Any())
         {
             _logger.LogWarning($"{this.GetType().Name} triangulation has 0 positions. No data written to model");
             return gltfModel;
@@ -119,7 +119,8 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
                 int initialPositionsCount = positions.Count;
 
                 positions.AddRange(positionsVec3);
-                indices.AddRange([.. triangulation.Indices.Select(i => i + initialPositionsCount)]);
+                foreach (int index in triangulation.Indices)
+                    indices.Add(index + initialPositionsCount);
                 colors.AddRange(triangulation.Colors);
                 normals.AddRange(buildingNormals);
             }
@@ -298,7 +299,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
         }
         else
         {
-            double highestFloorElevation = building.Points.OrderByDescending(p => p.Elevation ?? 0).First().Elevation ?? 0;
+            double highestFloorElevation = building.Points.Max(p => p.Elevation ?? 0);
 
             double computedHeight = building.Height ?? (building.Levels ?? 3) * LevelHeightMeters;
             double roofElevation = computedHeight + highestFloorElevation;

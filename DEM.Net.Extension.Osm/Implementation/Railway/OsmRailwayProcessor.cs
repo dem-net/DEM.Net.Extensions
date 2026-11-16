@@ -17,7 +17,7 @@ internal class OsmRailwayProcessor(GeoTransformPipeline transformPipeline) : Osm
     public override IOsmDataSettings DataSettings { get; set; } = new RailwayDataFilter();
     public override string glTFNodeName => nameof(RailwayModel);
 
-    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<RailwayModel> models)
+    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<RailwayModel> models)
     {
         gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), WidthMeters)), VectorsExtensions.CreateColor(165, 42, 42));
 
