@@ -52,11 +52,12 @@ internal class OsmWaterProcessor(GeoTransformPipeline transformPipeline) : OsmPr
         using TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug);
         if (computeElevations)
         {
-            foreach (var model in models)
+            var list = models as IReadOnlyList<WaterModel> ?? [.. models];
+            var lines = GetLinesElevation(list, m => m.LineString, dataSet);
+            for (int i = 0; i < list.Count; i++)
             {
-                model.LineString = [.. Transform.TransformPoints(ToDataSetSrid(_elevationService.GetLineGeometryElevation(model.LineString, dataSet), dataSet))];
-
-                yield return model;
+                list[i].LineString = [.. Transform.TransformPoints(ToDataSetSrid(lines[i], dataSet))];
+                yield return list[i];
             }
         }
         else

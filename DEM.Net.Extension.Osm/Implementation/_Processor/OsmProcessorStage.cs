@@ -7,6 +7,7 @@ using DEM.Net.Core;
 using DEM.Net.glTF.SharpglTF;
 using Microsoft.Extensions.Logging;
 using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm;
@@ -86,6 +87,16 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
         if (dataSet == null || dataSet.SRID == Reprojection.SRID_GEODETIC)
             return pointsWgs84;
         return pointsWgs84.ReprojectTo(Reprojection.SRID_GEODETIC, dataSet.SRID);
+    }
+
+    /// <summary>
+    /// Elevations along the line of each model, in one batch: the raster files are opened once for all the lines
+    /// (WGS84 points, empty for an empty line).
+    /// </summary>
+    protected List<List<GeoPoint>> GetLinesElevation(IReadOnlyList<T> models, Func<T, IEnumerable<GeoPoint>> line, DEMDataSet dataSet)
+    {
+        List<Geometry?> lines = [.. models.Select(m => (Geometry?)GeometryService.ParseGeoPointAsGeometryLine(line(m)))];
+        return [.. _elevationService.GetLinesGeometryElevation(lines, dataSet).Select(points => points ?? [])];
     }
 
     /// <summary>Elevations are read from local files: <see cref="RunAsync"/> downloads the missing ones first.</summary>
