@@ -72,9 +72,9 @@ namespace DEM.Net.Extension.Osm.Highways
                     Stopwatch sw = Stopwatch.StartNew();
                     foreach (var model in models)
                     {
-                        var points = _elevationService.GetLineGeometryElevation(model.LineString, dataSet);
-                        foreach (var p in points ?? Enumerable.Empty<GeoPoint>())
-                            p.Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters;
+                        var points = (_elevationService.GetLineGeometryElevation(model.LineString, dataSet) ?? Enumerable.Empty<GeoPoint>())
+                            .Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters })
+                            .ToList();
                         model.LineString = Transform.TransformPoints(ToDataSetSrid(points, dataSet))
                                              .ToList();
                         pointCount += model.LineString.Count;

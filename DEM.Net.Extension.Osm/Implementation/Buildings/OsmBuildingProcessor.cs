@@ -49,7 +49,7 @@ namespace DEM.Net.Extension.Osm.Buildings
 
         protected override IEnumerable<BuildingModel> ComputeModelElevationsAndTransform(IEnumerable<BuildingModel> modelsEnum, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
         {
-            Dictionary<int, GeoPoint> reprojectedPointsById = null;
+            List<GeoPoint> transformedPoints = null;
 
             //// georeference
             //var bbox = new BoundingBox();
@@ -64,7 +64,7 @@ namespace DEM.Net.Extension.Osm.Buildings
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
             {
                 // Select all points (outer ring) + (inner rings)
-                // They all have an Id, so we can lookup in which building they should be mapped after
+                // Elevation and transforms keep the points order: they are mapped back to their building by position
                 var allBuildingPoints = models
                     .SelectMany(b => b.Points);
 
@@ -74,9 +74,7 @@ namespace DEM.Net.Extension.Osm.Buildings
                                                                         , behavior: NoDataBehavior.SetToZero)
                                                                     : allBuildingPoints;
 
-                geoPoints = Transform?.TransformPoints(geoPoints);
-
-                reprojectedPointsById = geoPoints.ToDictionary(p => p.Id.Value, p => p);
+                transformedPoints = Transform.TransformPoints(geoPoints).ToList();
 
                 //.ZScale(zScale)
                 //.ReprojectGeodeticToCartesian(pointCount)
@@ -86,27 +84,20 @@ namespace DEM.Net.Extension.Osm.Buildings
 
             using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Remap points", _logger, LogLevel.Debug))
             {
-                int checksum = 0;
+                int index = 0;
                 foreach (var buiding in models)
                 {
-                    foreach (var point in buiding.Points)
+                    // same order as BuildingModel.Points
+                    foreach (var ring in buiding.InteriorRings.Prepend(buiding.ExteriorRing))
                     {
-                        //if (reprojectedPointsById.TryGetValue(point.Id.Value, out var newPoint))
-                        var newPoint = reprojectedPointsById[point.Id.Value];
-                        {
-                            point.Latitude = newPoint.Latitude;
-                            point.Longitude = newPoint.Longitude;
-                            point.Elevation = newPoint.Elevation;
-                            checksum++;
-                        }
-                        
+                        for (int i = 0; i < ring.Count; i++)
+                            ring[i] = transformedPoints[index++];
                     }
 
                     yield return buiding;
                 }
-                Debug.Assert(checksum == reprojectedPointsById.Count);
-                reprojectedPointsById.Clear();
-                reprojectedPointsById = null;
+                Debug.Assert(index == transformedPoints.Count);
+                transformedPoints = null;
             }
 
         }
@@ -186,13 +177,13 @@ namespace DEM.Net.Extension.Osm.Buildings
             // Building has real elevations
 
             // Create floor vertices by copying roof vertices and setting their z min elevation (floor or min height)
-            var floorVertices = triangulation.Positions.Select(pt => pt.Clone(building.ComputedFloorAltitude)).ToList();
+            var floorVertices = triangulation.Positions.Select(pt => pt with { Elevation = building.ComputedFloorAltitude ?? pt.Elevation }).ToList();
             triangulation.Positions.AddRange(floorVertices);
 
             // Take the first vertices and z shift them
-            foreach (var pt in triangulation.Positions.Take(totalPoints))
+            for (int i = 0; i < totalPoints; i++)
             {
-                pt.Elevation = building.ComputedRoofAltitude;
+                triangulation.Positions[i] = triangulation.Positions[i] with { Elevation = building.ComputedRoofAltitude };
             }
 
             //==========================
