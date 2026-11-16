@@ -31,6 +31,8 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using DEM.Net.Core;
 using DEM.Net.Core.Graph;
 using Microsoft.Extensions.Logging;
@@ -166,36 +168,99 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     }
 
     // Elevations
+    // All the points of a cavity are looked up in one batch: the DEM files are opened once, not once per point.
+
+    /// <summary>
+    /// Entry point and set start elevations, from the DEM files already downloaded
+    /// (see <see cref="ComputeCavityElevationsAsync"/> to download the missing files).
+    /// </summary>
     public void ComputeCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
     {
-        var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-        model.EntryPoint = model.EntryPoint with { Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0 };
-
-        foreach (var set in model.Sets.Where(s => s.Data.First().GeoPointLocal != null))
-        {
-            VisualTopoData setStartData = set.Data.First(d => d.GeoPointLocal != null);
-            GeoPoint local = setStartData.GeoPointLocal.Point;
-            GeoPoint dataPoint = local with { Longitude = local.Longitude + model.EntryPoint.Longitude, Latitude = local.Latitude + model.EntryPoint.Latitude };
-            var setStartPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
-            setStartData.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(setStartPointDem, dataset).Elevation ?? 0;
-        }
+        var (points, data) = GetSetStartPoints(model, dataset);
+        ApplyCavityElevations(model, data, _elevationService.GetPointsElevation(points, dataset), zFactor);
     }
+
+    /// <summary>
+    /// Entry point and set start elevations, downloading the missing DEM files first.
+    /// </summary>
+    public async Task ComputeCavityElevationsAsync(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1, CancellationToken cancellationToken = default)
+    {
+        var (points, data) = GetSetStartPoints(model, dataset);
+        var elevations = await _elevationService.GetPointsElevationAsync(points, dataset, cancellationToken: cancellationToken).ConfigureAwait(false);
+        ApplyCavityElevations(model, data, elevations, zFactor);
+    }
+
+    /// <summary>
+    /// Entry point and every station elevation, depth below the terrain, from the DEM files already downloaded
+    /// (see <see cref="ComputeFullCavityElevationsAsync"/> to download the missing files).
+    /// </summary>
     public void ComputeFullCavityElevations(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1)
     {
-        var entryPoint4326 = model.EntryPoint.ReprojectTo(model.SRID, dataset.SRID);
-        model.EntryPoint = model.EntryPoint with { Elevation = zFactor * _elevationService.GetPointElevation(entryPoint4326, dataset).Elevation ?? 0 };
+        var (points, data) = GetAllStationPoints(model, dataset);
+        ApplyFullCavityElevations(model, data, _elevationService.GetPointsElevation(points, dataset), zFactor);
+    }
 
-        foreach (var data in model.Graph.AllNodes.Where(n => n.Model.GeoPointLocal != null).Select(n => n.Model))
+    /// <summary>
+    /// Entry point and every station elevation, depth below the terrain, downloading the missing DEM files first.
+    /// </summary>
+    public async Task ComputeFullCavityElevationsAsync(VisualTopoModel model, DEMDataSet dataset, float zFactor = 1, CancellationToken cancellationToken = default)
+    {
+        var (points, data) = GetAllStationPoints(model, dataset);
+        var elevations = await _elevationService.GetPointsElevationAsync(points, dataset, cancellationToken: cancellationToken).ConfigureAwait(false);
+        ApplyFullCavityElevations(model, data, elevations, zFactor);
+    }
+
+    /// <summary>
+    /// Points in the DEM projection: the entry point first, then one point per returned station.
+    /// </summary>
+    private static (List<GeoPoint> Points, List<VisualTopoData> Data) GetSetStartPoints(VisualTopoModel model, DEMDataSet dataset)
+    {
+        var data = model.Sets.Where(s => s.Data.First().GeoPointLocal != null)
+            .Select(s => s.Data.First(d => d.GeoPointLocal != null))
+            .ToList();
+        List<GeoPoint> points = [model.EntryPoint, .. data.Select(d => ToGlobal(model, d))];
+        return ([.. points.ReprojectTo(model.SRID, dataset.SRID)], data);
+    }
+
+    private static (List<GeoPoint> Points, List<VisualTopoData> Data) GetAllStationPoints(VisualTopoModel model, DEMDataSet dataset)
+    {
+        var data = model.Graph.AllNodes.Where(n => n.Model.GeoPointLocal != null).Select(n => n.Model).ToList();
+        List<GeoPoint> points = [model.EntryPoint, .. data.Select(d => ToGlobal(model, d))];
+        List<GeoPoint> pointsDem = [.. points.ReprojectTo(model.SRID, dataset.SRID)];
+        for (int i = 0; i < data.Count; i++)
         {
-            GeoPoint local = data.GeoPointLocal.Point;
-            GeoPoint dataPoint = local with { Longitude = local.Longitude + model.EntryPoint.Longitude, Latitude = local.Latitude + model.EntryPoint.Latitude };
-            var dataPointDem = dataPoint.ReprojectTo(model.SRID, dataset.SRID);
+            data[i].GeoPointGlobal_ProjectedCoords = points[i + 1];
+            data[i].GeoPointGlobal_DEMProjection = pointsDem[i + 1];
+        }
+        return (pointsDem, data);
+    }
 
-            data.GeoPointGlobal_ProjectedCoords = dataPoint;
-            data.GeoPointGlobal_DEMProjection = dataPointDem;
+    private static GeoPoint ToGlobal(VisualTopoModel model, VisualTopoData data)
+    {
+        GeoPoint local = data.GeoPointLocal.Point;
+        return local with { Longitude = local.Longitude + model.EntryPoint.Longitude, Latitude = local.Latitude + model.EntryPoint.Latitude };
+    }
 
-            data.TerrainElevationAbove = zFactor * _elevationService.GetPointElevation(dataPointDem, dataset).Elevation ?? 0;
-            data.Depth = data.TerrainElevationAbove - model.EntryPoint.Elevation.Value - data.VectorLocal.Z;
+    /// <summary>Elevation of the point at <paramref name="index"/>, 0 when the dataset does not cover it.</summary>
+    private static double ElevationAt(List<GeoPoint>? elevations, int index, float zFactor)
+        => zFactor * elevations?[index].Elevation ?? 0;
+
+    private static void ApplyCavityElevations(VisualTopoModel model, List<VisualTopoData> data, List<GeoPoint>? elevations, float zFactor)
+    {
+        model.EntryPoint = model.EntryPoint with { Elevation = ElevationAt(elevations, 0, zFactor) };
+        for (int i = 0; i < data.Count; i++)
+        {
+            data[i].TerrainElevationAbove = ElevationAt(elevations, i + 1, zFactor);
+        }
+    }
+
+    private static void ApplyFullCavityElevations(VisualTopoModel model, List<VisualTopoData> data, List<GeoPoint>? elevations, float zFactor)
+    {
+        model.EntryPoint = model.EntryPoint with { Elevation = ElevationAt(elevations, 0, zFactor) };
+        for (int i = 0; i < data.Count; i++)
+        {
+            data[i].TerrainElevationAbove = ElevationAt(elevations, i + 1, zFactor);
+            data[i].Depth = data[i].TerrainElevationAbove - model.EntryPoint.Elevation.Value - data[i].VectorLocal.Z;
         }
     }
 

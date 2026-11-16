@@ -19,7 +19,7 @@ internal class OsmWaterProcessor(GeoTransformPipeline transformPipeline) : OsmPr
     public override IOsmDataSettings DataSettings { get; set; } = new WaterDataFilter();
     public override string glTFNodeName => nameof(WaterModel);
 
-    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<WaterModel> models)
+    protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<WaterModel> models)
     {
 
         gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, getLines(models), VectorsExtensions.CreateColor(102, 178, 255));

@@ -61,13 +61,16 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
             // Download elevation data if missing: elevations are then read from local files
             if (DataSettings.ComputeElevations && downloadMissingFiles)
                 await _elevationService.DownloadMissingFilesAsync(dataSet, bbox, cancellationToken).ConfigureAwait(false);
-            parsed = this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet, downloadMissingFiles);
 
-            return this.AddToModel(gltfModel, glTFNodeName, parsed);
+            // Materialized once: parsing, clipping and elevations must not run again for each enumeration
+            List<T> models = [.. this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet, downloadMissingFiles)];
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return this.AddToModel(gltfModel, glTFNodeName, models);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError($"{typeof(T).Name} generator error: {ex.Message}");
+            _logger.LogError(ex, "{Model} generator error", typeof(T).Name);
             throw;
         }
     }
@@ -88,7 +91,7 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
     /// <summary>Elevations are read from local files: <see cref="RunAsync"/> downloads the missing ones first.</summary>
     protected abstract IEnumerable<T> ComputeModelElevationsAndTransform(IEnumerable<T> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles);
 
-    protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IEnumerable<T> models);
+    protected abstract ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<T> models);
 
     public IEnumerable<Tmodel> CreateModelsFromGeoJson<Tmodel>(IEnumerable<IFeature> features, OsmModelFactory<Tmodel> validator) where Tmodel : CommonModel
     {
