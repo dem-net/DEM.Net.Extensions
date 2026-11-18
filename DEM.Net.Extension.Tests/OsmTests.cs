@@ -213,7 +213,7 @@ public class OsmTests(DemNetFixture fixture) : IClassFixture<DemNetFixture>
         transform.BoundingBox = bbox; // bbox changed by GetHeigtMap
 
         heightMap = transform.TransformHeightMap(heightMap);
-        TileRange tiles = await _imageryService.DownloadTilesAsync(bbox, ImageryProvider.EsriWorldImagery, 15);
+        TileRange tiles = await _imageryService.DownloadTilesAsync(bbox, ImageryProvider.SwissImage, 15);
 
         string fileName = Path.Combine(outputDir, "Texture.jpg");
         DEM.Net.Core.Imagery.TextureInfo texInfo = _imageryService.ConstructTexture(tiles, bbox, fileName, TextureImageFormat.image_jpeg);
