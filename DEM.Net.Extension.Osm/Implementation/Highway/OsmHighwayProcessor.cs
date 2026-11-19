@@ -10,7 +10,7 @@ using SharpGLTF.Schema2;
 namespace DEM.Net.Extension.Osm.Highways;
 
 
-public class OsmHighwayProcessor(GeoTransformPipeline transform, string highwaysColor) : OsmProcessorStage<HighwayModel>(transform)
+public class OsmHighwayProcessor(GeoTransformPipeline? transform, string? highwaysColor) : OsmProcessorStage<HighwayModel>(transform)
 {
 
     private const float LaneWidthMeters = 3.5F;
@@ -19,7 +19,7 @@ public class OsmHighwayProcessor(GeoTransformPipeline transform, string highways
     /// exact DEM elevation they flicker through it (z-fighting), and the reduced terrain mesh departs from the DEM.
     /// </summary>
     public const double HeightAboveTerrainMeters = 0.5;
-    private readonly string highwaysColor = highwaysColor;
+    private readonly string? highwaysColor = highwaysColor;
 
     public override IOsmDataSettings DataSettings { get; set; } = new HighwaysDataFilter();
     public override OsmModelFactory<HighwayModel> ModelFactory => new HighwayValidator(base._logger, highwaysColor);
@@ -40,7 +40,7 @@ public class OsmHighwayProcessor(GeoTransformPipeline transform, string highways
     {
         if ((road.Lanes ?? 0) > 0)
         {
-            return road.Lanes.Value * LaneWidthMeters;
+            return road.Lanes!.Value * LaneWidthMeters;
         }
         else
         {

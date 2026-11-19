@@ -9,8 +9,8 @@ namespace SampleApp;
 
 public class Location3DModelSettings
 {
-    public DEMDataSet Dataset { get; set; }
-    public ImageryProvider ImageryProvider { get; set; }
+    public DEMDataSet Dataset { get; set; } = null!;
+    public ImageryProvider ImageryProvider { get; set; } = null!;
     public float ZScale { get; set; } = 2f;
     public float SideSizeKm { get; internal set; } = 1.5f;
     public bool OsmBuildings { get; internal set; } = true;
@@ -23,7 +23,7 @@ public class Location3DModelSettings
         new("Data","Myceanean Atlas Project","https://helladic.info","Robert H. Consoli is the creator of this website and the database that underlies it. The site and the database feature contributions by Dr. Sarah Murray of the University of Nebraska. License: Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) (https://creativecommons.org/licenses/by-sa/4.0/)"),
         new("Generator","DEM Net Elevation API","https://elevationapi.com","Xavier Fischer, Frédéric Aubin, and contributors. License: MIT, free for individuals/private use or companies generating less than 100K$ income."),
     ];
-    public string OutputDirectory { get; internal set; }
+    public string OutputDirectory { get; internal set; } = null!;
 }
 
 #endregion

@@ -6,7 +6,7 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm.Railway;
 
-internal class OsmRailwayProcessor(GeoTransformPipeline transformPipeline) : OsmProcessorStage<RailwayModel>(transformPipeline)
+internal class OsmRailwayProcessor(GeoTransformPipeline? transformPipeline) : OsmProcessorStage<RailwayModel>(transformPipeline)
 {
 
     private const float WidthMeters = 2.5F;

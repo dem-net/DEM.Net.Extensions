@@ -33,7 +33,7 @@ public class DefaultOsmProcessor(ElevationService elevationService
 
     public OsmElevationOptions Settings { get; set; } = osmOptions.Value;
 
-    private List<IOsmProcessor> Build(OsmLayer layers, GeoTransformPipeline transform = null, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null)
+    private List<IOsmProcessor> Build(OsmLayer layers, GeoTransformPipeline? transform = null, bool withBuildingsColors = false, string? defaultBuildingsColor = null, string? highwaysColor = null)
     {
         List<IOsmProcessor> processors = [];
 
@@ -54,7 +54,7 @@ public class DefaultOsmProcessor(ElevationService elevationService
 
         return processors;
     }
-    public async Task<ModelRoot> RunAsync(ModelRoot model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, DEMDataSet dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string defaultBuildingsColor = null, string highwaysColor = null, CancellationToken cancellationToken = default)
+    public async Task<ModelRoot> RunAsync(ModelRoot? model, OsmLayer layers, BoundingBox bbox, GeoTransformPipeline transform, DEMDataSet? dataSet = null, bool downloadMissingFiles = true, bool withBuildingsColors = false, string? defaultBuildingsColor = null, string? highwaysColor = null, CancellationToken cancellationToken = default)
     {
 
         model = model ?? _gltfService.CreateNewModel();

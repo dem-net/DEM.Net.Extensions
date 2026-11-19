@@ -24,7 +24,7 @@ public static class OsmFeatureClipper
     public static IEnumerable<IFeature> ClipToBoundingBox(IEnumerable<IFeature> features, BoundingBox bboxWgs84)
     {
         var clipEnvelope = new Envelope(bboxWgs84.xMin, bboxWgs84.xMax, bboxWgs84.yMin, bboxWgs84.yMax);
-        Geometry clipPolygon = null;
+        Geometry? clipPolygon = null;
 
         foreach (var feature in features)
         {
@@ -35,22 +35,22 @@ public static class OsmFeatureClipper
                 continue;
             if (clipEnvelope.Contains(geom.EnvelopeInternal) || !IsClippable(geom))
             {
-                yield return feature;
+                yield return feature!;
                 continue;
             }
 
             clipPolygon ??= geom.Factory.ToGeometry(clipEnvelope);
-            Geometry clipped = Intersection(geom, clipPolygon);
+            Geometry? clipped = Intersection(geom, clipPolygon);
             if (clipped == null)
             {
-                yield return feature; // could not clip: better whole than missing
+                yield return feature!; // could not clip: better whole than missing
                 continue;
             }
 
             foreach (var part in Parts(geom, clipped))
             {
                 part.SRID = geom.SRID;
-                yield return new Feature(part, feature.Attributes);
+                yield return new Feature(part, feature!.Attributes);
             }
         }
     }
@@ -69,7 +69,7 @@ public static class OsmFeatureClipper
         return polygons.Length == 0 ? Array.Empty<Geometry>() : [source.Factory.CreateMultiPolygon(polygons)];
     }
 
-    private static Geometry Intersection(Geometry geom, Geometry clip)
+    private static Geometry? Intersection(Geometry geom, Geometry clip)
     {
         try
         {

@@ -35,18 +35,18 @@ namespace DEM.Net.Extension.VisualTopo;
 
 public class VisualTopoModel
 {
-    public string Name { get; internal set; }
+    public string? Name { get; internal set; }
     public GeoPoint EntryPoint { get; internal set; }
-    public string EntryPointProjectionCode { get; internal set; }
+    public string? EntryPointProjectionCode { get; internal set; }
 
     public Graph<VisualTopoData> Graph { get; set; } = new Graph<VisualTopoData>();
     public List<VisualTopoSet> Sets { get; set; } = [];
 
-    public Dictionary<string, VisualTopoData> GlobalPosPerSortie { get; internal set; }
-    public string Author { get; internal set; }
+    public Dictionary<string, VisualTopoData> GlobalPosPerSortie { get; internal set; } = null!;
+    public string? Author { get; internal set; }
     public bool TopoRobot { get; internal set; }
     public Vector4 DefaultColor { get; internal set; }
-    public string Entree { get; internal set; }
+    public string? Entree { get; internal set; }
     public int SRID { get; internal set; }
 
     public BoundingBox BoundingBox
@@ -59,7 +59,7 @@ public class VisualTopoModel
         }
     }
 
-    public List<List<GeoPointRays>> Topology3D { get; internal set; }
-    public TriangulationList<Vector3> TriangulationFull3D { get; internal set; }
+    public List<List<GeoPointRays>> Topology3D { get; internal set; } = null!;
+    public TriangulationList<Vector3> TriangulationFull3D { get; internal set; } = null!;
 }
 

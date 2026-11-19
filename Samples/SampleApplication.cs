@@ -80,7 +80,7 @@ public class SampleApplication
         {
             using (TimeSpanBlock timer = new TimeSpanBlock(nameof(VisualTopoSample), _logger))
             {
-                await services.GetService<VisualTopoSample>().RunAsync();
+                await services.GetService<VisualTopoSample>()!.RunAsync();
             }
 
 

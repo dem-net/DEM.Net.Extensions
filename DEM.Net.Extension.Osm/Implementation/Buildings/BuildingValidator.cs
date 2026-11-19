@@ -46,7 +46,7 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
     private readonly bool _useOsmColors;
     private readonly Vector4 _defaultColor = Vector4.One; // white
 
-    public BuildingValidator(ILogger logger, bool useOsmColors, string defaultHtmlColor = null) : base(logger)
+    public BuildingValidator(ILogger logger, bool useOsmColors, string? defaultHtmlColor = null) : base(logger)
     {
         this._logger = logger;
         this._useOsmColors = useOsmColors;
@@ -90,7 +90,7 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
     }
 
 
-    public override IEnumerable<BuildingModel> CreateModel(IFeature feature)
+    public override IEnumerable<BuildingModel?> CreateModel(IFeature? feature)
     {
         if (feature == null) yield break;
 
@@ -98,11 +98,11 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
         {
             case OgcGeometryType.Polygon:
 
-                BuildingModel model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
+                BuildingModel? model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
                 if (model != null)
                 {
-                    model.Id = feature.Attributes["osmid"].ToString();
-                    model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+                    model.Id = feature.Attributes["osmid"].ToString()!;
+                    model.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
                 }
                 yield return model;
                 break;
@@ -113,8 +113,8 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
                     var modelPoly = ConvertBuildingGeometry(polygon, ref base._totalPoints);
                     if (modelPoly != null)
                     {
-                        modelPoly.Id = feature.Attributes["osmid"].ToString();
-                        modelPoly.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+                        modelPoly.Id = feature.Attributes["osmid"].ToString()!;
+                        modelPoly.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
                     }
                     yield return modelPoly;
                 }
@@ -129,12 +129,12 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
     // Parse with unit conversion to meters
     private void ParseLengthTag(BuildingModel model, string tagName, Action<double> updateAction)
     {
-        if (model.Tags.TryGetValue(tagName, out object val))
+        if (model.Tags.TryGetValue(tagName, out object? val))
         {
             try
             {
                 // Will capture 4 items : inputval / sign / value / unit
-                var match = Regex.Match(val.ToString(), ValueAndUnitRegex, RegexOptions.Singleline | RegexOptions.Compiled);
+                var match = Regex.Match(val!.ToString()!, ValueAndUnitRegex, RegexOptions.Singleline | RegexOptions.Compiled);
                 if (match.Success)
                 {
                     var groups = match.Groups[0];
@@ -175,7 +175,7 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
         // Can't do it with a linq + lambda because of ref int param
         List<GeoPoint> outerRingGeoPoints = ConvertBuildingLineString(poly.ExteriorRing, ref geoPointIdCounter);
 
-        List<List<GeoPoint>> interiorRings = null;
+        List<List<GeoPoint>>? interiorRings = null;
         if (poly.NumPoints > 1)
         {
             interiorRings = [];

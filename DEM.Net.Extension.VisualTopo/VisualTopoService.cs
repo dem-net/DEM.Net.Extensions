@@ -80,7 +80,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
 
     private VisualTopoModel ParseFile(string vtopoFile, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams)
     {
-        VisualTopoModel model = null;
+        VisualTopoModel model;
 
         // ========================
         // Parsing
@@ -93,7 +93,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     }
     private VisualTopoModel ParseFile(Stream vtopoStream, Encoding encoding, bool decimalDegrees, bool ignoreRadialBeams)
     {
-        VisualTopoModel model = null;
+        VisualTopoModel model;
 
         // ========================
         // Parsing
@@ -273,13 +273,13 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
         // Generate triangulation
         //
         TriangulationList<Vector3> markersTriangulation = new TriangulationList<Vector3>();
-        TriangulationList<Vector3> triangulation = GraphTraversal_Triangulation(model, null, ref markersTriangulation, model.Graph.Root, colorFunc);
+        TriangulationList<Vector3> triangulation = GraphTraversal_Triangulation(model, null, ref markersTriangulation, model.Graph.Root!, colorFunc);
 
         model.TriangulationFull3D = triangulation + markersTriangulation;
     }
 
 
-    private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3> triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, IColorCalculator colorFunc)
+    private TriangulationList<Vector3> GraphTraversal_Triangulation(VisualTopoModel visualTopoModel, TriangulationList<Vector3>? triangulation, ref TriangulationList<Vector3> markersTriangulation, Node<VisualTopoData> node, IColorCalculator colorFunc)
     {
         triangulation = triangulation ?? new TriangulationList<Vector3>();
 
@@ -287,7 +287,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
         if (model.IsSectionStart && triangulation.NumPositions > 0)
         {
             // Cylinder height = point depth + (terrain height above - entry Z)
-            float cylinderHeight = -model.VectorLocal.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation.Value);
+            float cylinderHeight = -model.VectorLocal.Z + (float)(model.TerrainElevationAbove - visualTopoModel.EntryPoint.Elevation!.Value);
             markersTriangulation += _meshService.CreateCylinder(model.VectorLocal, 0.2f, cylinderHeight, model.Set.Color);
 
             //var surfacePos = new Vector3(model.GlobalVector.X, model.GlobalVector.Y, (float)model.TerrainElevationAbove);
@@ -329,7 +329,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     /// <param name="current"></param>
     /// <param name="next"></param>
     /// <returns></returns>
-    private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData nextData, int startIndex, IColorCalculator colorFunc)
+    private TriangulationList<Vector3> AddCorridorRectangleSection(TriangulationList<Vector3> triangulation, VisualTopoData current, VisualTopoData? nextData, int startIndex, IColorCalculator colorFunc)
     {
         Vector3 next = (nextData == null) ? current.VectorLocal : nextData.VectorLocal;
         GeoPointRays rays = current.GeoPointLocal;
@@ -357,7 +357,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
 
         //Vector4 color = (colorIndex++) % 2 == 0 ? VectorsExtensions.CreateColor(0, 255, 0) : VectorsExtensions.CreateColor(0, 0, 255);
 
-        triangulation.Colors.AddRange(Enumerable.Repeat(colorFunc.GetColor(current, position), 4));
+        triangulation.Colors!.AddRange(Enumerable.Repeat(colorFunc.GetColor(current, position), 4));
 
         // corridor sides
         if (triangulation.NumPositions > 4)
@@ -395,11 +395,11 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     private void Build3DTopology(VisualTopoModel model, float zFactor)
     {
         List<List<GeoPointRays>> branches = [];
-        GraphTraversal_Lines(model.Graph.Root, branches, null, Vector3.Zero, 0, zFactor);
+        GraphTraversal_Lines(model.Graph.Root!, branches, null, Vector3.Zero, 0, zFactor);
         model.Topology3D = branches;
     }
 
-    private void GraphTraversal_Lines(Node<VisualTopoData> node, List<List<GeoPointRays>> branches, List<GeoPointRays> current, Vector3 local, double runningTotalLength, float zFactor)
+    private void GraphTraversal_Lines(Node<VisualTopoData> node, List<List<GeoPointRays>> branches, List<GeoPointRays>? current, Vector3 local, double runningTotalLength, float zFactor)
     {
 
         var p = node.Model;
@@ -452,10 +452,10 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     public List<List<string>> GetBranchesNodeNames(VisualTopoModel model)
     {
         List<List<string>> branches = [];
-        GetBranches(model.Graph.Root, branches, null, n => n.Sortie);
+        GetBranches(model.Graph.Root!, branches, null, n => n.Sortie);
         return branches;
     }
-    private void GetBranches<T>(Node<VisualTopoData> node, List<List<T>> branches, List<T> current, Func<VisualTopoData, T> extractInfo)
+    private void GetBranches<T>(Node<VisualTopoData> node, List<List<T>> branches, List<T>? current, Func<VisualTopoData, T> extractInfo)
     {
         if (current == null) current = [];
 
@@ -509,23 +509,23 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
                             .Where(s => !string.IsNullOrWhiteSpace(s))
                             .Select(s => s.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries))
                             .ToDictionary(s => s[0], s => s[1]);
-        if (headerLines.TryGetValue("Trou", out string trou))
+        if (headerLines.TryGetValue("Trou", out string? trou))
         {
             ParseEntryHeader(model, trou);
         }
-        if (headerLines.TryGetValue("Club", out string club))
+        if (headerLines.TryGetValue("Club", out string? club))
         {
             model.Author = club;
         }
-        if (headerLines.TryGetValue("Entree", out string entree))
+        if (headerLines.TryGetValue("Entree", out string? entree))
         {
             model.Entree = entree;
         }
-        if (headerLines.TryGetValue("Toporobot", out string toporobot))
+        if (headerLines.TryGetValue("Toporobot", out string? toporobot))
         {
             model.TopoRobot = toporobot == "1";
         }
-        if (headerLines.TryGetValue("Couleur", out string couleur))
+        if (headerLines.TryGetValue("Couleur", out string? couleur))
         {
             model.DefaultColor = ParseColor(couleur);
         }
@@ -536,7 +536,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
     {
         VisualTopoSet set = new VisualTopoSet();
 
-        string setHeader = sr.ReadLine();
+        string setHeader = sr.ReadLine()!;
 
         if (setHeader.StartsWith("[Configuration "))
         {
@@ -551,10 +551,10 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
         set.Name = data.Length > 1 ? data[1].Trim() : string.Empty;
 
         sr.Skip(1);
-        var dataLine = sr.ReadLine();
+        var dataLine = sr.ReadLine()!;
         do
         {
-            VisualTopoData topoData = new VisualTopoData();
+            VisualTopoData? topoData = new VisualTopoData();
 
             var parts = dataLine.Split(';');
             if (parts.Length > 1) topoData.Comment = parts[1].Trim();
@@ -577,7 +577,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
         return model;
     }
 
-    private VisualTopoData ParseData(VisualTopoData topoData, string[] slots, bool decimalDegrees, bool ignoreRadialBeams)
+    private VisualTopoData? ParseData(VisualTopoData topoData, string[] slots, bool decimalDegrees, bool ignoreRadialBeams)
     {
         const string DefaultSize = "0.125";
 
@@ -626,7 +626,7 @@ public class VisualTopoService(MeshService meshService, ElevationService elevati
              .FirstOrDefault();
         return ParseColor(colorStr);
     }
-    private Vector4 ParseColor(string rgbCommaSeparated)
+    private Vector4 ParseColor(string? rgbCommaSeparated)
     {
         if (string.IsNullOrEmpty(rgbCommaSeparated) || rgbCommaSeparated == "std")
             return VectorsExtensions.CreateColor(255, 255, 255);

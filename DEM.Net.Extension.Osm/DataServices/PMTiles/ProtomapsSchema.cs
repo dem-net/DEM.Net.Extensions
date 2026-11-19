@@ -11,10 +11,10 @@ namespace DEM.Net.Extension.Osm.PMTiles;
 /// </summary>
 internal sealed class ProtomapsLayerMapping
 {
-    public string FilterIdentifier { get; set; }
-    public string[] SourceLayers { get; set; }
-    public Func<string, IReadOnlyDictionary<string, object>, MvtGeometryType, bool> Accept { get; set; }
-    public Func<IReadOnlyDictionary<string, object>, MvtGeometryType, IDictionary<string, object>> ToOsmTags { get; set; }
+    public string FilterIdentifier { get; set; } = null!;
+    public string[] SourceLayers { get; set; } = null!;
+    public Func<string, IReadOnlyDictionary<string, object>, MvtGeometryType, bool> Accept { get; set; } = null!;
+    public Func<IReadOnlyDictionary<string, object>, MvtGeometryType, IDictionary<string, object>> ToOsmTags { get; set; } = null!;
 
     /// <summary>Some validators (water) only accept MultiPolygon, not Polygon.</summary>
     public bool PolygonsAsMultiPolygon { get; set; }
@@ -97,7 +97,7 @@ internal static class ProtomapsSchema
             ToOsmTags = (p, type) =>
             {
                 var tags = new Dictionary<string, object>();
-                string detail = Str(p, "kind_detail") ?? Kind(p);
+                string? detail = Str(p, "kind_detail") ?? Kind(p);
                 if (type == MvtGeometryType.Polygon)
                 {
                     tags["natural"] = "water";
@@ -111,12 +111,12 @@ internal static class ProtomapsSchema
 
     };
 
-    public static ProtomapsLayerMapping Find(string filterIdentifier)
+    public static ProtomapsLayerMapping? Find(string? filterIdentifier)
         => filterIdentifier != null && Mappings.TryGetValue(filterIdentifier, out var m) ? m : null;
 
-    internal static string Kind(IReadOnlyDictionary<string, object> p) => Str(p, "kind") ?? Str(p, "pmap:kind");
+    internal static string? Kind(IReadOnlyDictionary<string, object> p) => Str(p, "kind") ?? Str(p, "pmap:kind");
 
-    private static string Str(IReadOnlyDictionary<string, object> p, string key)
+    private static string? Str(IReadOnlyDictionary<string, object> p, string key)
     {
         if (!p.TryGetValue(key, out var v) || v == null) return null;
         if (v is string s) return s.Length == 0 ? null : s;
@@ -151,7 +151,7 @@ internal static class ProtomapsSchema
         }
     }
 
-    private static string HighwayFromKind(string kind)
+    private static string HighwayFromKind(string? kind)
     {
         return kind switch
         {

@@ -32,6 +32,6 @@ public interface IVisualTopoRepository
 {
     Task<Guid> AddModelAsync(VisualTopoModel model);
     Task UpdateModelAsync(VisualTopoModel model, Guid id);
-    Task<VisualTopoModel> GetModelAsync(Guid id);
+    Task<VisualTopoModel?> GetModelAsync(Guid id);
     Task DeleteModelAsync(Guid id);
 }

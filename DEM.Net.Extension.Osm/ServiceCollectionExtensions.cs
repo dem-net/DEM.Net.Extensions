@@ -17,7 +17,7 @@ public static class ServiceCollectionExtension
 
             .AddSingleton<PMTilesReaderProvider>()
             .AddTransient<PMTilesDataService>()
-            .AddSingleton<Func<PMTilesDataService>>(x => x.GetService<PMTilesDataService>)
+            .AddSingleton<Func<PMTilesDataService>>(x => () => x.GetService<PMTilesDataService>()!)
 
             .AddTransient<DefaultOsmProcessor>();
         //services.AddTransient<IOsmDataService, OsmDataServiceVectorTiles>()

@@ -12,14 +12,14 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm;
 
-public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOsmProcessor
+public abstract class OsmProcessorStage<T>(GeoTransformPipeline? transform) : IOsmProcessor
     where T : CommonModel
 {
-    protected ElevationService _elevationService;
-    protected SharpGltfService _gltfService;
-    protected MeshService _meshService;
-    protected IOsmDataService _osmDataService;
-    protected ILogger _logger;
+    protected ElevationService _elevationService = null!;
+    protected SharpGltfService _gltfService = null!;
+    protected MeshService _meshService = null!;
+    protected IOsmDataService _osmDataService = null!;
+    protected ILogger _logger = null!;
 
     public void Init(ElevationService elevationService
         , SharpGltfService gltfService
@@ -45,10 +45,10 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
 
     public abstract string glTFNodeName { get; }
 
-    public virtual GeoTransformPipeline Transform { get; set; } = transform?.Clone();
+    public virtual GeoTransformPipeline Transform { get; set; } = transform?.Clone()!;
 
 
-    public async Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default)
+    public async Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet? dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -61,10 +61,10 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
 
             // Download elevation data if missing: elevations are then read from local files
             if (DataSettings.ComputeElevations && downloadMissingFiles)
-                await _elevationService.DownloadMissingFilesAsync(dataSet, bbox, cancellationToken).ConfigureAwait(false);
+                await _elevationService.DownloadMissingFilesAsync(dataSet!, bbox, cancellationToken).ConfigureAwait(false);
 
             // Materialized once: parsing, clipping and elevations must not run again for each enumeration
-            List<T> models = [.. this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet, downloadMissingFiles)];
+            List<T> models = [.. this.ComputeModelElevationsAndTransform(parsed, DataSettings.ComputeElevations, dataSet!, downloadMissingFiles)];
             cancellationToken.ThrowIfCancellationRequested();
 
             return this.AddToModel(gltfModel, glTFNodeName, models);
@@ -115,8 +115,8 @@ public abstract class OsmProcessorStage<T>(GeoTransformPipeline transform) : IOs
 
             foreach (var feature in features)
             {
-                validator.RegisterTags(feature as Feature);
-                foreach (Tmodel model in validator.CreateModel(feature as Feature))
+                validator.RegisterTags((feature as Feature)!);
+                foreach (Tmodel? model in validator.CreateModel(feature as Feature))
                 {
 
                     if (model == null)

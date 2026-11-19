@@ -6,7 +6,7 @@ using DEM.Net.Core;
 
 namespace DEM.Net.Extension.Osm.Buildings;
 
-public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint>> interiorRings) : CommonModel, IPolygon<GeoPoint>
+public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint>>? interiorRings) : CommonModel, IPolygon<GeoPoint>
 {
     public List<GeoPoint> ExteriorRing { get; set; } = exteriorRingPoints;
 
@@ -33,7 +33,7 @@ public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint
     public bool IsPart { get; set; }
     public Vector4? Color { get; set; }
     public Vector4? RoofColor { get; set; }
-    public BuildingModel Parent { get; internal set; }
+    public BuildingModel? Parent { get; internal set; }
 
     public override string ToString()
     {

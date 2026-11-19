@@ -72,7 +72,7 @@ class Program
 
     }
 
-    private static IConfigurationRoot LoadAppSettings()
+    private static IConfigurationRoot? LoadAppSettings()
     {
         try
         {

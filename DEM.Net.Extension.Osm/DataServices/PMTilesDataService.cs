@@ -28,7 +28,7 @@ public sealed class PMTilesReaderProvider(IOptions<OsmElevationOptions> options,
 {
     private readonly Lazy<PMTilesReader> _reader = new Lazy<PMTilesReader>(() =>
         {
-            string path = options.Value.PMTilesFilePath;
+            string? path = options.Value.PMTilesFilePath;
             if (string.IsNullOrWhiteSpace(path))
                 throw new InvalidOperationException($"{nameof(OsmElevationOptions)}.{nameof(OsmElevationOptions.PMTilesFilePath)} must be set when {nameof(OsmElevationOptions.DataServiceType)} is {OsmDataServiceType.PMTiles}.");
 
@@ -128,7 +128,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d), (idx, _, local) =>
         {
             int tx = range.MinTx + idx % range.Cols, ty = range.MinTy + idx / range.Cols;
-            byte[] data = range.Reader.GetTile(range.Zoom, tx, ty);
+            byte[]? data = range.Reader.GetTile(range.Zoom, tx, ty);
             if (data == null || data.Length == 0) return local;
 
             foreach (var layer in MvtDecoder.Decode(data, wantedLayers))
@@ -157,10 +157,10 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
 
     private sealed class TileRange
     {
-        public PMTilesReader Reader;
+        public PMTilesReader Reader = null!;
         public int Zoom, MinTx, MinTy, Cols, Rows;
         public long TileCount => (long)Cols * Rows;
-        public Envelope BboxWorldEnvelope;
+        public Envelope BboxWorldEnvelope = null!;
     }
 
     /// <exception cref="OsmQueryTooLargeException">More tiles than <see cref="OsmElevationOptions.PMTilesMaxTilesPerQuery"/>.</exception>
@@ -202,7 +202,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         Parallel.For(0, (int)tileCount, idx =>
         {
             int tx = minTx + idx % cols, ty = minTy + idx / cols;
-            byte[] data = reader.GetTile(z, tx, ty);
+            byte[]? data = reader.GetTile(z, tx, ty);
             if (data == null || data.Length == 0) return;
 
             var tileEnv = new Envelope(tx * W, (tx + 1) * W, ty * W, (ty + 1) * W);
@@ -215,7 +215,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
                     var props = layer.GetProperties(mvtFeature);
                     if (!mapping.Accept(layer.Name, props, mvtFeature.Type)) continue;
 
-                    Geometry geom;
+                    Geometry? geom;
                     try { geom = MvtDecoder.ToGeometry(mvtFeature, tx, ty, layer.Extent, WorldFactory); }
                     catch (Exception ex) when (ex is InvalidDataException || ex is ArgumentException)
                     {
@@ -254,7 +254,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
                 .ToList();
         }
 
-        Geometry clipped = tileEnv.Contains(geom.EnvelopeInternal) ? geom : SafeIntersection(geom, WorldFactory.ToGeometry(tileEnv), type);
+        Geometry? clipped = tileEnv.Contains(geom.EnvelopeInternal) ? geom : SafeIntersection(geom, WorldFactory.ToGeometry(tileEnv), type);
         if (clipped == null || clipped.IsEmpty) return [];
 
         return type == MvtGeometryType.Polygon
@@ -262,7 +262,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
             : [.. LineStringExtracter.GetLines(clipped).Where(g => !g.IsEmpty && g.Length > 0)];
     }
 
-    private Geometry SafeIntersection(Geometry geom, Geometry clip, MvtGeometryType type)
+    private Geometry? SafeIntersection(Geometry geom, Geometry clip, MvtGeometryType type)
     {
         try
         {
