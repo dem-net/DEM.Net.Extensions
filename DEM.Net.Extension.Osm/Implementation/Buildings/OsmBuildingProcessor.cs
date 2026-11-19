@@ -34,7 +34,8 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
             return gltfModel;
         }
 
-        gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
+        // With the computed normals: without them, viewers shade every triangle flat (round walls look faceted)
+        gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), triangulation.Normals, null, doubleSided: true);
 
         return gltfModel;
 
