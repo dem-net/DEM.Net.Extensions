@@ -34,6 +34,12 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
             return gltfModel;
         }
 
+        // All white (the default): no vertex colors, the material is white. Saves 16 bytes per vertex.
+        if (triangulation.Colors.All(c => c == Vector4.One))
+        {
+            triangulation = new TriangulationNormals(triangulation.Positions, triangulation.Indices, triangulation.Normals, []);
+        }
+
         // With the computed normals: without them, viewers shade every triangle flat (round walls look faceted)
         gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), triangulation.Normals, null, doubleSided: true);
 
