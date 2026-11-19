@@ -36,6 +36,9 @@ internal class HighwayValidator : OsmModelFactory<HighwayModel>
 
         model.Color = _defaultColor;
 
+        if (model.Tunnel)
+            return false; // underground: not drawn
+
         if (model.Area)
         {
             _logger.LogWarning($"Area polygons not supported yet. Will process only exterior ring. {nameof(HighwayModel)} {model.Type} {model.Id}.");

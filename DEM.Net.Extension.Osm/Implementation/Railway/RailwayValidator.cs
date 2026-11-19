@@ -17,7 +17,7 @@ internal class RailwayValidator(ILogger logger) : OsmModelFactory<RailwayModel>(
         base.ParseTag<string>(model, "railway", v => model.Type = v);
         base.ParseTag<string, bool>(model, "tunnel", s => s == "yes", v => model.Tunnel = v);
         base.ParseTag<string, bool>(model, "bridge", s => s == "yes", v => model.Bridge = v);
-        return true;
+        return !model.Tunnel; // underground: not drawn
     }
 
 

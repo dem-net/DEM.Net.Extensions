@@ -41,6 +41,9 @@
 		<Compile Remove="Extensions\IEnumerableExtensions.cs" />
 	</ItemGroup>
 	<ItemGroup>
+		<InternalsVisibleTo Include="DEM.Net.Extension.Tests" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Include="..\..\DEM.Net\LICENSE.md" Link="LICENSE.md">
 			<PackagePath>
 			</PackagePath>
