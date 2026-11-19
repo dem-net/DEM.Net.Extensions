@@ -154,7 +154,7 @@ class VisualTopoSample(ILogger<VisualTopoSample> logger
     /// <param name="vtopoFile">VisualTopo .TRO file</param>
     /// <param name="imageryProvider">Imagery provider for terrain texture. Set to null for untextured model</param>
     /// <param name="bboxMarginMeters">Terrain margin (meters) around VisualTopo model</param>
-    public async Task Run3DModelGenerationAsync(string vtopoFile, ImageryProvider imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
+    public async Task Run3DModelGenerationAsync(string vtopoFile, ImageryProvider? imageryProvider, float bboxMarginMeters = 1000, bool generateTopoOnlyModel = false, float zFactor = 1f)
     {
         try
         {
@@ -278,7 +278,7 @@ class VisualTopoSample(ILogger<VisualTopoSample> logger
             //=======================
             // Textures
             //
-            PBRTexture pbrTexture = null;
+            PBRTexture? pbrTexture = null;
             if (imageryProvider != null)
             {
                 TileRange tiles = await _imageryService.DownloadTilesAsync(bbox, imageryProvider, TEXTURE_TILES);

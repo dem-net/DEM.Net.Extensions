@@ -133,7 +133,7 @@ public class PMTilesTests
             // both road parts with their tile buffer: (4200 - 3000) + (500 + 1096) world px at z15
             var bbox = TestBbox();
             double metersPerPx = 40075016.686 * Math.Cos((bbox.yMin + bbox.yMax) / 2 * Math.PI / 180) / (4096d * (1 << Z));
-            Assert.Equal(2796 * metersPerPx, roads.LengthMeters.Value, 6);
+            Assert.Equal(2796 * metersPerPx, roads.LengthMeters!.Value, 6);
             Assert.Equal(2, service.GetOsmDataStats(TestBbox(), new TestFilter("railway")).Vertices);
             Assert.Equal(new OsmDataStats(0, 0), service.GetOsmDataStats(TestBbox(), new TestFilter("unknown-layer")));
             // historical scale kept for GetOsmDataCount
@@ -277,8 +277,8 @@ public class PMTilesTests
     private sealed class TestFeature
     {
         public int Type;
-        public List<uint> Geometry;
-        public (string Key, object Value)[] Props;
+        public List<uint> Geometry = null!;
+        public (string Key, object Value)[] Props = null!;
     }
 
     private static TestFeature Feature(int type, List<uint> geometry, params (string, object)[] props)

@@ -30,7 +30,7 @@ public class HelladicSample
     private readonly SharpGltfService _gltfService;
     private readonly MeshService _meshService;
     private readonly Sketchfab.SketchfabApi _sketchFabApi;
-    private readonly string _sketchFabToken;
+    private readonly string? _sketchFabToken;
     private readonly ILogger _logger;
 
 
@@ -111,7 +111,7 @@ public class HelladicSample
             try
             {
                 bool modelExists = File.Exists(Path.Combine(settings.OutputDirectory, settings.ModelFileNameGenerator(settings, request)));
-                Location3DModelResponse response = null;
+                Location3DModelResponse? response = null;
                 if (!(modelExists && responses.TryGetValue(request.Id, out response))) // check model file exist
                 {
                     try
@@ -121,7 +121,7 @@ public class HelladicSample
                         response = await Generate3DLocationModelAsync(request, settings);
                         sumTilesDownloaded += response.NumTiles ?? 0;
                         response.Id = request.Id;
-                        responses[response.Id] = response;
+                        responses[response!.Id] = response;
                     }
                     catch (Exception ex)
                     {
@@ -161,7 +161,7 @@ public class HelladicSample
                 await sw.WriteLineAsync(string.Join("\t", request.Id, request.Title, request.Latitude, request.Longitude
                    , request.Description // link
                    , sumTilesDownloaded // tilecount_running_total
-                   , response.UploadStatus.ToString() // sketchfab_status
+                   , response!.UploadStatus.ToString() // sketchfab_status
                    , response.UploadedFileId // sketchfab_id
                     ));
 
@@ -190,7 +190,7 @@ public class HelladicSample
             do
             {
                 //pk,pn,lat,lon,link
-                Location3DModelRequest request = ParseRequestCsvLine(sr.ReadLine(), '\t');
+                Location3DModelRequest request = ParseRequestCsvLine(sr.ReadLine()!, '\t');
                 requests.Add(request.Id, request);
             } while (!sr.EndOfStream);
         }
@@ -207,7 +207,7 @@ public class HelladicSample
             do
             {
                 //pk,pn,lat,lon,link
-                Location3DModelResponse result = ParseResultCsvLine(sr.ReadLine(), '\t');
+                Location3DModelResponse result = ParseResultCsvLine(sr.ReadLine()!, '\t');
                 results.Add(result.Id, result);
             } while (!sr.EndOfStream);
         }
@@ -315,7 +315,7 @@ public class HelladicSample
             response.Attributions.Add(settings.Dataset.Attribution); // will be added to the model
 
 
-            PBRTexture pbrTexture = null;
+            PBRTexture? pbrTexture = null;
             if (settings.ImageryProvider != null)
             {
                 response.Attributions.Add(settings.ImageryProvider.Attribution); // will be added to the model
@@ -365,7 +365,7 @@ public class HelladicSample
             //}
 
             response.Elapsed = timer.Elapsed;
-            response.NumTiles = pbrTexture.BaseColorTexture.TileCount;
+            response.NumTiles = pbrTexture!.BaseColorTexture.TileCount;
         }
         catch (Exception)
         {

@@ -46,7 +46,7 @@ public abstract class OsmModelFactory<TModel>(ILogger logger) where TModel : Com
     /// <param name="model"></param>
     /// <returns></returns>
     public abstract bool ParseTags(TModel model);
-    public abstract IEnumerable<TModel> CreateModel(IFeature feature);
+    public abstract IEnumerable<TModel?> CreateModel(IFeature? feature);
 
     public virtual void RegisterTags(IFeature feature)
     {
@@ -64,7 +64,7 @@ public abstract class OsmModelFactory<TModel>(ILogger logger) where TModel : Com
     }
     protected virtual void ParseTag<Tin, Tout>(TModel model, string tagName, Func<Tin, Tout> transformFunc, Action<Tout> updateAction)
     {
-        if (model.Tags.TryGetValue(tagName, out object val))
+        if (model.Tags.TryGetValue(tagName, out object? val))
         {
             try
             {
@@ -119,7 +119,7 @@ public class TagRegistry
         }
         _geomTypes[feature.Geometry.OgcGeometryType]++;
 
-        foreach (var prop in feature.Attributes as AttributesTable)
+        foreach (var prop in (feature.Attributes as AttributesTable)!)
         {
             if (!_tagsOccurences.ContainsKey(prop.Key))
             {

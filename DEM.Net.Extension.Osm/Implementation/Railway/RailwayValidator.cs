@@ -21,11 +21,11 @@ internal class RailwayValidator(ILogger logger) : OsmModelFactory<RailwayModel>(
     }
 
 
-    public override IEnumerable<RailwayModel> CreateModel(IFeature feature)
+    public override IEnumerable<RailwayModel?> CreateModel(IFeature? feature)
     {
         if (feature == null) yield break;
 
-        RailwayModel model = null;
+        RailwayModel? model = null;
         switch (feature.Geometry.OgcGeometryType)
         {
             case OgcGeometryType.LineString:
@@ -38,8 +38,8 @@ internal class RailwayValidator(ILogger logger) : OsmModelFactory<RailwayModel>(
 
         if (model != null)
         {
-            model.Id = feature.Attributes["osmid"].ToString();
-            model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+            model.Id = feature.Attributes["osmid"].ToString()!;
+            model.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
         }
 
 

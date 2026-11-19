@@ -13,7 +13,7 @@ namespace DEM.Net.Extension.Osm.Highways;
 internal class HighwayValidator : OsmModelFactory<HighwayModel>
 {
     private readonly Vector4 _defaultColor = Vector4.One;
-    public HighwayValidator(ILogger logger, string highwaysColor = null) : base(logger ?? NullLogger<HighwayValidator>.Instance)
+    public HighwayValidator(ILogger logger, string? highwaysColor = null) : base(logger ?? NullLogger<HighwayValidator>.Instance)
     {
         this._logger = logger ?? NullLogger<HighwayValidator>.Instance; 
         if (!string.IsNullOrWhiteSpace(highwaysColor))
@@ -48,11 +48,11 @@ internal class HighwayValidator : OsmModelFactory<HighwayModel>
         return true;
     }
 
-    public override IEnumerable<HighwayModel> CreateModel(IFeature feature)
+    public override IEnumerable<HighwayModel?> CreateModel(IFeature? feature)
     {
         if (feature == null) yield break;
 
-        HighwayModel model = null;
+        HighwayModel? model = null;
         switch (feature.Geometry.OgcGeometryType)
         {
             case OgcGeometryType.LineString:
@@ -71,8 +71,8 @@ internal class HighwayValidator : OsmModelFactory<HighwayModel>
 
         if (model != null)
         {
-            model.Id = feature.Attributes["osmid"].ToString();
-            model.Tags =(feature.Attributes as AttributesTable).ToDictionary(k=> k.Key, k=>k.Value);
+            model.Id = feature.Attributes["osmid"].ToString()!;
+            model.Tags =(feature.Attributes as AttributesTable)!.ToDictionary(k=> k.Key, k=>k.Value);
         }
 
 

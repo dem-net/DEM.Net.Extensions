@@ -10,7 +10,7 @@ public class HighwayModel(List<GeoPoint> lineString) : CommonModel
     // layer
     // aera = yes
 
-    public string Name { get; internal set; }
+    public string? Name { get; internal set; }
     public int? Lanes { get; internal set; }
     public bool Area { get; internal set; } = false;
     public bool Tunnel { get; internal set; } = false;

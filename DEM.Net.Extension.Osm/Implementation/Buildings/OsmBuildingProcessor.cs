@@ -12,12 +12,12 @@ using SharpGLTF.Schema2;
 namespace DEM.Net.Extension.Osm.Buildings;
 
 
-public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool withBuildingsColors, string defaultBuildingsColor) : OsmProcessorStage<BuildingModel>(transformPipeline)
+public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool withBuildingsColors, string? defaultBuildingsColor) : OsmProcessorStage<BuildingModel>(transformPipeline)
 {
 
     const double LevelHeightMeters = 3;
     private readonly bool withBuildingsColors = withBuildingsColors;
-    private readonly string defaultBuildingsColor = defaultBuildingsColor;
+    private readonly string? defaultBuildingsColor = defaultBuildingsColor;
 
     public override IOsmDataSettings DataSettings { get; set; } = new BuildingsDataFilter();
 
@@ -42,7 +42,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
 
     protected override IEnumerable<BuildingModel> ComputeModelElevationsAndTransform(IEnumerable<BuildingModel> modelsEnum, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
     {
-        List<GeoPoint> transformedPoints = null;
+        List<GeoPoint> transformedPoints;
 
         //// georeference
 
@@ -57,7 +57,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
             // Compute elevations if requested
             IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints // files downloaded by RunAsync
                                                                     , dataSet
-                                                                    , behavior: NoDataBehavior.SetToZero)
+                                                                    , behavior: NoDataBehavior.SetToZero)!
                                                                 : allBuildingPoints;
 
             transformedPoints = [.. Transform.TransformPoints(geoPoints)];
@@ -83,7 +83,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
                 yield return buiding;
             }
             Debug.Assert(index == transformedPoints.Count);
-            transformedPoints = null;
+            transformedPoints = null!; // releases the points while the caller enumerates
         }
 
     }
@@ -121,7 +121,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
                 positions.AddRange(positionsVec3);
                 foreach (int index in triangulation.Indices)
                     indices.Add(index + initialPositionsCount);
-                colors.AddRange(triangulation.Colors);
+                colors.AddRange(triangulation.Colors!);
                 normals.AddRange(buildingNormals);
             }
 
@@ -270,7 +270,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
                 building.Levels = 1;
             }
 
-            if (building.Levels.Value <= (building.Parent.Levels ?? 3))
+            if (building.Levels!.Value <= (building.Parent!.Levels ?? 3))
             {
                 _logger.LogWarning($"Conflicting height info between building and part (parent:{building.Parent.Levels ?? 3} >= part:{building.Levels.Value}), choosing parent level.");
                 if (building.Levels.Value == (building.Parent.Levels ?? 3))
@@ -289,7 +289,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline transformPipeline, bool w
                 // Compute parent roof first
                 ComputeBuildingHeightMeters(building.Parent);
             }
-            double highestFloorElevation = building.Parent.ComputedRoofAltitude.Value;
+            double highestFloorElevation = building.Parent.ComputedRoofAltitude!.Value;
 
             double computedHeight = (building.Levels.Value - building.Parent.Levels ?? 3) * LevelHeightMeters;
             double roofElevation = computedHeight + highestFloorElevation;

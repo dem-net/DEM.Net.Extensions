@@ -55,7 +55,7 @@ public class MemoryRepository(IMemoryCache memoryCache, IOptions<VisualTopoOptio
         return Task.CompletedTask;
     }
 
-    public Task<VisualTopoModel> GetModelAsync(Guid id)
+    public Task<VisualTopoModel?> GetModelAsync(Guid id)
     {
         return Task.FromResult(memoryCache.Get<VisualTopoModel>(GetKey(id)));
     }

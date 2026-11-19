@@ -8,7 +8,7 @@ using SharpGLTF.Schema2;
 
 namespace DEM.Net.Extension.Osm.Water;
 
-internal class OsmWaterProcessor(GeoTransformPipeline transformPipeline) : OsmProcessorStage<WaterModel>(transformPipeline)
+internal class OsmWaterProcessor(GeoTransformPipeline? transformPipeline) : OsmProcessorStage<WaterModel>(transformPipeline)
 {
 
     private const float WaterWidthMeters = 30F;

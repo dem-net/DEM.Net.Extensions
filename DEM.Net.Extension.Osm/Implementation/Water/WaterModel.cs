@@ -20,6 +20,6 @@ internal class WaterModel(List<GeoPoint> lineString) : CommonModel
 
 
     public Vector4 ColorVec4 { get; internal set; }
-    public string NaturalType { get; internal set; }
-    public string WaterwayType { get; internal set; }
+    public string? NaturalType { get; internal set; }
+    public string? WaterwayType { get; internal set; }
 }

@@ -26,7 +26,7 @@ public interface IOsmProcessor
     GeoTransformPipeline Transform { get; set; }
 
     /// <summary>Adds the layer to the model. Elevation files are downloaded first when <paramref name="downloadMissingFiles"/> is true.</summary>
-    Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default);
+    Task<ModelRoot> RunAsync(ModelRoot gltfModel, BoundingBox bbox, DEMDataSet? dataSet, bool downloadMissingFiles, CancellationToken cancellationToken = default);
 
 
 }

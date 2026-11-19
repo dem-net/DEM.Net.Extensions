@@ -62,10 +62,10 @@ public class OsmTests(DemNetFixture fixture) : IClassFixture<DemNetFixture>
 
     const string WKT_UKRAINE_MOUNTAINS = "POLYGON((23.621024638843874 48.915008011278594,23.98014023942981 48.915008011278594,23.98014023942981 48.67119290393242,23.621024638843874 48.67119290393242,23.621024638843874 48.915008011278594))";
 
-    private readonly DefaultOsmProcessor _osmProcessor = fixture.ServiceProvider.GetService<DefaultOsmProcessor>();
-    private readonly ElevationService _elevationService = fixture.ServiceProvider.GetService<ElevationService>();
-    private readonly ImageryService _imageryService = fixture.ServiceProvider.GetService<ImageryService>();
-    private readonly SharpGltfService _gltfService = fixture.ServiceProvider.GetService<SharpGltfService>();
+    private readonly DefaultOsmProcessor _osmProcessor = fixture.ServiceProvider.GetRequiredService<DefaultOsmProcessor>();
+    private readonly ElevationService _elevationService = fixture.ServiceProvider.GetRequiredService<ElevationService>();
+    private readonly ImageryService _imageryService = fixture.ServiceProvider.GetRequiredService<ImageryService>();
+    private readonly SharpGltfService _gltfService = fixture.ServiceProvider.GetRequiredService<SharpGltfService>();
 
     [Theory(DisplayName = "OSM Buildings")]
     [InlineData(nameof(WKT_PRIPYAT_FULL), WKT_PRIPYAT_FULL, true, false, 2)]

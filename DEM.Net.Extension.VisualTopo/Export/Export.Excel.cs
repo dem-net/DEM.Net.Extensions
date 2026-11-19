@@ -52,7 +52,7 @@ public static partial class Export
                                                                         "",
                                                                         "",
                                                                         "",
-                                                                        set.Name ];
+                                                                        set.Name! ];
     public static MemoryStream ExportToExcel(this VisualTopoModel model, bool autoFitColumns = true)
     {
         using var wb = new XLWorkbook();

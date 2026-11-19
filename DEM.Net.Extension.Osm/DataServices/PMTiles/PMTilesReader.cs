@@ -137,7 +137,7 @@ public sealed class PMTilesReader : IDisposable
     /// <summary>
     /// Returns the decompressed tile payload, or null when the tile is not present in the archive.
     /// </summary>
-    public byte[] GetTile(int z, int x, int y)
+    public byte[]? GetTile(int z, int x, int y)
     {
         ulong tileId = PMTilesTileId.FromZxy(z, x, y);
         PMTilesDirectoryEntry[] directory = _rootDirectory;

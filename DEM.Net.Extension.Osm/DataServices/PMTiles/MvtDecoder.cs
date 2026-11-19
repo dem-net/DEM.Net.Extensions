@@ -11,7 +11,7 @@ internal enum MvtGeometryType { Unknown = 0, Point = 1, LineString = 2, Polygon 
 
 internal sealed class MvtLayer
 {
-    public string Name;
+    public string Name = null!;
     public uint Extent = 4096;
     public readonly List<string> Keys = [];
     public readonly List<object> Values = [];
@@ -46,7 +46,7 @@ internal static class MvtDecoder
     /// <summary>World units per tile used for decoded coordinates (independent of each layer's extent).</summary>
     public const double WorldUnitsPerTile = 4096d;
 
-    public static List<MvtLayer> Decode(byte[] tile, ISet<string> wantedLayers = null)
+    public static List<MvtLayer> Decode(byte[] tile, ISet<string>? wantedLayers = null)
     {
         var layers = new List<MvtLayer>();
         var reader = new ProtoReader(tile, 0, tile.Length);
@@ -56,7 +56,7 @@ internal static class MvtDecoder
             if (field == 3 && wire == ProtoReader.WireLengthDelimited)
             {
                 var layerReader = reader.ReadMessage();
-                if (wantedLayers == null || wantedLayers.Contains(PeekLayerName(layerReader.Clone())))
+                if (wantedLayers == null || wantedLayers.Contains(PeekLayerName(layerReader.Clone())!))
                     layers.Add(ReadLayer(layerReader));
             }
             else reader.Skip(wire);
@@ -64,7 +64,7 @@ internal static class MvtDecoder
         return layers;
     }
 
-    private static string PeekLayerName(ProtoReader r)
+    private static string? PeekLayerName(ProtoReader r)
     {
         while (r.HasMore)
         {
@@ -86,7 +86,7 @@ internal static class MvtDecoder
                 case 1: layer.Name = r.ReadString(); break;
                 case 2: layer.Features.Add(ReadFeature(r.ReadMessage())); break;
                 case 3: layer.Keys.Add(r.ReadString()); break;
-                case 4: layer.Values.Add(ReadValue(r.ReadMessage())); break;
+                case 4: layer.Values.Add(ReadValue(r.ReadMessage())!); break;
                 case 5: layer.Extent = (uint)r.ReadVarint(); break;
                 default: r.Skip(wire); break; // 15 = version
             }
@@ -113,9 +113,9 @@ internal static class MvtDecoder
         return f;
     }
 
-    private static object ReadValue(ProtoReader r)
+    private static object? ReadValue(ProtoReader r)
     {
-        object value = null;
+        object? value = null;
         while (r.HasMore)
         {
             var (field, wire) = r.ReadKey();
@@ -138,13 +138,13 @@ internal static class MvtDecoder
     /// Decodes the feature geometry into world coordinates: (tileX + px / extent) * <see cref="WorldUnitsPerTile"/>.
     /// Y axis points down (tile convention). Returns null for empty/degenerate geometries.
     /// </summary>
-    public static Geometry ToGeometry(MvtFeature feature, int tileX, int tileY, uint extent, GeometryFactory factory)
+    public static Geometry? ToGeometry(MvtFeature feature, int tileX, int tileY, uint extent, GeometryFactory factory)
     {
         double scale = WorldUnitsPerTile / extent;
         double ox = tileX * WorldUnitsPerTile, oy = tileY * WorldUnitsPerTile;
 
         var parts = new List<List<Coordinate>>();
-        List<Coordinate> current = null;
+        List<Coordinate>? current = null;
         long cx = 0, cy = 0;
         var g = feature.Geometry;
         int i = 0;
@@ -249,10 +249,10 @@ internal static class MvtDecoder
     /// <summary>
     /// MVT spec: exterior rings have positive surveyor area in tile coordinates (y down), interior rings negative.
     /// </summary>
-    private static Geometry BuildPolygons(List<List<Coordinate>> rings, GeometryFactory factory)
+    private static Geometry? BuildPolygons(List<List<Coordinate>> rings, GeometryFactory factory)
     {
         var polygons = new List<Polygon>();
-        LinearRing shell = null;
+        LinearRing? shell = null;
         var holes = new List<LinearRing>();
 
         void Flush()

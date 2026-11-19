@@ -20,11 +20,11 @@ internal class WaterValidator(ILogger logger) : OsmModelFactory<WaterModel>(logg
     }
 
 
-    public override IEnumerable<WaterModel> CreateModel(IFeature feature)
+    public override IEnumerable<WaterModel?> CreateModel(IFeature? feature)
     {
         if (feature == null) yield break;
 
-        WaterModel model = null;
+        WaterModel? model = null;
         switch (feature.Geometry.OgcGeometryType)
         {
             case OgcGeometryType.LineString:
@@ -33,7 +33,7 @@ internal class WaterValidator(ILogger logger) : OsmModelFactory<WaterModel>(logg
             case OgcGeometryType.MultiPolygon:
                 _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(WaterModel)} {feature.Attributes["osmid"]}. Doing exterior ring only now");
                    
-                model = BuildModelFromGeometry((((MultiPolygon)feature.Geometry).Geometries[0] as Polygon).ExteriorRing, ref _totalPoints);
+                model = BuildModelFromGeometry((((MultiPolygon)feature.Geometry).Geometries[0] as Polygon)!.ExteriorRing, ref _totalPoints);
                 break;
             default:
                 _logger.LogWarning($"{feature.Geometry.GeometryType} not supported for {nameof(WaterModel)} {feature.Attributes["osmid"]}");
@@ -42,8 +42,8 @@ internal class WaterValidator(ILogger logger) : OsmModelFactory<WaterModel>(logg
 
         if (model != null)
         {
-            model.Id = feature.Attributes["osmid"].ToString();
-            model.Tags = (feature.Attributes as AttributesTable).ToDictionary(k => k.Key, k => k.Value);
+            model.Id = feature.Attributes["osmid"].ToString()!;
+            model.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
         }
 
 

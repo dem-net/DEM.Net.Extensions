@@ -15,7 +15,7 @@ class SketchfabSample
 {
     private readonly ILogger _logger;
     private readonly Sketchfab.SketchfabApi _sketchFabApi;
-    private readonly string _sketchFabToken;
+    private readonly string? _sketchFabToken;
 
     public SketchfabSample(Sketchfab.SketchfabApi sketchFabExport, ILogger<SketchfabSample> logger, IOptions<AppSecrets> secrets)
     {
