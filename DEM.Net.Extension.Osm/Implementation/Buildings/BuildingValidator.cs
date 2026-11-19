@@ -99,11 +99,13 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
             case OgcGeometryType.Polygon:
 
                 BuildingModel? model = ConvertBuildingGeometry((Polygon)feature.Geometry, ref base._totalPoints);
-                if (model != null)
+                if (model == null)
                 {
-                    model.Id = feature.Attributes["osmid"].ToString()!;
-                    model.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
+                    _logger.LogDebug($"Degenerate building polygon skipped: {feature.Attributes.GetOptionalValue("osmid")}.");
+                    yield break;
                 }
+                model.Id = feature.Attributes["osmid"].ToString()!;
+                model.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
                 yield return model;
                 break;
             case OgcGeometryType.MultiPolygon:
@@ -111,11 +113,10 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
                 foreach (Polygon polygon in ((MultiPolygon)feature.Geometry).Geometries)
                 {
                     var modelPoly = ConvertBuildingGeometry(polygon, ref base._totalPoints);
-                    if (modelPoly != null)
-                    {
-                        modelPoly.Id = feature.Attributes["osmid"].ToString()!;
-                        modelPoly.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
-                    }
+                    if (modelPoly == null)
+                        continue; // degenerate polygon
+                    modelPoly.Id = feature.Attributes["osmid"].ToString()!;
+                    modelPoly.Tags = (feature.Attributes as AttributesTable)!.ToDictionary(k => k.Key, k => k.Value);
                     yield return modelPoly;
                 }
                 break;
@@ -170,19 +171,25 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
     }
 
 
-    private BuildingModel ConvertBuildingGeometry(Polygon poly, ref int geoPointIdCounter)
+    /// <summary>
+    /// A closed ring needs 4 points (a triangle and its closing point)
+    /// </summary>
+    private const int MinRingPoints = 4;
+
+    /// <returns>null when the outer ring is not a polygon. Degenerate inner rings are skipped.</returns>
+    private BuildingModel? ConvertBuildingGeometry(Polygon poly, ref int geoPointIdCounter)
     {
+        if (poly.ExteriorRing.NumPoints < MinRingPoints)
+            return null;
+
         // Can't do it with a linq + lambda because of ref int param
         List<GeoPoint> outerRingGeoPoints = ConvertBuildingLineString(poly.ExteriorRing, ref geoPointIdCounter);
 
-        List<List<GeoPoint>>? interiorRings = null;
-        if (poly.NumPoints > 1)
+        List<List<GeoPoint>> interiorRings = [];
+        foreach (LineString innerRing in poly.InteriorRings)
         {
-            interiorRings = [];
-            foreach (LineString innerRing in poly.InteriorRings)
-            {
+            if (innerRing.NumPoints >= MinRingPoints)
                 interiorRings.Add(ConvertBuildingLineString(innerRing, ref geoPointIdCounter));
-            }
         }
 
         var buildingModel = new BuildingModel(outerRingGeoPoints, interiorRings);

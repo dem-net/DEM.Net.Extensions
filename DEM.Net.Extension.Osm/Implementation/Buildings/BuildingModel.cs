@@ -33,7 +33,6 @@ public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint
     public bool IsPart { get; set; }
     public Vector4? Color { get; set; }
     public Vector4? RoofColor { get; set; }
-    public BuildingModel? Parent { get; internal set; }
 
     public override string ToString()
     {

@@ -34,7 +34,14 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
             return gltfModel;
         }
 
-        gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), null, null, doubleSided: true);
+        // All white (the default): no vertex colors, the material is white. Saves 16 bytes per vertex.
+        if (triangulation.Colors.All(c => c == Vector4.One))
+        {
+            triangulation = new TriangulationNormals(triangulation.Positions, triangulation.Indices, triangulation.Normals, []);
+        }
+
+        // With the computed normals: without them, viewers shade every triangle flat (round walls look faceted)
+        gltfModel = _gltfService.AddMesh(gltfModel, glTFNodeName, new IndexedTriangulation(triangulation), triangulation.Normals, null, doubleSided: true);
 
         return gltfModel;
 
@@ -46,7 +53,7 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
 
         //// georeference
 
-        List<BuildingModel> models = [.. modelsEnum];
+        List<BuildingModel> models = DropOutlinesWithParts([.. modelsEnum]);
         using (TimeSpanBlock timeSpanBlock = new TimeSpanBlock("Elevations+Reprojection", _logger, LogLevel.Debug))
         {
             // Select all points (outer ring) + (inner rings)
@@ -54,11 +61,11 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
             var allBuildingPoints = models
                 .SelectMany(b => b.Points);
 
-            // Compute elevations if requested
+            // Compute elevations if requested (the elevated points are in the dataset SRID, as the transform expects)
             IEnumerable<GeoPoint> geoPoints = computeElevations ? _elevationService.GetPointsElevation(allBuildingPoints // files downloaded by RunAsync
                                                                     , dataSet
                                                                     , behavior: NoDataBehavior.SetToZero)!
-                                                                : allBuildingPoints;
+                                                                : ToDataSetSrid(allBuildingPoints, dataSet);
 
             transformedPoints = [.. Transform.TransformPoints(geoPoints)];
 
@@ -132,123 +139,163 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
 
         return new TriangulationNormals(positions, indices, normals, colors);
     }
+    /// <summary>
+    /// Flat-roofed building: the footprint triangulation as the roof, and the walls from the floor to the roof.
+    /// </summary>
+    /// <remarks>
+    /// The roof has its own vertices, so its normals are not blended with the walls'. Wall vertices are shared
+    /// between two consecutive wall faces only where the outline turns by less than
+    /// <see cref="SmoothWallAngleDegrees"/> (curved walls stay smooth, corners are sharp).
+    /// </remarks>
     public TriangulationList<GeoPoint> Triangulate(BuildingModel building)
     {
-        //==========================
-        // Footprint triangulation
-        //
-        var footPrintOutline = building.ExteriorRing.Skip(1); // In GeoJson, ring last point == first point, we must filter the first point out
-        var footPrintInnerRingsFlattened = building.InteriorRings == null ? null : building.InteriorRings.Select(r => r.Skip(1));
-
-        TriangulationList<GeoPoint> triangulation = _meshService.Tesselate(footPrintOutline, footPrintInnerRingsFlattened);
-        int numFootPrintIndices = triangulation.Indices.Count;
-        /////
-
-        // Now extrude it (build the sides)
-        // Algo
-        // First triangulate the foot print (with inner rings if existing)
-        // This triangulation is the roof top if building is flat
         building = this.ComputeBuildingHeightMeters(building);
 
-        int totalPoints = building.ExteriorRing.Count - 1 + building.InteriorRings.Sum(r => r.Count - 1);
-
-        // Triangulate wall for each ring
-        // (We add floor indices before copying the vertices, they will be duplicated and z shifted later on)
-        List<int> numVerticesPerRing =
-        [
-            building.ExteriorRing.Count - 1,
-            .. building.InteriorRings.Select(r => r.Count - 1),
-        ];
-        triangulation = this.TriangulateRingsWalls(triangulation, numVerticesPerRing, totalPoints);
-
-        // Roof
-        // Building has real elevations
-
-        // Create floor vertices by copying roof vertices and setting their z min elevation (floor or min height)
-        var floorVertices = triangulation.Positions.Select(pt => pt with { Elevation = building.ComputedFloorAltitude ?? pt.Elevation }).ToList();
-        triangulation.Positions.AddRange(floorVertices);
-
-        // Take the first vertices and z shift them
-        for (int i = 0; i < totalPoints; i++)
+        //==========================
+        // Roof: footprint triangulation at the roof altitude
+        //
+        // In GeoJson, ring last point == first point, we must filter the last point out
+        var rings = building.InteriorRings.Prepend(building.ExteriorRing).Select(r => r.Take(r.Count - 1).ToList()).ToList();
+        TriangulationList<GeoPoint> triangulation = _meshService.Tesselate(rings[0], rings.Skip(1));
+        for (int i = 0; i < triangulation.Positions.Count; i++)
         {
             triangulation.Positions[i] = triangulation.Positions[i] with { Elevation = building.ComputedRoofAltitude };
         }
 
+        Vector4 defaultColor = Vector4.One;
+        Vector4 wallColor = building.Color ?? defaultColor;
+        Vector4 roofColor = building.RoofColor ?? wallColor;
+        triangulation.Colors = [.. triangulation.Positions.Select(_ => roofColor)];
+
         //==========================
-        // Colors: if walls and roof color is the same, all vertices can have the same color
-        // otherwise we must duplicate vertices to ensure consistent triangles color (avoid unrealistic shades)
-        // AND shift the roof triangulation indices
-        // Before:
-        //      Vertices: <roof_wallcolor_0..i> / <floor_wallcolor_i..j>
-        //      Indices: <roof_triangulation_0..i> / <roof_wall_triangulation_0..j>
-        // After:
-        //      Vertices: <roof_wallcolor_0..i> / <floor_wallcolor_i..j> // <roof_roofcolor_j..k>
-        //      Indices: <roof_triangulation_j..k> / <roof_wall_triangulation_0..j>
-        Vector4 DefaultColor = Vector4.One;
-        bool mustCopyVerticesForRoof = (building.Color ?? DefaultColor) != (building.RoofColor ?? building.Color);
-        // assign wall or default color to all vertices
-        triangulation.Colors = [.. triangulation.Positions.Select(p => building.Color ?? DefaultColor)];
-
-        if (mustCopyVerticesForRoof)
+        // Walls, ring by ring
+        //
+        foreach (var ring in rings)
         {
-            triangulation.Positions.AddRange(triangulation.Positions.Take(totalPoints));
-            triangulation.Colors.AddRange(Enumerable.Range(1, totalPoints).Select(_ => building.RoofColor ?? DefaultColor));
-
-            // shift roof triangulation indices
-            for (int i = 0; i < numFootPrintIndices; i++)
-            {
-                triangulation.Indices[i] += (triangulation.Positions.Count - totalPoints);
-            }
-
+            AddRingWalls(triangulation, ring, building, wallColor);
         }
 
-        Debug.Assert(triangulation.Colors.Count == 0 || triangulation.Colors.Count == triangulation.Positions.Count);
+        Debug.Assert(triangulation.Colors.Count == triangulation.Positions.Count);
 
         return triangulation;
-
     }
 
-    private TriangulationList<GeoPoint> TriangulateRingsWalls(TriangulationList<GeoPoint> triangulation, List<int> numVerticesPerRing, int totalPoints)
+    /// <summary>
+    /// Outline turns below this angle share their wall vertices (smooth normals across the corner)
+    /// </summary>
+    internal const double SmoothWallAngleDegrees = 30;
+
+    private void AddRingWalls(TriangulationList<GeoPoint> triangulation, List<GeoPoint> ring, BuildingModel building, Vector4 color)
     {
-        int offset = numVerticesPerRing.Sum();
+        int n = ring.Count;
+        if (n < 3) return;
 
-        Debug.Assert(totalPoints == offset);
-
-        int ringOffset = 0;
-        foreach (var numRingVertices in numVerticesPerRing)
+        double cosSmooth = Math.Cos(SmoothWallAngleDegrees * Math.PI / 180);
+        Vector2 Edge(int i)
         {
-            int i = 0;
-            do
-            {
-                triangulation.Indices.Add(ringOffset + i);
-                triangulation.Indices.Add(ringOffset + i + offset);
-                triangulation.Indices.Add(ringOffset + i + 1);
-
-                triangulation.Indices.Add(ringOffset + i + offset);
-                triangulation.Indices.Add(ringOffset + i + offset + 1);
-                triangulation.Indices.Add(ringOffset + i + 1);
-
-                i++;
-            }
-            while (i < numRingVertices - 1);
-
-            // Connect last vertices to start vertices
-            triangulation.Indices.Add(ringOffset + i);
-            triangulation.Indices.Add(ringOffset + i + offset);
-            triangulation.Indices.Add(ringOffset + 0);
-
-            triangulation.Indices.Add(ringOffset + i + offset);
-            triangulation.Indices.Add(ringOffset + 0 + offset);
-            triangulation.Indices.Add(ringOffset + 0);
-
-            ringOffset += numRingVertices;
-
+            var a = ring[i];
+            var b = ring[(i + 1) % n];
+            var e = new Vector2((float)(b.Longitude - a.Longitude), (float)(b.Latitude - a.Latitude));
+            return e.LengthSquared() > 0 ? Vector2.Normalize(e) : e;
         }
-        return triangulation;
+        bool IsSharp(int i) // corner at vertex i, between edges i-1 and i
+            => Vector2.Dot(Edge((i - 1 + n) % n), Edge(i)) < cosSmooth;
+
+        // a (top, bottom) vertex pair at ring vertex i, returns the top index (bottom is +1)
+        int AddPair(int i)
+        {
+            int index = triangulation.Positions.Count;
+            var p = ring[i];
+            triangulation.Positions.Add(p with { Elevation = building.ComputedRoofAltitude });
+            triangulation.Positions.Add(p with { Elevation = building.ComputedFloorAltitude ?? p.Elevation });
+            triangulation.Colors!.Add(color);
+            triangulation.Colors.Add(color);
+            return index;
+        }
+        void AddFace(int a, int b) // wall quad from pair a to pair b
+        {
+            triangulation.Indices.Add(a);
+            triangulation.Indices.Add(a + 1);
+            triangulation.Indices.Add(b);
+
+            triangulation.Indices.Add(a + 1);
+            triangulation.Indices.Add(b + 1);
+            triangulation.Indices.Add(b);
+        }
+
+        // Start at a sharp corner when there is one, so the ring closes on a split
+        int start = Enumerable.Range(0, n).FirstOrDefault(IsSharp, -1);
+        bool allSmooth = start < 0;
+        if (allSmooth) start = 0;
+
+        int first = AddPair(start);
+        int previous = first;
+        for (int k = 1; k < n; k++)
+        {
+            int i = (start + k) % n;
+            int end = AddPair(i);
+            AddFace(previous, end);
+            previous = IsSharp(i) ? AddPair(i) : end;
+        }
+        // close the ring: on the first pair when it is smooth all around, on a new pair at the start corner otherwise
+        AddFace(previous, allSmooth ? first : AddPair(start));
     }
 
+    /// <summary>
+    /// Simple 3D Buildings: a building outline that contains building parts is not drawn, its parts are.
+    /// </summary>
+    /// <remarks>A part belongs to the outline that contains one of its interior points.</remarks>
+    internal List<BuildingModel> DropOutlinesWithParts(List<BuildingModel> models)
+    {
+        var parts = models.Where(m => m.IsPart).ToList();
+        if (parts.Count == 0)
+            return models;
 
-    private BuildingModel ComputeBuildingHeightMeters(BuildingModel building)
+        var factory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory();
+        NetTopologySuite.Geometries.Polygon ToPolygon(BuildingModel m)
+            => factory.CreatePolygon([.. m.ExteriorRing.Select(p => new NetTopologySuite.Geometries.Coordinate(p.Longitude, p.Latitude))]);
+
+        var outlines = new NetTopologySuite.Index.Strtree.STRtree<(BuildingModel model, NetTopologySuite.Geometries.Polygon polygon)>();
+        foreach (var outline in models.Where(m => !m.IsPart))
+        {
+            try
+            {
+                var polygon = ToPolygon(outline);
+                outlines.Insert(polygon.EnvelopeInternal, (outline, polygon));
+            }
+            catch (ArgumentException) { } // invalid ring: kept as is
+        }
+
+        var dropped = new HashSet<BuildingModel>(ReferenceEqualityComparer.Instance);
+        foreach (var part in parts)
+        {
+            NetTopologySuite.Geometries.Point inside;
+            try
+            {
+                inside = ToPolygon(part).InteriorPoint;
+            }
+            catch (ArgumentException) { continue; }
+            if (inside == null || inside.IsEmpty) continue;
+
+            foreach (var (outline, polygon) in outlines.Query(inside.EnvelopeInternal))
+            {
+                if (!dropped.Contains(outline) && polygon.Contains(inside))
+                    dropped.Add(outline);
+            }
+        }
+
+        if (dropped.Count > 0)
+            _logger.LogInformation($"Buildings: {dropped.Count:N0} outlines replaced by their {parts.Count:N0} parts.");
+        return dropped.Count == 0 ? models : [.. models.Where(m => !dropped.Contains(m))];
+    }
+
+    /// <summary>
+    /// Roof and floor altitudes, in model units. The ground is the lowest footprint point, so no wall floats on a slope.
+    /// <c>height</c> and <c>min_height</c> are measured from the ground (OSM), and scaled by
+    /// <see cref="GeoTransformPipeline.ModelUnitsPerMeter"/> so the building keeps its real proportions.
+    /// Without <c>min_height</c>, the walls go down to the terrain at each vertex.
+    /// </summary>
+    internal BuildingModel ComputeBuildingHeightMeters(BuildingModel building)
     {
         if (building.ComputedRoofAltitude.HasValue)
             return building;
@@ -262,56 +309,19 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
                 _logger.LogWarning($"Conflicting height info (Levels:{building.Levels.Value} and Height:{building.Height}), height will be used.");
             }
         }
-        if (building.IsPart && building.Parent != null)
+
+        double unitsPerMeter = Transform?.ModelUnitsPerMeter ?? 1d;
+        double ground = building.Points.Min(p => p.Elevation ?? 0);
+        double height = building.Height ?? (building.Levels ?? 3) * LevelHeightMeters;
+        double? minHeight = building.MinHeight is > 0 ? building.MinHeight : null;
+        if (minHeight >= height)
         {
-            if (building.Levels == null && building.Height == null)
-            {
-                _logger.LogWarning("Undertermined height");
-                building.Levels = 1;
-            }
-
-            if (building.Levels!.Value <= (building.Parent!.Levels ?? 3))
-            {
-                _logger.LogWarning($"Conflicting height info between building and part (parent:{building.Parent.Levels ?? 3} >= part:{building.Levels.Value}), choosing parent level.");
-                if (building.Levels.Value == (building.Parent.Levels ?? 3))
-                {
-                    building.Levels = (building.Parent.Levels ?? 3) + 1;
-                }
-                else
-                {
-                    building.Levels = (building.Parent.Levels ?? 3) + 1;
-                }
-
-            }
-
-            if (building.Parent.ComputedRoofAltitude == null)
-            {
-                // Compute parent roof first
-                ComputeBuildingHeightMeters(building.Parent);
-            }
-            double highestFloorElevation = building.Parent.ComputedRoofAltitude!.Value;
-
-            double computedHeight = (building.Levels.Value - building.Parent.Levels ?? 3) * LevelHeightMeters;
-            double roofElevation = computedHeight + highestFloorElevation;
-
-            building.ComputedRoofAltitude = roofElevation;
-            building.ComputedFloorAltitude = highestFloorElevation;// - 0.5; // 50 cm inclusion inside parent mesh
-        }
-        else
-        {
-            double highestFloorElevation = building.Points.Max(p => p.Elevation ?? 0);
-
-            double computedHeight = building.Height ?? (building.Levels ?? 3) * LevelHeightMeters;
-            double roofElevation = computedHeight + highestFloorElevation;
-
-            double? computedMinHeight = null;
-            if (building.MinHeight.HasValue)
-                computedMinHeight = roofElevation - building.MinHeight.Value;
-
-            building.ComputedRoofAltitude = roofElevation;
-            building.ComputedFloorAltitude = computedMinHeight;
+            _logger.LogDebug($"Building {building.Id}: min_height {minHeight} is not below its height {height}, ignored.");
+            minHeight = null;
         }
 
+        building.ComputedRoofAltitude = ground + height * unitsPerMeter;
+        building.ComputedFloorAltitude = minHeight.HasValue ? ground + minHeight.Value * unitsPerMeter : null;
 
         return building;
     }

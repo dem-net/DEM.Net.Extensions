@@ -13,12 +13,8 @@ namespace DEM.Net.Extension.Osm.Highways;
 public class OsmHighwayProcessor(GeoTransformPipeline? transform, string? highwaysColor) : OsmProcessorStage<HighwayModel>(transform)
 {
 
-    private const float LaneWidthMeters = 3.5F;
-    /// <summary>
-    /// Roads are lifted above the terrain (meters, scaled by the vertical exaggeration like the terrain): at the
-    /// exact DEM elevation they flicker through it (z-fighting), and the reduced terrain mesh departs from the DEM.
-    /// </summary>
-    public const double HeightAboveTerrainMeters = 0.5;
+    /// <inheritdoc cref="OsmLineElevation.HeightAboveTerrainMeters"/>
+    public const double HeightAboveTerrainMeters = OsmLineElevation.HeightAboveTerrainMeters;
     private readonly string? highwaysColor = highwaysColor;
 
     public override IOsmDataSettings DataSettings { get; set; } = new HighwaysDataFilter();
@@ -29,27 +25,12 @@ public class OsmHighwayProcessor(GeoTransformPipeline? transform, string? highwa
     {
         if (models.Count > 0)
         {
-            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, this.GetRoadWidth(m))), models[0].Color);
+            float unitsPerMeter = (float)(Transform?.ModelUnitsPerMeter ?? 1d);
+            gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => ((IEnumerable<GeoPoint>)m.LineString, OsmLineElevation.RoadWidthMeters(m.Type, m.Lanes) * unitsPerMeter)), models[0].Color);
         }
 
         return gltfModel;
 
-    }
-
-    private float GetRoadWidth(HighwayModel road)
-    {
-        if ((road.Lanes ?? 0) > 0)
-        {
-            return road.Lanes!.Value * LaneWidthMeters;
-        }
-        else
-        {
-            return road.Type switch
-            {
-                "unclassified" => 3,
-                _ => LaneWidthMeters,
-            };
-        }
     }
 
     protected override IEnumerable<HighwayModel> ComputeModelElevationsAndTransform(IEnumerable<HighwayModel> models, bool computeElevations, DEMDataSet dataSet, bool downloadMissingFiles)
@@ -64,7 +45,7 @@ public class OsmHighwayProcessor(GeoTransformPipeline? transform, string? highwa
             long pointCount = 0;
             for (int i = 0; i < roads.Count; i++)
             {
-                var points = lines[i].Select(p => p with { Elevation = (p.Elevation ?? 0) + HeightAboveTerrainMeters });
+                var points = OsmLineElevation.Elevate(lines[i], roads[i].Bridge);
                 roads[i].LineString = [.. Transform.TransformPoints(ToDataSetSrid(points, dataSet))];
                 pointCount += roads[i].LineString.Count;
                 yield return roads[i];

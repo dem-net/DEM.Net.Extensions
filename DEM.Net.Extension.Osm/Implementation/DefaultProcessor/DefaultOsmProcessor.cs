@@ -40,15 +40,8 @@ public class DefaultOsmProcessor(ElevationService elevationService
         if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor));
         if (layers.HasFlag(OsmLayer.Railway)) processors.Add(new OsmRailwayProcessor(transform));
         if (layers.HasFlag(OsmLayer.Water)) processors.Add(new OsmWaterProcessor(transform));
-        if (layers.HasFlag(OsmLayer.Highways))
-        {
-            var processor = new OsmHighwayProcessor(transform, highwaysColor);
-            if (processor.DataSettings.ComputeElevations)
-            {
-                processor.AddPostTransform(p => p.ZTranslate(_options.RenderGpxZTranslateTrackMeters));
-            }
-            processors.Add(processor);
-        }
+        // Roads are lifted by OsmLineElevation.HeightAboveTerrainMeters
+        if (layers.HasFlag(OsmLayer.Highways)) processors.Add(new OsmHighwayProcessor(transform, highwaysColor));
 
         processors.ForEach(p => p.DataSettings.Apply(Settings));
 

@@ -9,8 +9,6 @@ namespace DEM.Net.Extension.Osm.Railway;
 internal class OsmRailwayProcessor(GeoTransformPipeline? transformPipeline) : OsmProcessorStage<RailwayModel>(transformPipeline)
 {
 
-    private const float WidthMeters = 2.5F;
-
     public override OsmModelFactory<RailwayModel> ModelFactory => new RailwayValidator(base._logger);
 
 
@@ -19,7 +17,8 @@ internal class OsmRailwayProcessor(GeoTransformPipeline? transformPipeline) : Os
 
     protected override ModelRoot AddToModel(ModelRoot gltfModel, string nodeName, IReadOnlyList<RailwayModel> models)
     {
-        gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), WidthMeters)), VectorsExtensions.CreateColor(165, 42, 42));
+        float width = OsmLineElevation.RailwayWidthMeters * (float)(Transform?.ModelUnitsPerMeter ?? 1d);
+        gltfModel = _gltfService.AddLines(gltfModel, glTFNodeName, models.Select(m => (m.LineString.AsEnumerable(), width)), VectorsExtensions.CreateColor(165, 42, 42));
 
         return gltfModel;
     }
@@ -33,7 +32,7 @@ internal class OsmRailwayProcessor(GeoTransformPipeline? transformPipeline) : Os
             var lines = GetLinesElevation(list, m => m.LineString, dataSet);
             for (int i = 0; i < list.Count; i++)
             {
-                list[i].LineString = [.. Transform.TransformPoints(ToDataSetSrid(lines[i], dataSet))];
+                list[i].LineString = [.. Transform.TransformPoints(ToDataSetSrid(OsmLineElevation.Elevate(lines[i], list[i].Bridge), dataSet))];
                 yield return list[i];
             }
         }
