@@ -23,6 +23,13 @@ instead (`OsmElevationOptions.BuildingsPMTilesFilePath`, `tiles/<release>/buildi
 planet): it keeps the heights, floors, roof shapes and colours that the Protomaps archive drops. Regional extract:
 `pmtiles extract https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-11-18.0/buildings.pmtiles out.pmtiles --bbox=…`
 
+Roofs: mapped roof shapes are drawn (gabled, hipped, pyramidal, skillion; others approximated). Buildings without one
+get a roof drawn from a roof prior (`OsmElevationOptions.RoofPriorFilePath`, ~1.3 MB): the odds of each roof shape by
+place, footprint size, height and use, from the roof shapes mapped in OpenStreetMap, with climate zones where few are
+mapped. Build it with `tools/roof-prior/build_roof_prior.py` (instructions inside); the `validate_*` scripts compare it
+with ground truth (3DBAG, Netherlands; NRW LoD2, Germany). The prior is ODbL (© OpenStreetMap contributors, Overture
+Maps Foundation) and uses the Köppen-Geiger maps of Beck et al. (2023, CC BY 4.0).
+
 ## SampleApp
 
 Various samples, one including model generation for http://helladic.info (gallery here: sketchfab.com/mycenaean-atlas-project)

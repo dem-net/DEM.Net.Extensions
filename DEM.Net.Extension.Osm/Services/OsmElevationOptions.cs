@@ -27,6 +27,14 @@ public class OsmElevationOptions
     /// </summary>
     public string? BuildingsPMTilesFilePath { get; set; }
 
+    /// <summary>
+    /// Optional roof prior (<c>roof-prior.bin</c>, made by <c>tools/roof-prior/build_roof_prior.py</c>): the odds of
+    /// each roof shape by place and kind of building, from the roof shapes mapped in OpenStreetMap. Buildings without
+    /// a mapped roof shape get a roof drawn from it. Without it, only small, nearly rectangular, low houses get a
+    /// default gabled roof.
+    /// </summary>
+    public string? RoofPriorFilePath { get; set; }
+
     /// <summary>Safety limit on the number of tiles decoded per layer and request (2500 z15 tiles ≈ 40x40 km at mid latitudes).</summary>
     public int PMTilesMaxTilesPerQuery { get; set; } = 2500;
 }

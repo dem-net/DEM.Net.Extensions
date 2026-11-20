@@ -67,6 +67,11 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
         ParseTag<string>(model, "building:part", v => model.IsPart = v.ToLower() == "yes");
         ParseLengthTag(model, "min_height", v => model.MinHeight = v);
         ParseLengthTag(model, "height", v => model.Height = v);
+        ParseTag<string>(model, PMTiles.OvertureSchema.EstimatedHeightTag, v => model.HeightIsEstimated = v == "yes");
+        ParseTag<string>(model, "roof:shape", v => model.RoofShape = v);
+        ParseLengthTag(model, "roof:height", v => model.RoofHeight = v);
+        ParseTag<string>(model, "roof:direction", v => model.RoofDirection = ParseDirection(v));
+        ParseTag<string>(model, "roof:orientation", v => model.RoofAcross = string.Equals(v, "across", StringComparison.OrdinalIgnoreCase));
         if (_useOsmColors)
         {
             ParseTag<string, Vector4>(model, "building:colour", htmlColor => HtmlColorTranslator.ToVector4(htmlColor), v => model.Color = v);
@@ -126,6 +131,18 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
                 break;
         }
 
+    }
+
+    private static readonly string[] Cardinals = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+
+    /// <summary>roof:direction: degrees (0 = north, clockwise) or a cardinal direction (N, NNE … NNW).</summary>
+    internal static double? ParseDirection(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double deg) && double.IsFinite(deg))
+            return ((deg % 360) + 360) % 360;
+        int i = Array.FindIndex(Cardinals, c => string.Equals(c, value.Trim(), StringComparison.OrdinalIgnoreCase));
+        return i < 0 ? null : i * 22.5;
     }
 
     // Parse with unit conversion to meters

@@ -16,6 +16,7 @@ public static class ServiceCollectionExtension
             .AddTransient<IOsmDataServiceFactory, OsmDataServiceFactory>()
 
             .AddSingleton<PMTilesReaderProvider>()
+            .AddSingleton<RoofPriorProvider>()
             .AddTransient<PMTilesDataService>()
             .AddSingleton<Func<PMTilesDataService>>(x => () => x.GetService<PMTilesDataService>()!)
 

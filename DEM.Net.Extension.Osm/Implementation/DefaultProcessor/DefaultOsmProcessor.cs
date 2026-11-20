@@ -22,7 +22,8 @@ public class DefaultOsmProcessor(ElevationService elevationService
         , IOsmDataServiceFactory dataServiceFactory
         , IOptions<DEMNetOptions> options
         , IOptions<OsmElevationOptions> osmOptions
-        , ILogger<DefaultOsmProcessor> logger)
+        , ILogger<DefaultOsmProcessor> logger
+        , RoofPriorProvider? roofPrior = null)
 {
     private readonly IOsmDataServiceFactory _dataServiceFactory = dataServiceFactory;
     private readonly DEMNetOptions _options = options.Value;
@@ -37,7 +38,7 @@ public class DefaultOsmProcessor(ElevationService elevationService
     {
         List<IOsmProcessor> processors = [];
 
-        if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor));
+        if (layers.HasFlag(OsmLayer.Buildings)) processors.Add(new OsmBuildingProcessor(transform, withBuildingsColors, defaultBuildingsColor, roofPrior?.Prior));
         if (layers.HasFlag(OsmLayer.Railway)) processors.Add(new OsmRailwayProcessor(transform));
         if (layers.HasFlag(OsmLayer.Water)) processors.Add(new OsmWaterProcessor(transform));
         // Roads are lifted by OsmLineElevation.HeightAboveTerrainMeters
