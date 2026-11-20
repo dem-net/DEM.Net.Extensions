@@ -16,6 +16,9 @@ internal sealed class ProtomapsLayerMapping
     public Func<string, IReadOnlyDictionary<string, object>, MvtGeometryType, bool> Accept { get; set; } = null!;
     public Func<IReadOnlyDictionary<string, object>, MvtGeometryType, IDictionary<string, object>> ToOsmTags { get; set; } = null!;
 
+    /// <summary>Read from <see cref="OsmElevationOptions.BuildingsPMTilesFilePath"/> (Overture), not from the Protomaps archive.</summary>
+    public bool BuildingsArchive { get; init; }
+
     /// <summary>Some validators (water) only accept MultiPolygon, not Polygon.</summary>
     public bool PolygonsAsMultiPolygon { get; set; }
 }
@@ -116,7 +119,7 @@ internal static class ProtomapsSchema
 
     internal static string? Kind(IReadOnlyDictionary<string, object> p) => Str(p, "kind") ?? Str(p, "pmap:kind");
 
-    private static string? Str(IReadOnlyDictionary<string, object> p, string key)
+    internal static string? Str(IReadOnlyDictionary<string, object> p, string key)
     {
         if (!p.TryGetValue(key, out var v) || v == null) return null;
         if (v is string s) return s.Length == 0 ? null : s;

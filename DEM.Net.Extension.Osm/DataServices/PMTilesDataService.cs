@@ -22,31 +22,49 @@ using NetTopologySuite.Simplify;
 namespace DEM.Net.Extension.Osm;
 
 /// <summary>
-/// Opens the configured PMTiles archive once and shares it (file handle + directory cache) across requests.
+/// Opens the configured PMTiles archives once and shares them (file handle + directory cache) across requests:
+/// the Protomaps basemap, and the optional Overture buildings archive.
 /// </summary>
-public sealed class PMTilesReaderProvider(IOptions<OsmElevationOptions> options, ILogger<PMTilesReaderProvider> logger) : IDisposable
+public sealed class PMTilesReaderProvider : IDisposable
 {
-    private readonly Lazy<PMTilesReader> _reader = new Lazy<PMTilesReader>(() =>
-        {
-            string? path = options.Value.PMTilesFilePath;
-            if (string.IsNullOrWhiteSpace(path))
-                throw new InvalidOperationException($"{nameof(OsmElevationOptions)}.{nameof(OsmElevationOptions.PMTilesFilePath)} must be set when {nameof(OsmElevationOptions.DataServiceType)} is {OsmDataServiceType.PMTiles}.");
+    private readonly Lazy<PMTilesReader> _reader;
+    private readonly Lazy<PMTilesReader>? _buildingsReader;
 
-            var reader = new PMTilesReader(path);
+    public PMTilesReaderProvider(IOptions<OsmElevationOptions> options, ILogger<PMTilesReaderProvider> logger)
+    {
+        Lazy<PMTilesReader> Open(Func<string?> path, string optionName) => new(() =>
+        {
+            string? p = path();
+            if (string.IsNullOrWhiteSpace(p))
+                throw new InvalidOperationException($"{nameof(OsmElevationOptions)}.{optionName} must be set when {nameof(OsmElevationOptions.DataServiceType)} is {OsmDataServiceType.PMTiles}.");
+
+            var reader = new PMTilesReader(p);
             if (reader.Header.TileType != PMTilesTileType.Mvt)
             {
                 reader.Dispose();
-                throw new InvalidDataException($"{path} does not contain vector tiles (tile type {reader.Header.TileType}).");
+                throw new InvalidDataException($"{p} does not contain vector tiles (tile type {reader.Header.TileType}).");
             }
-            logger.LogInformation("Opened {Path}: {Header}", path, reader.Header);
+            logger.LogInformation("Opened {Path}: {Header}", p, reader.Header);
             return reader;
         }, LazyThreadSafetyMode.ExecutionAndPublication);
 
+        _reader = Open(() => options.Value.PMTilesFilePath, nameof(OsmElevationOptions.PMTilesFilePath));
+        if (!string.IsNullOrWhiteSpace(options.Value.BuildingsPMTilesFilePath))
+            _buildingsReader = Open(() => options.Value.BuildingsPMTilesFilePath, nameof(OsmElevationOptions.BuildingsPMTilesFilePath));
+    }
+
+    /// <summary>The Protomaps basemap.</summary>
     public PMTilesReader Reader => _reader.Value;
+
+    /// <summary>The Overture buildings archive.</summary>
+    /// <exception cref="InvalidOperationException">No buildings archive is configured.</exception>
+    public PMTilesReader BuildingsReader => _buildingsReader?.Value
+        ?? throw new InvalidOperationException($"{nameof(OsmElevationOptions)}.{nameof(OsmElevationOptions.BuildingsPMTilesFilePath)} is not set.");
 
     public void Dispose()
     {
         if (_reader.IsValueCreated) _reader.Value.Dispose();
+        if (_buildingsReader?.IsValueCreated == true) _buildingsReader.Value.Dispose();
     }
 }
 
@@ -54,6 +72,7 @@ public sealed class PMTilesReaderProvider(IOptions<OsmElevationOptions> options,
 /// <see cref="IOsmDataService"/> backed by a local Protomaps basemap PMTiles archive (https://maps.protomaps.com/builds/).
 /// Features are read at the archive max zoom, clipped to exact tile bounds, stitched back across tile seams and
 /// returned with OSM-like tags so the existing validators can process them unchanged.
+/// Buildings come from the Overture archive instead when <see cref="OsmElevationOptions.BuildingsPMTilesFilePath"/> is set.
 /// </summary>
 public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReaderProvider readerProvider,
     IOptions<OsmElevationOptions> options) : IOsmDataService
@@ -73,7 +92,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
 
     public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
     {
-        var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
+        var mapping = FindMapping(filter?.FilterIdentifier);
         if (mapping == null)
         {
             _logger.LogWarning("Layer {Layer} is not in the Protomaps schema, no data returned.", filter?.FilterIdentifier);
@@ -90,7 +109,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
 
     public int GetOsmDataCount(BoundingBox bbox, IOsmDataSettings filter)
     {
-        var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
+        var mapping = FindMapping(filter?.FilterIdentifier);
         if (mapping == null)
             return 0;
 
@@ -100,12 +119,20 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
 
     public OsmDataStats GetOsmDataStats(BoundingBox bbox, IOsmDataSettings filter)
     {
-        var mapping = ProtomapsSchema.Find(filter?.FilterIdentifier);
+        var mapping = FindMapping(filter?.FilterIdentifier);
         if (mapping == null)
             return new OsmDataStats(0, 0);
 
         using (new TimeSpanBlock(nameof(GetOsmDataStats), _logger, LogLevel.Debug))
             return CountVertices(bbox, mapping);
+    }
+
+    /// <summary>The Overture mapping for buildings when its archive is configured, the Protomaps one otherwise.</summary>
+    internal ProtomapsLayerMapping? FindMapping(string? filterIdentifier)
+    {
+        if (!string.IsNullOrWhiteSpace(_options.BuildingsPMTilesFilePath) && OvertureSchema.Find(filterIdentifier) is { } overture)
+            return overture;
+        return ProtomapsSchema.Find(filterIdentifier);
     }
 
     /// <summary>
@@ -118,7 +145,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         if (bbox.SRID != Reprojection.SRID_GEODETIC)
             bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
 
-        var range = GetTileRange(bbox);
+        var range = GetTileRange(bbox, mapping);
         var wantedLayers = new HashSet<string>(mapping.SourceLayers, StringComparer.Ordinal);
         var bboxEnv = range.BboxWorldEnvelope;
         long vertices = 0;
@@ -164,13 +191,15 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
     }
 
     /// <exception cref="OsmQueryTooLargeException">More tiles than <see cref="OsmElevationOptions.PMTilesMaxTilesPerQuery"/>.</exception>
-    private TileRange GetTileRange(BoundingBox bbox)
+    private TileRange GetTileRange(BoundingBox bbox, ProtomapsLayerMapping mapping)
     {
         if (bbox.SRID != Reprojection.SRID_GEODETIC)
             bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
 
-        PMTilesReader reader = _readerProvider.Reader;
-        int z = Math.Clamp(_options.PMTilesZoom ?? reader.Header.MaxZoom, reader.Header.MinZoom, reader.Header.MaxZoom);
+        // PMTilesZoom is for the Protomaps archive; the buildings archive is read at its max zoom
+        PMTilesReader reader = mapping.BuildingsArchive ? _readerProvider.BuildingsReader : _readerProvider.Reader;
+        int? zoom = mapping.BuildingsArchive ? null : _options.PMTilesZoom;
+        int z = Math.Clamp(zoom ?? reader.Header.MaxZoom, reader.Header.MinZoom, reader.Header.MaxZoom);
 
         var (minTx, minTy) = TileMath.LonLatToTile(bbox.xMin, bbox.yMax, z);
         var (maxTx, maxTy) = TileMath.LonLatToTile(bbox.xMax, bbox.yMin, z);
@@ -190,7 +219,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         if (bbox.SRID != Reprojection.SRID_GEODETIC)
             bbox = bbox.ReprojectTo(bbox.SRID, Reprojection.SRID_GEODETIC);
 
-        var range = GetTileRange(bbox);
+        var range = GetTileRange(bbox, mapping);
         PMTilesReader reader = range.Reader;
         int z = range.Zoom, minTx = range.MinTx, minTy = range.MinTy, cols = range.Cols;
         long tileCount = range.TileCount;

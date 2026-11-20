@@ -164,13 +164,63 @@ public class PMTilesTests
         finally { File.Delete(path); }
     }
 
+    [Fact]
+    public void Overture_BuildingsComeFromTheBuildingsArchiveWithTheirTags()
+    {
+        string basemap = WriteTestArchive(useLeafDirectory: false);
+        string overture = WriteOvertureArchive();
+        try
+        {
+            var service = CreateService(basemap, buildingsPath: overture);
+            var features = service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")).ToList();
 
-    private static PMTilesDataService CreateService(string path, int maxTiles = 2500)
+            // chalet + part + the seam building stitched by its id; the underground one is skipped
+            Assert.Equal(3, features.Count);
+            Assert.DoesNotContain(features, f => (string)f.Attributes.GetOptionalValue("building") == "transportation");
+
+            var chalet = features.Single(f => (string)f.Attributes.GetOptionalValue("name") == "Chalet Test");
+            Assert.Equal("apartments", chalet.Attributes["building"]);
+            Assert.Equal("15.5", chalet.Attributes["height"]);
+            Assert.Equal("5", chalet.Attributes["building:levels"]);
+            Assert.Equal("#9C8272", chalet.Attributes["building:colour"]);
+            Assert.Equal("#525F65", chalet.Attributes["roof:colour"]);
+            Assert.Equal("gabled", chalet.Attributes["roof:shape"]);
+            Assert.Equal("3", chalet.Attributes["roof:height"]);
+            Assert.Equal("209", chalet.Attributes["roof:direction"]);
+            Assert.Equal("along", chalet.Attributes["roof:orientation"]);
+            Assert.Equal("brick", chalet.Attributes["building:material"]);
+            Assert.Equal("roof_tiles", chalet.Attributes["roof:material"]);
+            Assert.Equal("11", chalet.Attributes["osmid"]);
+            Assert.False(chalet.Attributes.Exists("building:part"));
+
+            var part = features.Single(f => f.Attributes.Exists("building:part"));
+            Assert.Equal("yes", part.Attributes["building:part"]);
+            Assert.Equal("yes", part.Attributes["building"]);
+            Assert.Equal("2", part.Attributes["building:min_level"]);
+
+            var stitched = features.Single(f => (string)f.Attributes.GetOptionalValue("height") == "12.5");
+            Assert.Equal(5, stitched.Geometry.NumPoints);
+            Assert.Equal(160d / 4096 / (1 << Z) * 360, stitched.Geometry.EnvelopeInternal.Width, 9);
+
+            // other layers still come from the Protomaps archive
+            Assert.Equal("primary", Assert.Single(service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("highways"))).Attributes["highway"]);
+            // estimates read the buildings archive too: 3 rectangles in tile A (not the underground one) + 1 in tile B
+            Assert.Equal(16, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
+        }
+        finally
+        {
+            File.Delete(basemap);
+            File.Delete(overture);
+        }
+    }
+
+    private static PMTilesDataService CreateService(string path, int maxTiles = 2500, string? buildingsPath = null)
     {
         var options = Options.Create(new OsmElevationOptions
         {
             DataServiceType = OsmDataServiceType.PMTiles,
             PMTilesFilePath = path,
+            BuildingsPMTilesFilePath = buildingsPath,
             PMTilesMaxTilesPerQuery = maxTiles,
         });
         var provider = new PMTilesReaderProvider(options, NullLogger<PMTilesReaderProvider>.Instance);
@@ -207,6 +257,29 @@ public class PMTilesTests
             Layer("roads",
                 Feature(2, Line((-1096, 2000), (500, 2000)), ("kind", "major_road"), ("kind_detail", "primary"), ("name", "Rue Test"), ("is_bridge", true))));
 
+        return WriteArchive(tileA, tileB, useLeafDirectory);
+    }
+
+    // Overture buildings archive: outlines and parts with MVT ids, one outline cut by the seam
+    private static string WriteOvertureArchive()
+    {
+        byte[] tileA = Mvt(
+            Layer("building",
+                Feature(3, Rect(1000, 1000, 1100, 1100), 11, ("class", "apartments"), ("height", 15.5), ("num_floors", 5.0), ("facade_color", "#9C8272"),
+                    ("roof_color", "#525F65"), ("roof_shape", "gabled"), ("roof_height", 3.0), ("roof_direction", 209.0), ("roof_orientation", "along"),
+                    ("facade_material", "brick"), ("roof_material", "roof_tiles"), ("@name", "Chalet Test"), ("has_parts", false), ("is_underground", false)),
+                Feature(3, Rect(2000, 1000, 2100, 1100), 12, ("subtype", "transportation"), ("is_underground", true)),
+                Feature(3, Rect(4000, 1000, 4160, 1100), 13, ("height", 12.5), ("is_underground", false))),
+            Layer("building_part",
+                Feature(3, Rect(1000, 2000, 1050, 2050), 21, ("building_id", "outline-1"), ("height", 30.0), ("min_floor", 2.0))));
+        byte[] tileB = Mvt(
+            Layer("building",
+                Feature(3, Rect(-96, 1000, 64, 1100), 13, ("height", 12.5), ("is_underground", false))));
+        return WriteArchive(tileA, tileB, useLeafDirectory: false);
+    }
+
+    private static string WriteArchive(byte[] tileA, byte[] tileB, bool useLeafDirectory)
+    {
         var tiles = new[] { (Id: PMTilesTileId.FromZxy(Z, TX, TY), Data: Gzip(tileA)), (Id: PMTilesTileId.FromZxy(Z, TX + 1, TY), Data: Gzip(tileB)) }
             .OrderBy(t => t.Id).ToArray();
 
@@ -277,6 +350,7 @@ public class PMTilesTests
     private sealed class TestFeature
     {
         public int Type;
+        public ulong? Id;
         public List<uint> Geometry = null!;
         public (string Key, object Value)[] Props = null!;
     }
@@ -284,6 +358,10 @@ public class PMTilesTests
     private static TestFeature Feature(int type, List<uint> geometry, params (string, object)[] props)
         => new()
         { Type = type, Geometry = geometry, Props = props };
+
+    private static TestFeature Feature(int type, List<uint> geometry, ulong id, params (string, object)[] props)
+        => new()
+        { Type = type, Id = id, Geometry = geometry, Props = props };
 
     private static (string Name, TestFeature[] Features) Layer(string name, params TestFeature[] features) => (name, features);
 
@@ -309,6 +387,7 @@ public class PMTilesTests
                     tags.Add((uint)vi);
                 }
                 var feature = new MemoryStream();
+                if (f.Id.HasValue) { WriteKey(feature, 1, 0); WriteVarint(feature, f.Id.Value); }
                 WritePacked(feature, 2, tags);
                 WriteKey(feature, 3, 0); WriteVarint(feature, (ulong)f.Type);
                 WritePacked(feature, 4, f.Geometry);

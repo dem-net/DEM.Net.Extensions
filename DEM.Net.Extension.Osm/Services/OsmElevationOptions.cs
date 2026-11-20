@@ -19,6 +19,14 @@ public class OsmElevationOptions
     /// <summary>Zoom level to read features at. Defaults to the archive max zoom (15 for Protomaps builds), which has full detail.</summary>
     public int? PMTilesZoom { get; set; }
 
+    /// <summary>
+    /// Optional Overture Maps buildings archive (<c>tiles/&lt;release&gt;/buildings.pmtiles</c> from
+    /// https://docs.overturemaps.org/examples/overture-tiles/). When set, buildings are read from it, with their
+    /// floors, roof shape and colours, instead of from the Protomaps archive (which only has heights). Read at its
+    /// max zoom (14).
+    /// </summary>
+    public string? BuildingsPMTilesFilePath { get; set; }
+
     /// <summary>Safety limit on the number of tiles decoded per layer and request (2500 z15 tiles ≈ 40x40 km at mid latitudes).</summary>
     public int PMTilesMaxTilesPerQuery { get; set; } = 2500;
 }

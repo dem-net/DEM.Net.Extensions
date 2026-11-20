@@ -70,6 +70,25 @@ public class OsmAccuracyTests
     }
 
     [Fact]
+    public void MinLevelSetsTheFloorWithoutMinHeight()
+    {
+        // an overhang starting at the 4th floor (building:min_level=3, Overture min_floor)
+        var part = Building(Ring((0, 0, 10), (50, 0, 12), (50, 50, 11), (0, 50, 10)), height: 30, part: true);
+        part.MinLevel = 3;
+
+        Processor().ComputeBuildingHeightMeters(part);
+
+        Assert.Equal(10 + 9, part.ComputedFloorAltitude);
+        Assert.True(part.HasHeightInformation);
+
+        // min_height wins over min_level
+        var measured = Building(Box(0, 0, 50), height: 30, minHeight: 12);
+        measured.MinLevel = 3;
+        Processor().ComputeBuildingHeightMeters(measured);
+        Assert.Equal(12, measured.ComputedFloorAltitude);
+    }
+
+    [Fact]
     public void MinHeightAboveTheHeightIsIgnored()
     {
         var building = Building(Box(0, 0, 50), height: 10, minHeight: 20);

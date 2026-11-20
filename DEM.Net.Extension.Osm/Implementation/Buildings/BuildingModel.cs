@@ -24,6 +24,8 @@ public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint
     // height
     // min_height
     public int? Levels { get; set; }
+    /// <summary>building:min_level: floors skipped below a part (an overhang), used when min_height is missing.</summary>
+    public int? MinLevel { get; set; }
     public double? MinHeight { get; set; }
     public double? Height { get; set; }
 

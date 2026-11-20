@@ -114,11 +114,12 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
 
             foreach (var building in buildingModels)
             {
+                var triangulation = this.Triangulate(building);
+
+                // after Triangulate, which computes HasHeightInformation
                 numTotal++;
                 numWithHeight += building.HasHeightInformation ? 1 : 0;
                 numWithColor += (building.Color.HasValue || building.RoofColor.HasValue) ? 1 : 0;
-
-                var triangulation = this.Triangulate(building);
 
                 var positionsVec3 = triangulation.Positions.ToVector3GlTFSpace().ToList();
                 var buildingNormals = _meshService.ComputeMeshNormals(positionsVec3, triangulation.Indices);
@@ -293,14 +294,15 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
     /// Roof and floor altitudes, in model units. The ground is the lowest footprint point, so no wall floats on a slope.
     /// <c>height</c> and <c>min_height</c> are measured from the ground (OSM), and scaled by
     /// <see cref="GeoTransformPipeline.ModelUnitsPerMeter"/> so the building keeps its real proportions.
-    /// Without <c>min_height</c>, the walls go down to the terrain at each vertex.
+    /// Without <c>min_height</c>, <c>building:min_level</c> floors are skipped, and without either the walls go down
+    /// to the terrain at each vertex.
     /// </summary>
     internal BuildingModel ComputeBuildingHeightMeters(BuildingModel building)
     {
         if (building.ComputedRoofAltitude.HasValue)
             return building;
 
-        building.HasHeightInformation = building.Levels.HasValue || building.Height.HasValue || building.MinHeight.HasValue;
+        building.HasHeightInformation = building.Levels.HasValue || building.Height.HasValue || building.MinHeight.HasValue || building.MinLevel.HasValue;
 
         if (building.Levels.HasValue && building.Height.HasValue)
         {
@@ -313,7 +315,8 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
         double unitsPerMeter = Transform?.ModelUnitsPerMeter ?? 1d;
         double ground = building.Points.Min(p => p.Elevation ?? 0);
         double height = building.Height ?? (building.Levels ?? 3) * LevelHeightMeters;
-        double? minHeight = building.MinHeight is > 0 ? building.MinHeight : null;
+        double? minHeight = building.MinHeight is > 0 ? building.MinHeight
+            : building.MinLevel is > 0 ? building.MinLevel * LevelHeightMeters : null;
         if (minHeight >= height)
         {
             _logger.LogDebug($"Building {building.Id}: min_height {minHeight} is not below its height {height}, ignored.");

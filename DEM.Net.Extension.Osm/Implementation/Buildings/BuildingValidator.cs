@@ -62,6 +62,7 @@ public class BuildingValidator : OsmModelFactory<BuildingModel>
         ParseTag<string>(model, "building", v => model.Type = v);
         ParseTag<int>(model, "building:levels", v => model.Levels = v);
         ParseTag<int>(model, "buildings:levels", v => model.Levels = v);
+        ParseTag<int>(model, "building:min_level", v => model.MinLevel = v);
         ParseTag<string>(model, "buildings:part", v => model.IsPart = v.ToLower() == "yes");
         ParseTag<string>(model, "building:part", v => model.IsPart = v.ToLower() == "yes");
         ParseLengthTag(model, "min_height", v => model.MinHeight = v);
