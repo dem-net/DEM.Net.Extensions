@@ -28,6 +28,17 @@ public class BuildingModel(List<GeoPoint> exteriorRingPoints, List<List<GeoPoint
     public int? MinLevel { get; set; }
     public double? MinHeight { get; set; }
     public double? Height { get; set; }
+    /// <summary>The height is a machine-learning estimate (Overture: Microsoft ML Buildings), taken as the wall height.</summary>
+    public bool HeightIsEstimated { get; set; }
+
+    // roof:shape, roof:height (metres), roof:direction (compass degrees the slope faces), roof:orientation=across
+    public string? RoofShape { get; set; }
+    public double? RoofHeight { get; set; }
+    public double? RoofDirection { get; set; }
+    public bool RoofAcross { get; set; }
+
+    /// <summary>Centre of the footprint, longitude and latitude, recorded before the points are transformed.</summary>
+    public (double Lon, double Lat)? Centre { get; set; }
 
     public double? ComputedFloorAltitude { get; set; }
     public double? ComputedRoofAltitude { get; set; }

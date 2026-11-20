@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json;
 
 namespace DEM.Net.Extension.Osm.PMTiles;
 
@@ -27,6 +28,7 @@ internal static class OvertureSchema
             // Only parts have a building_id (the id of their outline)
             if (Str(p, "building_id") != null) tags["building:part"] = "yes";
             Copy(p, tags, "height", "height");
+            if (tags.ContainsKey("height") && HeightIsEstimated(p)) tags[EstimatedHeightTag] = "yes";
             Copy(p, tags, "min_height", "min_height");
             Integer(p, tags, "num_floors", "building:levels");
             Integer(p, tags, "min_floor", "building:min_level");
@@ -42,6 +44,35 @@ internal static class OvertureSchema
             return tags;
         },
     };
+
+    /// <summary>Not an OSM tag: set when the height is a machine-learning estimate, not a mapped value.</summary>
+    public const string EstimatedHeightTag = "dem:height_estimated";
+
+    /// <summary>
+    /// The height comes from Microsoft ML Buildings: either only the height (a source with property
+    /// <c>/properties/height</c>), or the whole building. <c>@height_source</c> can't be trusted for this: it names
+    /// OpenStreetMap for ML heights put on OSM footprints. ML heights are low (median 4–5 m for Alpine houses):
+    /// closer to an eave height than to the ridge.
+    /// </summary>
+    internal static bool HeightIsEstimated(IReadOnlyDictionary<string, object> p)
+    {
+        if (Str(p, "sources") is not string json) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array) return false;
+            string? whole = null, height = null;
+            foreach (var s in doc.RootElement.EnumerateArray())
+            {
+                string? property = s.TryGetProperty("property", out var pr) ? pr.GetString() : null;
+                string? provider = s.TryGetProperty("provider", out var pv) ? pv.GetString() : null;
+                if (property == "/properties/height") height = provider;
+                else if (string.IsNullOrEmpty(property)) whole ??= provider;
+            }
+            return string.Equals(height ?? whole, "microsoft", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (JsonException) { return false; }
+    }
 
     public static ProtomapsLayerMapping? Find(string? filterIdentifier)
         => string.Equals(filterIdentifier, Buildings.FilterIdentifier, StringComparison.OrdinalIgnoreCase) ? Buildings : null;
