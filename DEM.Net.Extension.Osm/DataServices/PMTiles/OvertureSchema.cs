@@ -18,6 +18,7 @@ internal static class OvertureSchema
         FilterIdentifier = "buildings",
         SourceLayers = ["building", "building_part"],
         BuildingsArchive = true,
+        HasColor = p => Str(p, "facade_color") != null || Str(p, "roof_color") != null,
         Accept = (layer, p, type) => type == MvtGeometryType.Polygon && !IsTrue(p, "is_underground"),
         ToOsmTags = (p, type) =>
         {
