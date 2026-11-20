@@ -18,6 +18,11 @@ Not well documented but deserved to go public. Please fill an issue if you need 
 [Protomaps basemap](https://maps.protomaps.com/builds/) PMTiles archive (`OsmElevationOptions.PMTilesFilePath`),
 draped on the terrain.
 
+Buildings can come from the [Overture Maps buildings archive](https://docs.overturemaps.org/examples/overture-tiles/)
+instead (`OsmElevationOptions.BuildingsPMTilesFilePath`, `tiles/<release>/buildings.pmtiles`, about 181 GB for the
+planet): it keeps the heights, floors, roof shapes and colours that the Protomaps archive drops. Regional extract:
+`pmtiles extract https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-11-18.0/buildings.pmtiles out.pmtiles --bbox=…`
+
 ## SampleApp
 
 Various samples, one including model generation for http://helladic.info (gallery here: sketchfab.com/mycenaean-atlas-project)
