@@ -148,11 +148,11 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         var range = GetTileRange(bbox, mapping);
         var wantedLayers = new HashSet<string>(mapping.SourceLayers, StringComparer.Ordinal);
         var bboxEnv = range.BboxWorldEnvelope;
-        long vertices = 0;
+        long vertices = 0, features = 0, colored = 0;
         double worldLength = 0;
         var sync = new Lock();
 
-        Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d), (idx, _, local) =>
+        Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d, Features: 0L, Colored: 0L), (idx, _, local) =>
         {
             int tx = range.MinTx + idx % range.Cols, ty = range.MinTy + idx / range.Cols;
             byte[]? data = range.Reader.GetTile(range.Zoom, tx, ty);
@@ -161,10 +161,11 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
             foreach (var layer in MvtDecoder.Decode(data, wantedLayers))
                 foreach (var mvtFeature in layer.Features)
                 {
-                    if (!mapping.Accept(layer.Name, layer.GetProperties(mvtFeature), mvtFeature.Type)) continue;
+                    var props = layer.GetProperties(mvtFeature);
+                    if (!mapping.Accept(layer.Name, props, mvtFeature.Type)) continue;
                     int n = MvtDecoder.CountVertices(mvtFeature, tx, ty, layer.Extent, out var env, out double length);
                     if (n > 0 && bboxEnv.Intersects(env))
-                        local = (local.Vertices + n, local.Length + length);
+                        local = (local.Vertices + n, local.Length + length, local.Features + 1, local.Colored + (mapping.HasColor?.Invoke(props) == true ? 1 : 0));
                 }
             return local;
         }, local =>
@@ -173,13 +174,16 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
             {
                 vertices += local.Vertices;
                 worldLength += local.Length;
+                features += local.Features;
+                colored += local.Colored;
             }
         });
 
         // Web Mercator scale at the bbox center latitude
         double centerLatRad = (bbox.yMin + bbox.yMax) / 2d * Math.PI / 180d;
         double metersPerWorldUnit = EarthCircumferenceMeters * Math.Cos(centerLatRad) / (W * (1L << range.Zoom));
-        return new OsmDataStats((int)Math.Min(vertices, int.MaxValue), worldLength * metersPerWorldUnit);
+        return new OsmDataStats((int)Math.Min(vertices, int.MaxValue), worldLength * metersPerWorldUnit,
+            (int)Math.Min(features, int.MaxValue), (int)Math.Min(colored, int.MaxValue));
     }
 
     private sealed class TileRange

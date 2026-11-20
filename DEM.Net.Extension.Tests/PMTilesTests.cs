@@ -127,6 +127,8 @@ public class PMTilesTests
 
             // buildings: 2 rectangles in tile A + the seam building's part in tile B (4 vertices each, ClosePath not counted)
             Assert.Equal(12, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
+            Assert.Equal(3, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Features);
+            Assert.Equal(0, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).ColoredFeatures); // Protomaps has no colours
             // the road: 2 vertices per tile; the rail stays out of highways
             var roads = service.GetOsmDataStats(TestBbox(), new TestFilter("highways"));
             Assert.Equal(4, roads.Vertices);
@@ -205,7 +207,10 @@ public class PMTilesTests
             // other layers still come from the Protomaps archive
             Assert.Equal("primary", Assert.Single(service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("highways"))).Attributes["highway"]);
             // estimates read the buildings archive too: 3 rectangles in tile A (not the underground one) + 1 in tile B
-            Assert.Equal(16, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
+            var stats = service.GetOsmDataStats(TestBbox(), new TestFilter("buildings"));
+            Assert.Equal(16, stats.Vertices);
+            Assert.Equal(4, stats.Features);        // the seam building once per tile
+            Assert.Equal(1, stats.ColoredFeatures); // the chalet
         }
         finally
         {
