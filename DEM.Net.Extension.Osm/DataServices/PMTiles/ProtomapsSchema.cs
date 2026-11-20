@@ -19,6 +19,9 @@ internal sealed class ProtomapsLayerMapping
     /// <summary>Read from <see cref="OsmElevationOptions.BuildingsPMTilesFilePath"/> (Overture), not from the Protomaps archive.</summary>
     public bool BuildingsArchive { get; init; }
 
+    /// <summary>The feature has a mapped colour (for size estimates); null when the archive has no colours.</summary>
+    public Func<IReadOnlyDictionary<string, object>, bool>? HasColor { get; init; }
+
     /// <summary>Some validators (water) only accept MultiPolygon, not Polygon.</summary>
     public bool PolygonsAsMultiPolygon { get; set; }
 }
