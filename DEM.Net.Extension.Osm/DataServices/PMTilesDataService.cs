@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DEM.Net.Core;
+using DEM.Net.Extension.Osm.Buildings;
 using DEM.Net.Extension.Osm.PMTiles;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -75,7 +76,7 @@ public sealed class PMTilesReaderProvider : IDisposable
 /// Buildings come from the Overture archive instead when <see cref="OsmElevationOptions.BuildingsPMTilesFilePath"/> is set.
 /// </summary>
 public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReaderProvider readerProvider,
-    IOptions<OsmElevationOptions> options) : IOsmDataService
+    IOptions<OsmElevationOptions> options, RoofPriorProvider? roofPriorProvider = null) : IOsmDataService
 {
     private const double W = MvtDecoder.WorldUnitsPerTile;
     private const double BorderEpsilon = 1e-6;
@@ -89,6 +90,7 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
     private readonly ILogger<PMTilesDataService> _logger = logger;
     private readonly PMTilesReaderProvider _readerProvider = readerProvider;
     private readonly OsmElevationOptions _options = options.Value;
+    private readonly RoofPriorProvider? _roofPriorProvider = roofPriorProvider;
 
     public IEnumerable<IFeature> GetOsmDataAsGeoJson(BoundingBox bbox, IOsmDataSettings filter)
     {
@@ -137,8 +139,10 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
 
     /// <summary>
     /// Fast estimate: decodes the tiles but builds no geometry (no clipping or seam merging). Counts the vertices and
-    /// line length of accepted features whose envelope intersects the bbox. Features crossing tile edges are counted
-    /// once per tile (with the tile buffer), a small overestimate.
+    /// line length of accepted features whose envelope intersects the bbox, within each tile's own extent (not its
+    /// buffer), so features crossing tile edges add up to their stitched size. Each feature is counted once: by its
+    /// MVT id when the archive has ids, otherwise in the tile holding the centre of its envelope. Buildings also get
+    /// their expected pitched roofs (<see cref="OsmBuildingProcessor.PitchedRoofChance"/>).
     /// </summary>
     internal OsmDataStats CountVertices(BoundingBox bbox, ProtomapsLayerMapping mapping)
     {
@@ -148,43 +152,74 @@ public class PMTilesDataService(ILogger<PMTilesDataService> logger, PMTilesReade
         var range = GetTileRange(bbox, mapping);
         var wantedLayers = new HashSet<string>(mapping.SourceLayers, StringComparer.Ordinal);
         var bboxEnv = range.BboxWorldEnvelope;
-        long vertices = 0, features = 0, colored = 0;
-        double worldLength = 0;
+        var total = new Tally();
         var sync = new Lock();
+        var counted = new ConcurrentDictionary<(string Layer, ulong Id), byte>();
 
-        Parallel.For(0, (int)range.TileCount, () => (Vertices: 0L, Length: 0d, Features: 0L, Colored: 0L), (idx, _, local) =>
+        // Web Mercator scale at the bbox center latitude
+        double worldSize = W * (1L << range.Zoom);
+        double centerLatRad = (bbox.yMin + bbox.yMax) / 2d * Math.PI / 180d;
+        double metersPerWorldUnit = EarthCircumferenceMeters * Math.Cos(centerLatRad) / worldSize;
+        bool buildings = string.Equals(mapping.FilterIdentifier, "buildings", StringComparison.OrdinalIgnoreCase);
+        RoofPrior? roofPrior = buildings ? _roofPriorProvider?.Prior : null;
+
+        Parallel.For(0, (int)range.TileCount, () => new Tally(), (idx, _, local) =>
         {
             int tx = range.MinTx + idx % range.Cols, ty = range.MinTy + idx / range.Cols;
             byte[]? data = range.Reader.GetTile(range.Zoom, tx, ty);
             if (data == null || data.Length == 0) return local;
 
+            var tileEnv = new Envelope(tx * W, (tx + 1) * W, ty * W, (ty + 1) * W);
             foreach (var layer in MvtDecoder.Decode(data, wantedLayers))
                 foreach (var mvtFeature in layer.Features)
                 {
                     var props = layer.GetProperties(mvtFeature);
                     if (!mapping.Accept(layer.Name, props, mvtFeature.Type)) continue;
-                    int n = MvtDecoder.CountVertices(mvtFeature, tx, ty, layer.Extent, out var env, out double length);
-                    if (n > 0 && bboxEnv.Intersects(env))
-                        local = (local.Vertices + n, local.Length + length, local.Features + 1, local.Colored + (mapping.HasColor?.Invoke(props) == true ? 1 : 0));
+                    var size = MvtDecoder.Measure(mvtFeature, tx, ty, layer.Extent);
+                    if (size.Envelope.IsNull || !bboxEnv.Intersects(size.Envelope)) continue;
+                    local.Vertices += size.Vertices;
+                    local.Length += size.Length;
+
+                    bool first = mvtFeature.Id is ulong id && id != 0
+                        ? counted.TryAdd((layer.Name, id), 0)
+                        : ContainsHalfOpen(tileEnv, size.Envelope.Centre);
+                    if (!first) continue;
+                    local.Features++;
+                    if (mapping.HasColor?.Invoke(props) == true) local.Colored++;
+                    if (buildings)
+                    {
+                        var (lon, lat) = TileMath.WorldToLonLat(size.Envelope.Centre.X, size.Envelope.Centre.Y, worldSize);
+                        double areaM2 = size.Area * metersPerWorldUnit * metersPerWorldUnit;
+                        local.PitchedRoofs += OsmBuildingProcessor.PitchedRoofChance(roofPrior, mapping.ToOsmTags(props, mvtFeature.Type), lon, lat, areaM2, size.Holes > 0);
+                    }
                 }
             return local;
         }, local =>
         {
-            lock (sync)
-            {
-                vertices += local.Vertices;
-                worldLength += local.Length;
-                features += local.Features;
-                colored += local.Colored;
-            }
+            lock (sync) total.Add(local);
         });
 
-        // Web Mercator scale at the bbox center latitude
-        double centerLatRad = (bbox.yMin + bbox.yMax) / 2d * Math.PI / 180d;
-        double metersPerWorldUnit = EarthCircumferenceMeters * Math.Cos(centerLatRad) / (W * (1L << range.Zoom));
-        return new OsmDataStats((int)Math.Min(vertices, int.MaxValue), worldLength * metersPerWorldUnit,
-            (int)Math.Min(features, int.MaxValue), (int)Math.Min(colored, int.MaxValue));
+        return new OsmDataStats((int)Math.Min(total.Vertices, int.MaxValue), total.Length * metersPerWorldUnit,
+            (int)Math.Min(total.Features, int.MaxValue), (int)Math.Min(total.Colored, int.MaxValue), total.PitchedRoofs);
     }
+
+    private sealed class Tally
+    {
+        public long Vertices, Features, Colored;
+        public double Length, PitchedRoofs;
+
+        public void Add(Tally t)
+        {
+            Vertices += t.Vertices;
+            Features += t.Features;
+            Colored += t.Colored;
+            Length += t.Length;
+            PitchedRoofs += t.PitchedRoofs;
+        }
+    }
+
+    private static bool ContainsHalfOpen(Envelope tile, Coordinate c)
+        => c.X >= tile.MinX && c.X < tile.MaxX && c.Y >= tile.MinY && c.Y < tile.MaxY;
 
     private sealed class TileRange
     {

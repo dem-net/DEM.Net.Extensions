@@ -125,31 +125,81 @@ public class PMTilesTests
         {
             var service = CreateService(path);
 
-            // buildings: 2 rectangles in tile A + the seam building's part in tile B (4 vertices each, ClosePath not counted)
-            Assert.Equal(12, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
-            Assert.Equal(3, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Features);
+            // buildings: a rectangle in tile A (4 vertices, ClosePath not counted) + the seam building (2 vertices on each
+            // side: the copies in the tile buffers are not counted), once (no ids: in the tile holding its centre)
+            Assert.Equal(8, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Vertices);
+            Assert.Equal(2, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).Features);
             Assert.Equal(0, service.GetOsmDataStats(TestBbox(), new TestFilter("buildings")).ColoredFeatures); // Protomaps has no colours
-            // the road: 2 vertices per tile; the rail stays out of highways
+            // the road: one vertex in each tile (its end in the other tile's buffer is not counted); the rail stays out of highways
             var roads = service.GetOsmDataStats(TestBbox(), new TestFilter("highways"));
-            Assert.Equal(4, roads.Vertices);
-            // both road parts with their tile buffer: (4200 - 3000) + (500 + 1096) world px at z15
+            Assert.Equal(2, roads.Vertices);
+            Assert.Equal(1, roads.Features);
+            // both road parts clipped to their own tile: (4096 - 3000) + 500 world px at z15, the length of the road
             var bbox = TestBbox();
             double metersPerPx = 40075016.686 * Math.Cos((bbox.yMin + bbox.yMax) / 2 * Math.PI / 180) / (4096d * (1 << Z));
-            Assert.Equal(2796 * metersPerPx, roads.LengthMeters!.Value, 6);
+            Assert.Equal(1596 * metersPerPx, roads.LengthMeters!.Value, 6);
             Assert.Equal(2, service.GetOsmDataStats(TestBbox(), new TestFilter("railway")).Vertices);
             Assert.Equal(new OsmDataStats(0, 0), service.GetOsmDataStats(TestBbox(), new TestFilter("unknown-layer")));
             // historical scale kept for GetOsmDataCount
-            Assert.Equal(24, service.GetOsmDataCount(TestBbox(), new TestFilter("buildings")));
+            Assert.Equal(16, service.GetOsmDataCount(TestBbox(), new TestFilter("buildings")));
 
-            // close to the full query (which adds closing points and seam vertices, then merges the seam building)
-            int queried = service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")).Sum(f => f.Geometry.NumPoints);
-            Assert.InRange(queried, 8, 12);
+            // the full query has the same vertices (+ one closing point per ring) once the seam building is merged
+            var queried = service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("buildings")).ToList();
+            Assert.Equal(2, queried.Count);
+            Assert.Equal(8 + 2, queried.Sum(f => f.Geometry.NumPoints));
 
             // partial bbox: only the small building of tile A (px 1000-1100)
             var small = new BoundingBox(TileLon(TX + 0.2), TileLon(TX + 0.3), TileLat(TY + 0.3), TileLat(TY + 0.2));
             Assert.Equal(4, service.GetOsmDataStats(small, new TestFilter("buildings")).Vertices);
         }
         finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(100, 100, 200, 100, 100)]       // inside
+    [InlineData(4000, 0, 4200, 0, 96)]          // leaves through the right border
+    [InlineData(-100, 50, -10, 50, 0)]          // outside
+    [InlineData(-100, -100, 4196, 4196, 5792.6)] // diagonal across the whole tile: 4096 √2
+    [InlineData(0, 4096, 4096, 4096, 4096)]     // on the border
+    public void ClippedLength_KeepsTheSegmentInsideTheTile(long x0, long y0, long x1, long y1, double expected)
+    {
+        Assert.Equal(expected, MvtDecoder.ClippedLength(x0, y0, x1, y1, 4096), 1);
+    }
+
+    [Fact]
+    public void Measure_ReadsTheExteriorAreaAndTheHoles()
+    {
+        // A 100 × 100 outline with a 20 × 20 hole (reversed: negative area), at z15 with a 4096 extent: 1 unit = 1 world unit
+        var geometry = Rings([(0, 0), (100, 0), (100, 100), (0, 100)], [(20, 20), (20, 40), (40, 40), (40, 20)]);
+        var feature = MvtDecoder.Decode(Mvt(Layer("buildings", Feature(3, geometry))), null).Single().Features.Single();
+
+        var size = MvtDecoder.Measure(feature, TX, TY, 4096);
+        Assert.Equal(8, size.Vertices);
+        Assert.Equal(10000, size.Area, 6); // holes are not subtracted
+        Assert.Equal(1, size.Holes);
+        Assert.Equal(TX * 4096d, size.Envelope.MinX);
+        Assert.Equal(100, size.Envelope.Width);
+    }
+
+    [Fact]
+    public void DataStats_CountsExpectedPitchedRoofs()
+    {
+        string basemap = WriteTestArchive(useLeafDirectory: false);
+        string overture = WriteOvertureArchive();
+        try
+        {
+            // No roof prior: the chalet's mapped gabled roof; the part stays flat; the seam building (about 48 × 30 m
+            // at z15) is too large for the default gabled roof
+            var stats = CreateService(basemap, buildingsPath: overture).GetOsmDataStats(TestBbox(), new TestFilter("buildings"));
+            Assert.Equal(1, stats.PitchedRoofs, 6);
+            // roads have none
+            Assert.Equal(0, CreateService(basemap).GetOsmDataStats(TestBbox(), new TestFilter("highways")).PitchedRoofs);
+        }
+        finally
+        {
+            File.Delete(basemap);
+            File.Delete(overture);
+        }
     }
 
     [Fact]
@@ -206,10 +256,11 @@ public class PMTilesTests
 
             // other layers still come from the Protomaps archive
             Assert.Equal("primary", Assert.Single(service.GetOsmDataAsGeoJson(TestBbox(), new TestFilter("highways"))).Attributes["highway"]);
-            // estimates read the buildings archive too: 3 rectangles in tile A (not the underground one) + 1 in tile B
+            // estimates read the buildings archive too: chalet + part (4 vertices each) + the seam building (2 on each
+            // side), not the underground one
             var stats = service.GetOsmDataStats(TestBbox(), new TestFilter("buildings"));
-            Assert.Equal(16, stats.Vertices);
-            Assert.Equal(4, stats.Features);        // the seam building once per tile
+            Assert.Equal(12, stats.Vertices);
+            Assert.Equal(3, stats.Features);        // the seam building once, by its id
             Assert.Equal(1, stats.ColoredFeatures); // the chalet
         }
         finally
@@ -422,6 +473,23 @@ public class PMTilesTests
         => Commands(true, (x0, y0), (x1, y0), (x1, y1), (x0, y1));
 
     private static List<uint> Line(params (int X, int Y)[] pts) => Commands(false, pts);
+
+    /// <summary>Closed rings in one geometry (the cursor carries over from one ring to the next).</summary>
+    private static List<uint> Rings(params (int X, int Y)[][] rings)
+    {
+        var g = new List<uint>();
+        int cx = 0, cy = 0;
+        void Add((int X, int Y) p) { g.Add(ZigZag(p.X - cx)); g.Add(ZigZag(p.Y - cy)); cx = p.X; cy = p.Y; }
+        foreach (var ring in rings)
+        {
+            g.Add((1 & 7) | (1 << 3));
+            Add(ring[0]);
+            g.Add((uint)((2 & 7) | ((ring.Length - 1) << 3)));
+            foreach (var p in ring.Skip(1)) Add(p);
+            g.Add((7 & 7) | (1 << 3));
+        }
+        return g;
+    }
 
     private static List<uint> Commands(bool close, params (int X, int Y)[] pts)
     {
