@@ -206,17 +206,23 @@ internal static class MvtDecoder
     }
 
     /// <summary>
-    /// Counts the feature vertices (MoveTo + LineTo; the ClosePath repeat is not counted), sums the length of its
-    /// LineTo segments and computes its envelope, all in world coordinates, without building a geometry.
-    /// Used for fast size estimates.
+    /// Measures a feature without building a geometry, for fast size estimates, in world coordinates:
+    /// <list type="bullet">
+    /// <item>vertices (MoveTo + LineTo; the ClosePath repeat is not counted) and length of the LineTo segments, both
+    /// within the tile's own extent only: vertices in the half-open extent, segments clipped to it, so the fragments of a
+    /// feature cut by tile seams add up to the feature itself (the buffer copies and the clip points are not counted);</item>
+    /// <item>the envelope, the area of the exterior rings and the number of holes of the whole decoded geometry (buffer
+    /// included).</item>
+    /// </list>
     /// </summary>
-    public static int CountVertices(MvtFeature feature, int tileX, int tileY, uint extent, out Envelope worldEnvelope, out double worldLength)
+    public static MvtFeatureSize Measure(MvtFeature feature, int tileX, int tileY, uint extent)
     {
         double scale = WorldUnitsPerTile / extent;
         double ox = tileX * WorldUnitsPerTile, oy = tileY * WorldUnitsPerTile;
         long cx = 0, cy = 0, minX = long.MaxValue, minY = long.MaxValue, maxX = long.MinValue, maxY = long.MinValue;
-        int vertices = 0;
-        double length = 0;
+        long sx = 0, sy = 0; // ring start
+        int decoded = 0, vertices = 0, holes = 0;
+        double length = 0, ring2 = 0, area2 = 0; // twice the signed areas, in tile units
         var g = feature.Geometry;
         int i = 0;
         while (i < g.Count)
@@ -224,26 +230,57 @@ internal static class MvtDecoder
             uint cmd = g[i++];
             int id = (int)(cmd & 0x7);
             int count = (int)(cmd >> 3);
-            if (id == 7) continue; // ClosePath has no parameters
+            if (id == 7) // ClosePath has no parameters
+            {
+                // MVT: exterior rings have a positive area (y down), holes a negative one
+                ring2 += (double)cx * sy - (double)sx * cy;
+                if (ring2 > 0) area2 += ring2;
+                else if (ring2 < 0) holes++;
+                ring2 = 0;
+                continue;
+            }
             if (id != 1 && id != 2) break; // malformed: count what was read
             for (int k = 0; k < count && i + 1 < g.Count; k++)
             {
                 int dx = ZigZag32(g[i++]), dy = ZigZag32(g[i++]);
+                if (id == 2)
+                {
+                    length += ClippedLength(cx, cy, cx + dx, cy + dy, extent);
+                    ring2 += (double)cx * (cy + dy) - (double)(cx + dx) * cy;
+                }
                 cx += dx;
                 cy += dy;
-                if (id == 2) length += Math.Sqrt((double)dx * dx + (double)dy * dy);
-                vertices++;
+                if (id == 1) { sx = cx; sy = cy; ring2 = 0; }
+                decoded++;
+                if (cx >= 0 && cx < extent && cy >= 0 && cy < extent) vertices++;
                 if (cx < minX) minX = cx;
                 if (cx > maxX) maxX = cx;
                 if (cy < minY) minY = cy;
                 if (cy > maxY) maxY = cy;
             }
         }
-        worldEnvelope = vertices == 0
+        var envelope = decoded == 0
             ? new Envelope()
             : new Envelope(ox + minX * scale, ox + maxX * scale, oy + minY * scale, oy + maxY * scale);
-        worldLength = length * scale;
-        return vertices;
+        return new MvtFeatureSize(vertices, length * scale, envelope, area2 / 2 * scale * scale, holes);
+    }
+
+    /// <summary>Length of the segment inside the square [0, extent]² (Liang–Barsky clipping).</summary>
+    internal static double ClippedLength(long x0, long y0, long x1, long y1, uint extent)
+    {
+        double dx = x1 - x0, dy = y1 - y0;
+        double t0 = 0, t1 = 1;
+        bool Clip(double p, double q)
+        {
+            if (p == 0) return q >= 0; // parallel to this border: inside or outside
+            double t = q / p;
+            if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+            else { if (t < t0) return false; if (t < t1) t1 = t; }
+            return true;
+        }
+        if (!Clip(-dx, x0) || !Clip(dx, extent - x0) || !Clip(-dy, y0) || !Clip(dy, extent - y0))
+            return 0;
+        return (t1 - t0) * Math.Sqrt(dx * dx + dy * dy);
     }
 
     /// <summary>
@@ -300,6 +337,14 @@ internal static class MvtDecoder
     private static int ZigZag32(uint n) => (int)(n >> 1) ^ -(int)(n & 1);
     private static long ZigZag64(ulong n) => (long)(n >> 1) ^ -(long)(n & 1);
 }
+
+/// <summary>What <see cref="MvtDecoder.Measure"/> reads from a feature, in world units.</summary>
+/// <param name="Vertices">Vertices within the tile's own extent.</param>
+/// <param name="Length">Length of the line segments clipped to the tile's own extent.</param>
+/// <param name="Envelope">Envelope of the whole decoded geometry (tile buffer included).</param>
+/// <param name="Area">Area of the exterior rings (holes not subtracted), tile buffer included.</param>
+/// <param name="Holes">Interior rings.</param>
+internal readonly record struct MvtFeatureSize(int Vertices, double Length, Envelope Envelope, double Area, int Holes);
 
 /// <summary>Just enough protobuf wire-format reading for MVT.</summary>
 internal sealed class ProtoReader(byte[] buffer, int start, int length)

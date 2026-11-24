@@ -286,6 +286,44 @@ public class OsmBuildingProcessor(GeoTransformPipeline? transformPipeline, bool 
         return kind;
     }
 
+    /// <summary>
+    /// For size estimates: the chance that <see cref="PitchedRoof"/> draws a pitched roof on a building, from the OSM
+    /// tags it will be built from (the <see cref="BuildingValidator"/> ones), its centre and footprint. Same rules as
+    /// <see cref="PitchedRoof"/> and <see cref="DefaultRoof(BuildingModel, RoofFootprint, double)"/>, with the prior's
+    /// odds instead of a draw. No footprint is built, so the rectangularity tests are skipped: an irregular footprint
+    /// counts as pitched as often as a rectangle (the safe side).
+    /// </summary>
+    internal static double PitchedRoofChance(RoofPrior? prior, IDictionary<string, object> tags, double lon, double lat, double areaM2, bool hasHoles)
+    {
+        if (Str(tags, "roof:shape") is string shape)
+            return RoofGeometry.ParseShape(shape) == RoofKind.Flat ? 0 : 1;
+
+        bool isPart = string.Equals(Str(tags, "building:part"), "yes", StringComparison.OrdinalIgnoreCase);
+        string? type = Str(tags, "building");
+        double? height = Num(tags, "height"), levels = Num(tags, "building:levels");
+        if (isPart || hasHoles || Num(tags, "min_height") is > 0 || Num(tags, "building:min_level") is > 0) return 0;
+
+        if (prior == null)
+        {
+            bool estimated = Str(tags, PMTiles.OvertureSchema.EstimatedHeightTag) == "yes";
+            if (type != null && FlatRoofTypes.Contains(type)) return 0;
+            if ((!estimated && height is > 12) || levels is > 3) return 0;
+            return areaM2 is >= 25 and <= DefaultRoofMaxAreaM2 ? 1 : 0;
+        }
+
+        bool nonResidential = type != null && RoofPrior.NonResidentialTypes.Contains(type);
+        var odds = prior.Odds(lon, lat, RoofPrior.Stratum(areaM2, height ?? levels * LevelHeightMeters, nonResidential));
+        int total = 0;
+        foreach (byte o in odds) total += o;
+        return total == 0 ? 0 : 1 - (double)odds[0] / total; // Kinds[0] is Flat
+    }
+
+    private static string? Str(IDictionary<string, object> tags, string key)
+        => tags.TryGetValue(key, out var v) && v != null ? Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+    private static double? Num(IDictionary<string, object> tags, string key)
+        => Str(tags, key) is string s && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double d) ? d : null;
+
     internal static bool HasDefaultGabledRoof(BuildingModel building, NetTopologySuite.Geometries.Polygon footprint, double unitsPerMeter)
         => HasDefaultGabledRoof(building, RoofFootprint.From(footprint), unitsPerMeter);
 

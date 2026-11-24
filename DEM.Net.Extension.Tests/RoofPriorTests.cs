@@ -61,6 +61,40 @@ public class RoofPriorTests
         => Assert.Equal(expected, RoofPrior.Stratum(area, height, nonRes));
 
     [Fact]
+    public void PitchedRoofChance_FollowsTheBuilderRules()
+    {
+        string path = WritePrior();
+        try
+        {
+            var prior = RoofPrior.Load(path);
+            static Dictionary<string, object> Tags(params (string, object)[] t) => t.ToDictionary(x => x.Item1, x => x.Item2);
+            double Chance(RoofPrior? p, Dictionary<string, object> tags, double area = 120, bool holes = false, double lon = 6.5, double lat = 45.5)
+                => OsmBuildingProcessor.PitchedRoofChance(p, tags, lon, lat, area, holes);
+
+            // the prior's odds: an all gabled cell, and its all flat tower stratum elsewhere
+            Assert.Equal(1, Chance(prior, Tags(("building", "house"))));
+            Assert.Equal(0, Chance(prior, Tags(("building", "commercial"), ("height", "50")), area: 2000, lon: 2.5, lat: 47.5));
+            Assert.Equal(1, Chance(prior, Tags(("building", "commercial"), ("height", "50")), area: 2000)); // all gabled cell
+            // mapped shapes first, then the flat cases
+            Assert.Equal(0, Chance(prior, Tags(("roof:shape", "flat"))));
+            Assert.Equal(1, Chance(prior, Tags(("roof:shape", "hipped")), holes: true));
+            Assert.Equal(0, Chance(prior, Tags(("building:part", "yes"))));
+            Assert.Equal(0, Chance(prior, Tags(("building", "house")), holes: true));
+            Assert.Equal(0, Chance(prior, Tags(("min_height", 3.0))));
+            Assert.Equal(0, Chance(prior, Tags(("building:min_level", 2))));
+
+            // without a prior: the default gabled roof on small, low houses
+            Assert.Equal(1, Chance(null, Tags(("building", "house"))));
+            Assert.Equal(0, Chance(null, Tags(("building", "house")), area: 400));
+            Assert.Equal(0, Chance(null, Tags(("building", "warehouse"))));
+            Assert.Equal(0, Chance(null, Tags(("height", 20.0))));
+            Assert.Equal(1, Chance(null, Tags(("height", 20.0), ("dem:height_estimated", "yes"))));
+            Assert.Equal(0, Chance(null, Tags(("building:levels", 4))));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void FinestCellFirstThenCoarserThenClimate()
     {
         string path = WritePrior();
